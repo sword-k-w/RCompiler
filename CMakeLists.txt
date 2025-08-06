@@ -9,5 +9,8 @@ set(CMAKE_CXX_STANDARD 20)
 include_directories(src/include)
 add_executable(tmp
         src/lexer/lexer.cpp
+        src/lexer/single.cpp
+        src/lexer/intermediate.cpp
+        src/lexer/token.cpp
         src/lexer/lexer_test.cpp
 )
