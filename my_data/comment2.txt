@@ -1,3 +1,0 @@
-fn main() {
-"/* this is not a comment */ // either this";
-}
