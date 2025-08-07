@@ -3,6 +3,8 @@
 
 #include <string>
 
+constexpr uint32_t kTokenTypeCount = 13;
+
 // strict keywords
 constexpr std::string_view kAS = "as";
 constexpr std::string_view kBREAK = "break";

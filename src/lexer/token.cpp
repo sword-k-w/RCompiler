@@ -229,7 +229,7 @@ auto Lexer::CheckFloatLiteral(uint32_t pos) const -> uint32_t {
   return pos;
 }
 
-auto Lexer::CheckPunctuation(const uint32_t &pos) const -> uint32_t {
+auto Lexer::CheckPunctuation(uint32_t pos) const -> uint32_t {
   if (pos + 2 < length_) {
     if (input_[pos] == '<' && input_[pos + 1] == '<' && input_[pos + 2] == '=') {
       return pos + 3;
@@ -325,7 +325,7 @@ auto Lexer::CheckPunctuation(const uint32_t &pos) const -> uint32_t {
   return pos;
 }
 
-auto Lexer::CheckReservedToken(const uint32_t &pos) const -> uint32_t {
+auto Lexer::CheckReservedToken(uint32_t pos) const -> uint32_t {
   uint32_t tmp = CheckReservedGuardedStringLiteral(pos);
   if (tmp != pos) {
     return tmp;

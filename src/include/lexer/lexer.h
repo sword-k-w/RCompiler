@@ -11,6 +11,12 @@ enum TokenType {
   kINTEGER_LITERAL, kFLOAT_LITERAL, kPUNCTUATION, kRESERVED_TOKEN
 };
 
+constexpr TokenType kTokenTypes[kTokenTypeCount] = {
+  kIDENTIFIER_OR_KEYWORD, kCHAR_LITERAL, kSTRING_LITERAL, kRAW_STRING_LITERAL, kBYTE_LITERAL,
+  kBYTE_STRING_LITERAL, kRAW_BYTE_STRING_LITERAL, kC_STRING_LITERAL, kRAW_C_STRING_LITERAL,
+  kINTEGER_LITERAL, kFLOAT_LITERAL, kPUNCTUATION, kRESERVED_TOKEN
+};
+
 struct Token {
   TokenType type;
   std::string lexeme;
@@ -62,8 +68,16 @@ private:
   auto CheckRawCStringLiteral(uint32_t) const -> uint32_t;
   auto CheckIntegerLiteral(uint32_t) const -> uint32_t;
   auto CheckFloatLiteral(uint32_t) const -> uint32_t;
-  auto CheckPunctuation(const uint32_t &) const -> uint32_t;
-  auto CheckReservedToken(const uint32_t &) const -> uint32_t;
+  auto CheckPunctuation(uint32_t) const -> uint32_t;
+  auto CheckReservedToken(uint32_t) const -> uint32_t;
+
+  using CheckTokenFuncType = auto(Lexer::*)(uint32_t) const -> uint32_t;
+  const CheckTokenFuncType check_token_func_[kTokenTypeCount] = {
+    &Lexer::CheckIntegerLiteral, &Lexer::CheckCharLiteral, &Lexer::CheckStringLiteral, &Lexer::CheckRawStringLiteral,
+    &Lexer::CheckByteLiteral, &Lexer::CheckByteStringLiteral, &Lexer::CheckRawByteStringLiteral,
+    &Lexer::CheckCStringLiteral, &Lexer::CheckRawCStringLiteral, &Lexer::CheckIntegerLiteral, &Lexer::CheckFloatLiteral,
+    &Lexer::CheckPunctuation, &Lexer::CheckReservedToken
+  };
 };
 
 #endif //LEXER_H
