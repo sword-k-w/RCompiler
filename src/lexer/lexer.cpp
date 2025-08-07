@@ -1,5 +1,4 @@
 #include "lexer/lexer.h"
-#include <iostream>
 
 Lexer::Lexer(const std::string &input) : input_(input), length_(input.size()) {}
 
@@ -16,13 +15,14 @@ auto Lexer::Run() -> std::vector<Token> const {
       } else {
         uint32_t max_pos = pos, index = kTokenTypeCount;
         for (uint32_t i = 0; i < kTokenTypeCount; ++i) {
-          tmp = check_token_func_[i](pos);
+          tmp = (this->*check_token_func_[i])(pos);
           if (tmp > max_pos) {
             max_pos = tmp;
             index = i;
           }
         }
         if (index == kTokenTypeCount) {
+          std::cerr << "error!\n";
           return {};
         }
         res.push_back({kTokenTypes[index], input_.substr(pos, max_pos - pos)});

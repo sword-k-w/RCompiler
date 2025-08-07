@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
+#include <cassert>
 #include "common/config.h"
 
 enum TokenType {
@@ -20,6 +22,39 @@ constexpr TokenType kTokenTypes[kTokenTypeCount] = {
 struct Token {
   TokenType type;
   std::string lexeme;
+  void Print(std::ostream &os) const {
+    os << "(";
+    if (type == kIDENTIFIER_OR_KEYWORD) {
+      os << "IDENTIFIER_OR_KEYWORD";
+    } else if (type == kCHAR_LITERAL) {
+      os << "CHAR_LITERAL";
+    } else if (type == kSTRING_LITERAL) {
+      os << "STRING_LITERAL";
+    } else if (type == kRAW_STRING_LITERAL) {
+      os << "RAW_STRING_LITERAL";
+    } else if (type == kBYTE_LITERAL) {
+      os << "BYTE_LITERAL";
+    } else if (type == kBYTE_STRING_LITERAL) {
+      os << "BYTE_STRING_LITERAL";
+    } else if (type == kRAW_BYTE_STRING_LITERAL) {
+      os << "RAW_BYTE_STRING_LITERAL";
+    } else if (type == kC_STRING_LITERAL) {
+      os << "C_STRING_LITERAL";
+    } else if (type == kRAW_C_STRING_LITERAL) {
+      os << "RAW_C_STRING_LITERAL";
+    } else if (type == kINTEGER_LITERAL) {
+      os << "INTEGER_LITERAL";
+    } else if (type == kFLOAT_LITERAL) {
+      os << "FLOAT_LITERAL";
+    } else if (type == kPUNCTUATION) {
+      os << "PUNCTUATION";
+    } else if (type == kRESERVED_TOKEN) {
+      os << "RESERVED_TOKEN";
+    } else {
+      assert(0);
+    }
+    os << " " << lexeme << ")";
+  }
 };
 
 class Lexer {
@@ -73,7 +108,7 @@ private:
 
   using CheckTokenFuncType = auto(Lexer::*)(uint32_t) const -> uint32_t;
   const CheckTokenFuncType check_token_func_[kTokenTypeCount] = {
-    &Lexer::CheckIntegerLiteral, &Lexer::CheckCharLiteral, &Lexer::CheckStringLiteral, &Lexer::CheckRawStringLiteral,
+    &Lexer::CheckIdentifierOrKeyWord, &Lexer::CheckCharLiteral, &Lexer::CheckStringLiteral, &Lexer::CheckRawStringLiteral,
     &Lexer::CheckByteLiteral, &Lexer::CheckByteStringLiteral, &Lexer::CheckRawByteStringLiteral,
     &Lexer::CheckCStringLiteral, &Lexer::CheckRawCStringLiteral, &Lexer::CheckIntegerLiteral, &Lexer::CheckFloatLiteral,
     &Lexer::CheckPunctuation, &Lexer::CheckReservedToken

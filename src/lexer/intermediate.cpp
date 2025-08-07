@@ -13,19 +13,18 @@ auto Lexer::CheckRawStringContent(uint32_t pos) const -> uint32_t {
   if (pos >= length_) {
     return start;
   }
-  uint32_t end = pos;
-  while (CheckAsciiForRaw(end)) {
-    ++end;
-  }
-  for (uint32_t i = end - 1; i > pos + count; --i) {
-    bool flag = true;
-    for (uint32_t j = i - count + 1; j <= i; ++j) {
-      flag &= (input_[pos] == '#');
+  while (pos + count < length_) {
+    bool flag = input_[pos] == '\"';
+    for (uint32_t i = pos + 1; i <= pos + count; ++i) {
+      flag &= input_[i] == '#';
     }
-    flag &= (input_[i - count] == '\"');
     if (flag) {
-      return i + 1;
+      return pos + count + 1;
     }
+    if (!CheckAsciiForRaw(pos)) {
+      return start;
+    }
+    ++pos;
   }
   return start;
 }
@@ -43,19 +42,18 @@ auto Lexer::CheckRawCStringContent(uint32_t pos) const -> uint32_t {
   if (pos >= length_) {
     return start;
   }
-  uint32_t end = pos;
-  while (CheckAsciiForRaw(end) && input_[end] != '\0') {
-    ++end;
-  }
-  for (uint32_t i = end - 1; i > pos + count; --i) {
-    bool flag = true;
-    for (uint32_t j = i - count + 1; j <= i; ++j) {
-      flag &= (input_[pos] == '#');
+  while (pos + count < length_) {
+    bool flag = input_[pos] == '\"';
+    for (uint32_t i = pos + 1; i <= pos + count; ++i) {
+      flag &= input_[i] == '#';
     }
-    flag &= (input_[i - count] == '\"');
     if (flag) {
-      return i + 1;
+      return pos + count + 1;
     }
+    if (!CheckAsciiForRaw(pos) || input_[pos] == '\0') {
+      return start;
+    }
+    ++pos;
   }
   return start;
 }
@@ -132,10 +130,8 @@ auto Lexer::CheckSuffixNoE(uint32_t pos) const -> uint32_t {
     return pos;
   }
   ++pos;
-  while (pos < length_) {
-    if (CheckAsciiAlpha(pos) || CheckAsciiDigit(pos) || input_[pos] == '_') {
-      ++pos;
-    }
+  while (pos < length_ && (CheckAsciiAlpha(pos) || CheckAsciiDigit(pos) || input_[pos] == '_')) {
+    ++pos;
   }
   return pos;
 }

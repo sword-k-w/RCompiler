@@ -7,10 +7,8 @@ auto Lexer::CheckIdentifierOrKeyWord(uint32_t pos) const -> uint32_t {
     return pos;
   }
   ++pos;
-  while (pos < length_) {
-    if (CheckAsciiAlpha(pos) || CheckAsciiDigit(pos) || input_[pos] == '_') {
-      ++pos;
-    }
+  while (pos < length_ && (CheckAsciiAlpha(pos) || CheckAsciiDigit(pos) || input_[pos] == '_')) {
+    ++pos;
   }
   return pos;
 }

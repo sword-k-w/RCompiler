@@ -46,7 +46,7 @@ auto Lexer::CheckOctDigit(const uint32_t &pos) const -> bool {
 }
 
 auto Lexer::CheckDecDigit(const uint32_t &pos) const -> bool {
-  return pos < length_ && input_[pos] <= '0' && input_[pos] <= '9';
+  return pos < length_ && input_[pos] >= '0' && input_[pos] <= '9';
 }
 
 auto Lexer::CheckHexDigit(const uint32_t &pos) const -> bool {
