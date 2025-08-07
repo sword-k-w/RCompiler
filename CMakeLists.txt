@@ -11,6 +11,7 @@ add_executable(tmp
         src/lexer/lexer.cpp
         src/lexer/single.cpp
         src/lexer/intermediate.cpp
+        src/lexer/meaningless.cpp
         src/lexer/token.cpp
         src/lexer/lexer_test.cpp
 )

@@ -24,6 +24,9 @@ public:
 private:
   uint32_t length_;
   std::string input_;
+  auto CheckWhitespace(const uint32_t &) const -> bool;
+  auto CheckLineComment(uint32_t) const -> uint32_t;
+  auto CheckBlockComment(uint32_t) const -> uint32_t;
   auto CheckAsciiAlpha(const uint32_t &) const -> bool;
   auto CheckAsciiDigit(const uint32_t &) const -> bool;
   auto CheckQuoteEscape(const uint32_t &) const -> bool;
@@ -37,7 +40,17 @@ private:
   auto CheckAsciiForChar(const uint32_t &) const -> bool;
   auto CheckAsciiForString(const uint32_t &) const -> bool;
   auto CheckAsciiForRaw(const uint32_t &) const -> bool;
+  auto CheckCommentLeft(const uint32_t &) const -> bool;
+  auto CheckCommentRight(const uint32_t &) const -> bool;
   auto CheckRawStringContent(uint32_t) const -> uint32_t;
+  auto CheckRawCStringContent(uint32_t) const -> uint32_t;
+  auto CheckDecLiteral(uint32_t) const -> uint32_t;
+  auto CheckBinLiteral(uint32_t) const -> uint32_t;
+  auto CheckOctLiteral(uint32_t) const -> uint32_t;
+  auto CheckHexLiteral(uint32_t) const -> uint32_t;
+  auto CheckSuffixNoE(uint32_t) const -> uint32_t;
+  auto CheckReservedGuardedStringLiteral(uint32_t) const -> uint32_t;
+  auto CheckReservedNumber(uint32_t) const -> uint32_t;
   auto CheckIdentifierOrKeyWord(uint32_t) const -> uint32_t;
   auto CheckCharLiteral(uint32_t) const -> uint32_t;
   auto CheckStringLiteral(uint32_t) const -> uint32_t;
@@ -45,6 +58,12 @@ private:
   auto CheckByteLiteral(uint32_t) const -> uint32_t;
   auto CheckByteStringLiteral(uint32_t) const -> uint32_t;
   auto CheckRawByteStringLiteral(uint32_t) const -> uint32_t;
+  auto CheckCStringLiteral(uint32_t) const -> uint32_t;
+  auto CheckRawCStringLiteral(uint32_t) const -> uint32_t;
+  auto CheckIntegerLiteral(uint32_t) const -> uint32_t;
+  auto CheckFloatLiteral(uint32_t) const -> uint32_t;
+  auto CheckPunctuation(const uint32_t &) const -> uint32_t;
+  auto CheckReservedToken(const uint32_t &) const -> uint32_t;
 };
 
 #endif //LEXER_H

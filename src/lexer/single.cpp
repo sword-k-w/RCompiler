@@ -70,3 +70,12 @@ auto Lexer::CheckAsciiForString(const uint32_t &pos) const -> bool {
 auto Lexer::CheckAsciiForRaw(const uint32_t &pos) const -> bool {
   return pos < length_ && input_[pos] != '\r';
 }
+
+auto Lexer::CheckCommentLeft(const uint32_t &pos) const -> bool {
+  return pos + 1 < length_ && input_[pos] == '/' && input_[pos + 1] == '*';
+}
+
+auto Lexer::CheckCommentRight(const uint32_t &pos) const -> bool {
+  return pos + 1 < length_ && input_[pos] == '*' && input_[pos + 1] == '/';
+}
+
