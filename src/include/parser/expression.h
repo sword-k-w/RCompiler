@@ -1,13 +1,25 @@
 #ifndef EXPRESSION_H
 #define EXPRESSION_H
 
+#include <string>
 #include "parser/AST_node.h"
 #include "parser/terminal.h"
 
 class LiteralExpressionNode : public ASTNode {
 
 private:
-
+  CharLiteralNode *char_literal_ = nullptr;
+  StringLiteralNode *string_literal_ = nullptr;
+  RawStringLiteralNode *raw_string_literal_ = nullptr;
+  ByteLiteralNode *byte_literal_ = nullptr;
+  ByteStringLiteralNode *byte_string_literal_ = nullptr;
+  RawByteStringLiteralNode *raw_byte_string_literal_ = nullptr;
+  CStringLiteralNode *c_string_literal_ = nullptr;
+  RawCStringLiteralNode *raw_c_string_literal_ = nullptr;
+  IntegerLiteralNode *integer_literal_ = nullptr;
+  FloatLiteralNode *float_literal_ = nullptr;
+  TrueNode *true_ = nullptr;
+  FalseNode *false_ = nullptr;
 };
 
 class PathExpressionNode : public ASTNode {
@@ -15,20 +27,61 @@ class PathExpressionNode : public ASTNode {
 private:
 };
 
+class BorrowExpressionNode : public ASTNode {
+
+private:
+};
+
+class NegationExpressionNode : public ASTNode {
+
+private:
+};
+
+class ArithmeticOrLogicalExpressionNode : public ASTNode {
+
+};
+
+class ComparisonExpressionNode : public ASTNode {
+
+};
+
+class LazyBooleanExpressionNode : public ASTNode {
+
+};
+
+class AssignmentExpressionNode : public ASTNode {
+
+};
+
+class CompoundAssignmentExpressionNode : public ASTNode {
+
+};
+
 class OperatorExpressionNode : public ASTNode {
 
 private:
+  BorrowExpressionNode *borrow_expr_ = nullptr;
+  NegationExpressionNode *negation_expr_ = nullptr;
+  ArithmeticOrLogicalExpressionNode *arithmetic_or_logical_expr_ = nullptr;
+  ComparisonExpressionNode *comparison_expr_ = nullptr;
+  LazyBooleanExpressionNode *lazy_boolean_expr_ = nullptr;
+  AssignmentExpressionNode *assignment_expr_ = nullptr;
+  CompoundAssignmentExpressionNode *compound_assignment_expr_ = nullptr;
 };
 
 class GroupedExpressionNode : public ASTNode {
 
 private:
-  ExpressionNode *expr_;
+};
+
+class ArrayElementsNode {
+
 };
 
 class ArrayExpressionNode : public ASTNode {
 
 private:
+  ArrayElementsNode *array_elements_ = nullptr;
 };
 
 class IndexExpressionNode : public ASTNode {
@@ -36,9 +89,15 @@ class IndexExpressionNode : public ASTNode {
 private:
 };
 
+class TupleElements : public ASTNode {
+
+private:
+};
+
 class TupleExpressionNode : public ASTNode {
 
 private:
+  TupleElements *tuple_elements_ = nullptr;
 };
 
 class TupleIndexingExpressionNode : public ASTNode {
@@ -46,9 +105,24 @@ class TupleIndexingExpressionNode : public ASTNode {
 private:
 };
 
+class PathInExpression : public ASTNode {
+
+};
+
+class StructExprFields : public ASTNode {
+
+};
+
+class StructBase : public ASTNode {
+
+};
+
 class StructExpressionNode : public ASTNode {
 
 private:
+  PathInExpression *path_in_expr_ = nullptr;
+  StructExprFields *struct_expr_fields_ = nullptr;
+  StructBase *struct_base_ = nullptr;
 };
 
 class CallExpressionNode : public ASTNode {
@@ -69,16 +143,48 @@ private:
 class ContinueExpressionNode : public ASTNode {
 
 private:
+  const std::string content_ = "continue";
 };
 
 class BreakExpressionNode : public ASTNode {
 
 private:
+  const std::string content_ = "break";
+  ExpressionNode *expr_ = nullptr;
+};
+
+class RangeExprNode : public ASTNode {
+
+};
+
+class RangeFromExprNode : public ASTNode {
+
+};
+
+class RangeToExprNode : public ASTNode {
+
+};
+
+class RangeFullExprNode : public ASTNode {
+
+};
+
+class RangeInclusiveExprNode : public ASTNode {
+
+};
+
+class RangeToInclusiveExprNode : public ASTNode {
+
 };
 
 class RangeExpressionNode : public ASTNode {
 
 private:
+  RangeExprNode *range_expr_ = nullptr;
+  RangeFromExprNode *range_from_expr_ = nullptr;
+  RangeFullExprNode *range_full_expr_ = nullptr;
+  RangeInclusiveExprNode *range_inclusive_expr_ = nullptr;
+  RangeToInclusiveExprNode *range_to_inclusive_expr_ = nullptr;
 };
 
 class ReturnExpressionNode : public ASTNode {
