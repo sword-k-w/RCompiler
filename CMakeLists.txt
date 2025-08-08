@@ -7,7 +7,8 @@ set(CMAKE_CXX_STANDARD 20)
 
 #include_directories(${GTEST_INCLUDE_DIRS})
 include_directories(src/include)
-add_executable(tmp
+add_executable(lexer_test
+        src/data_loader/data_loader.cpp
         src/lexer/lexer.cpp
         src/lexer/single.cpp
         src/lexer/intermediate.cpp
@@ -15,3 +16,6 @@ add_executable(tmp
         src/lexer/token.cpp
         src/lexer/lexer_test.cpp
 )
+
+add_executable(parser_test
+        src/parser/parser_test.cpp)

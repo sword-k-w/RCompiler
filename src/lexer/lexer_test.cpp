@@ -1,7 +1,9 @@
 #include "lexer/lexer.h"
+#include "data_loader/data_loader.h"
 
 int main() {
-  Lexer a("hello world r###\"114514  rjrao\"###cr####\"\"####");
+  freopen("data.txt", "r", stdin);
+  Lexer a(LoadInput());
   auto res = a.Run();
   for (auto &x : res) {
     x.Print(std::cerr);
