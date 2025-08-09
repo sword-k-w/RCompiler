@@ -1,3 +1,4 @@
 cmake-build-debug/**
 .idea/**
 my_data/**
+redundance.md

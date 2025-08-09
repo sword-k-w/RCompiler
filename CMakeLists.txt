@@ -5,6 +5,7 @@ project(RCompiler)
 
 set(CMAKE_CXX_STANDARD 20)
 
+
 #include_directories(${GTEST_INCLUDE_DIRS})
 include_directories(src/include)
 add_executable(lexer_test
@@ -17,5 +18,11 @@ add_executable(lexer_test
         src/lexer/lexer_test.cpp
 )
 
+set(PARSER_DIR ./src/parser)
+set(COMMON_DIR ./src/common)
+aux_source_directory(${PARSER_DIR} PARSERS)
+aux_source_directory(${COMMON_DIR} COMMONS)
+
 add_executable(parser_test
-        src/parser/parser_test.cpp)
+        ${PARSERS}
+        ${COMMONS})

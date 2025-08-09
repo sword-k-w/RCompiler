@@ -1,2 +1,5 @@
 #include "parser/expression.h"
 #include "parser/statement.h"
+#include "parser/function.h"
+#include "parser/struct.h"
+#include "parser/crate.h"
