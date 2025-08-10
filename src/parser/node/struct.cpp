@@ -40,14 +40,14 @@ TupleFieldNode::TupleFieldNode(const std::vector<Token> &tokens, uint32_t &pos, 
 
 TupleFieldsNode::TupleFieldsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Tuple Fields") {
   tuple_field_s_.push_back(node_pool.Make<TupleFieldNode>(tokens, pos, length));
-  while (pos < length && tokens[pos].lexeme != "}") {
+  while (pos < length && tokens[pos].lexeme != ")") {
     if (tokens[pos].lexeme != ",") {
       Error("try parsing Tuple Fields Node but not comma");
     }
     ++pos;
     ++comma_cnt_;
     CheckLength(pos, length);
-    if (tokens[pos].lexeme == "}") {
+    if (tokens[pos].lexeme == ")") {
       break;
     }
     tuple_field_s_.push_back(node_pool.Make<TupleFieldNode>(tokens, pos, length));
