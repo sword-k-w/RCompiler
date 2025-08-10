@@ -1,7 +1,8 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
 
-#include "parser/AST_node.h"
+#include "lexer/lexer.h"
+#include "parser/node/AST_node.h"
 
 class IdentifierOrKeywordNode : public ASTNode {
 public:

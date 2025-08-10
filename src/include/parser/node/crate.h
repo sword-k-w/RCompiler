@@ -2,8 +2,8 @@
 #define CRATE_H
 
 #include "lexer/lexer.h"
-#include "parser/AST_node.h"
-#include "parser/item.h"
+#include "parser/node/AST_node.h"
+#include "parser/node/item.h"
 
 class CrateNode : public ASTNode {
 public:

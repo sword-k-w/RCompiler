@@ -20,10 +20,11 @@ add_executable(lexer_test
 
 set(PARSER_DIR ./src/parser)
 set(COMMON_DIR ./src/common)
-aux_source_directory(${PARSER_DIR} PARSERS)
+file(GLOB_RECURSE PARSER_SRCS
+    "${PARSER_DIR}/*.cpp")
 aux_source_directory(${COMMON_DIR} COMMONS)
 
 add_executable(parser_test
-        ${PARSERS}
+        ${PARSER_SRCS}
         ${COMMONS}
 )

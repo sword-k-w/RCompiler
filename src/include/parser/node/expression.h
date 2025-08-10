@@ -2,8 +2,8 @@
 #define EXPRESSION_H
 
 #include <string>
-#include "parser/AST_node.h"
-#include "parser/terminal.h"
+#include "parser/node/AST_node.h"
+#include "parser/node/terminal.h"
 
 class LiteralExpressionNode : public ASTNode {
 

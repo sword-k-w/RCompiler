@@ -1,10 +1,10 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-#include "parser/AST_node.h"
-#include "parser/item.h"
-#include "parser/terminal.h"
 #include "lexer/lexer.h"
+#include "parser/node/AST_node.h"
+#include "parser/node/item.h"
+#include "parser/node/terminal.h"
 
 class ModuleNode : public ASTNode {
 public:

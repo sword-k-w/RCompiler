@@ -1,6 +1,9 @@
 #ifndef IMPLEMENTATION_H
 #define IMPLEMENTATION_H
 
+#include "lexer/lexer.h"
+#include "parser/node/AST_node.h"
+
 class ImplementationNode : public ASTNode {
 public:
   ImplementationNode();

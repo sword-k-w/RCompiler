@@ -2,13 +2,13 @@
 #define ITEM_H
 
 #include "lexer/lexer.h"
-#include "parser/AST_node.h"
-#include "parser/module.h"
-#include "parser/function.h"
-#include "parser/struct.h"
-#include "parser/enumeration.h"
-#include "parser/trait.h"
-#include "parser/implementation.h"
+#include "parser/node/AST_node.h"
+#include "parser/node/module.h"
+#include "parser/node/function.h"
+#include "parser/node/struct.h"
+#include "parser/node/enumeration.h"
+#include "parser/node/trait.h"
+#include "parser/node/implementation.h"
 
 class ConstantItemNode : ASTNode {
 public:

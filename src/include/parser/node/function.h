@@ -2,6 +2,7 @@
 #define FUNCTION_H
 
 #include "lexer/lexer.h"
+#include "parser/node/AST_node.h"
 
 class FunctionQualifiers : public ASTNode {
 
@@ -19,6 +20,7 @@ class FunctionNode : public ASTNode {
 public:
   FunctionNode() = delete;
   FunctionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
 
 };
 

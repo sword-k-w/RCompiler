@@ -1,4 +1,4 @@
-#include "parser/module.h"
+#include "parser/node/module.h"
 
 ModuleNode::ModuleNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Module") {
   CheckLength(pos, length);

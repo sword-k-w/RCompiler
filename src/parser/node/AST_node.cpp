@@ -1,4 +1,4 @@
-#include "parser/AST_node.h"
+#include "parser/node/AST_node.h"
 
 ASTNode::ASTNode(const std::string_view &name) : name_(name) {}
 

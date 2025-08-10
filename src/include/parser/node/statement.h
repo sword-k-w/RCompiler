@@ -1,7 +1,8 @@
 #ifndef STATEMENT_H
 #define STATEMENT_H
 
-#include "parser/AST_node.h"
+#include "lexer/lexer.h"
+#include "parser/node/AST_node.h"
 
 class LetStatementNode : public ASTNode {
 

@@ -1,6 +1,9 @@
 #ifndef STRUCT_H
 #define STRUCT_H
 
+#include "lexer/lexer.h"
+#include "parser/node/AST_node.h"
+
 class StructFieldsNode : public ASTNode {
 
 };
