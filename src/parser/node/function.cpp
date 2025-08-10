@@ -7,8 +7,8 @@ FunctionNode::FunctionNode(const std::vector<Token> &tokens, uint32_t &pos, cons
   }
   ++pos;
   CheckLength(pos, length);
-  if (IsKeyword(tokens[pos].lexeme)) {
-    Error("try parsing Function Node but get keyword instead of identifier");
+  if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD || IsKeyword(tokens[pos].lexeme)) {
+    Error("try parsing Function Node but not identifier");
   }
   identifier_or_keyword_ = node_pool.Make<IdentifierOrKeywordNode>(tokens, pos, length);
   CheckLength(pos, length);

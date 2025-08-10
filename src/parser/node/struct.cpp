@@ -37,7 +37,6 @@ TupleFieldNode::TupleFieldNode(const std::vector<Token> &tokens, uint32_t &pos, 
   type_ = node_pool.Make<TypeNode>(tokens, pos, length);
 }
 
-
 TupleFieldsNode::TupleFieldsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Tuple Fields") {
   tuple_field_s_.push_back(node_pool.Make<TupleFieldNode>(tokens, pos, length));
   while (pos < length && tokens[pos].lexeme != ")") {
@@ -64,8 +63,8 @@ StructNode::StructNode(const std::vector<Token> &tokens, uint32_t &pos, const ui
   }
   ++pos;
   CheckLength(pos, length);
-  if (IsKeyword(tokens[pos].lexeme)) {
-    Error("try parsing Struct Node but get keyword instead of identifier");
+  if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD || IsKeyword(tokens[pos].lexeme)) {
+    Error("try parsing Struct Node but not identifier");
   }
   identifier_or_keyword_ = node_pool.Make<IdentifierOrKeywordNode>(tokens, pos, length);
   CheckLength(pos, length);

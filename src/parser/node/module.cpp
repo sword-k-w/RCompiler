@@ -7,8 +7,8 @@ ModuleNode::ModuleNode(const std::vector<Token> &tokens, uint32_t &pos, const ui
   }
   ++pos;
   CheckLength(pos, length);
-  if (IsKeyword(tokens[pos].lexeme)) {
-    Error("try parsing Module Node but get keyword instead of identifier");
+  if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD || IsKeyword(tokens[pos].lexeme)) {
+    Error("try parsing Module Node but not identifier");
   }
   identifier_or_keyword_ = node_pool.Make<IdentifierOrKeywordNode>(tokens, pos, length);
   CheckLength(pos, length);
