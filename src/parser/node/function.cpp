@@ -11,7 +11,6 @@ FunctionNode::FunctionNode(const std::vector<Token> &tokens, uint32_t &pos, cons
     Error("try parsing Function Node but get keyword instead of identifier");
   }
   identifier_or_keyword_ = node_pool.Make<IdentifierOrKeywordNode>(tokens, pos, length);
-  ++pos;
   CheckLength(pos, length);
   if (tokens[pos].lexeme != "(") {
     generic_params_ = node_pool.Make<GenericParamsNode>(tokens, pos, length);
@@ -38,6 +37,7 @@ FunctionNode::FunctionNode(const std::vector<Token> &tokens, uint32_t &pos, cons
   }
   CheckLength(pos, length);
   if (tokens[pos].lexeme == ";") {
+    ++pos;
     semicolon_ = true;
   } else {
     block_expr_ = node_pool.Make<BlockExpressionNode>(tokens, pos, length);
