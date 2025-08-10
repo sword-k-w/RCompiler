@@ -8,15 +8,13 @@
 #include "common/config.h"
 
 enum TokenType {
-  kIDENTIFIER_OR_KEYWORD, kCHAR_LITERAL, kSTRING_LITERAL, kRAW_STRING_LITERAL, kBYTE_LITERAL,
-  kBYTE_STRING_LITERAL, kRAW_BYTE_STRING_LITERAL, kC_STRING_LITERAL, kRAW_C_STRING_LITERAL,
-  kINTEGER_LITERAL, kFLOAT_LITERAL, kPUNCTUATION, kRESERVED_TOKEN
+  kIDENTIFIER_OR_KEYWORD, kCHAR_LITERAL, kSTRING_LITERAL, kRAW_STRING_LITERAL, kC_STRING_LITERAL,
+  kRAW_C_STRING_LITERAL, kINTEGER_LITERAL, kFLOAT_LITERAL, kPUNCTUATION, kRESERVED_TOKEN
 };
 
 constexpr TokenType kTokenTypes[kTokenTypeCount] = {
-  kIDENTIFIER_OR_KEYWORD, kCHAR_LITERAL, kSTRING_LITERAL, kRAW_STRING_LITERAL, kBYTE_LITERAL,
-  kBYTE_STRING_LITERAL, kRAW_BYTE_STRING_LITERAL, kC_STRING_LITERAL, kRAW_C_STRING_LITERAL,
-  kINTEGER_LITERAL, kFLOAT_LITERAL, kPUNCTUATION, kRESERVED_TOKEN
+  kIDENTIFIER_OR_KEYWORD, kCHAR_LITERAL, kSTRING_LITERAL, kRAW_STRING_LITERAL, kC_STRING_LITERAL,
+  kRAW_C_STRING_LITERAL, kINTEGER_LITERAL, kFLOAT_LITERAL, kPUNCTUATION, kRESERVED_TOKEN
 };
 
 struct Token {
@@ -32,12 +30,6 @@ struct Token {
       os << "STRING_LITERAL";
     } else if (type == kRAW_STRING_LITERAL) {
       os << "RAW_STRING_LITERAL";
-    } else if (type == kBYTE_LITERAL) {
-      os << "BYTE_LITERAL";
-    } else if (type == kBYTE_STRING_LITERAL) {
-      os << "BYTE_STRING_LITERAL";
-    } else if (type == kRAW_BYTE_STRING_LITERAL) {
-      os << "RAW_BYTE_STRING_LITERAL";
     } else if (type == kC_STRING_LITERAL) {
       os << "C_STRING_LITERAL";
     } else if (type == kRAW_C_STRING_LITERAL) {
@@ -96,9 +88,6 @@ private:
   auto CheckCharLiteral(uint32_t) const -> uint32_t;
   auto CheckStringLiteral(uint32_t) const -> uint32_t;
   auto CheckRawStringLiteral(uint32_t) const -> uint32_t;
-  auto CheckByteLiteral(uint32_t) const -> uint32_t;
-  auto CheckByteStringLiteral(uint32_t) const -> uint32_t;
-  auto CheckRawByteStringLiteral(uint32_t) const -> uint32_t;
   auto CheckCStringLiteral(uint32_t) const -> uint32_t;
   auto CheckRawCStringLiteral(uint32_t) const -> uint32_t;
   auto CheckIntegerLiteral(uint32_t) const -> uint32_t;
@@ -109,7 +98,6 @@ private:
   using CheckTokenFuncType = auto(Lexer::*)(uint32_t) const -> uint32_t;
   const CheckTokenFuncType check_token_func_[kTokenTypeCount] = {
     &Lexer::CheckIdentifierOrKeyWord, &Lexer::CheckCharLiteral, &Lexer::CheckStringLiteral, &Lexer::CheckRawStringLiteral,
-    &Lexer::CheckByteLiteral, &Lexer::CheckByteStringLiteral, &Lexer::CheckRawByteStringLiteral,
     &Lexer::CheckCStringLiteral, &Lexer::CheckRawCStringLiteral, &Lexer::CheckIntegerLiteral, &Lexer::CheckFloatLiteral,
     &Lexer::CheckPunctuation, &Lexer::CheckReservedToken
   };

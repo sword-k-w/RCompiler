@@ -3,10 +3,7 @@
 
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
-
-class FunctionQualifiers : public ASTNode {
-
-};
+#include "parser/node/generic.h"
 
 class FunctionParametersNode : public ASTNode {
 
