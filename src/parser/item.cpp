@@ -1,27 +1,24 @@
 #include "parser/item.h"
-#include "common/error.h"
 
-ItemNode::ItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) {
-  if (pos >= length) {
-    Error("try parsing Item Node but no enough length");
-  }
+ItemNode::ItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Item") {
+  CheckLength(pos, length);
   if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD) {
     Error("try parsing Item Node but first token isn't identifier or keyword");
   }
   if (tokens[pos].lexeme == "mod") {
-    module_ = new ModuleNode(tokens, pos, length);
+    module_ = node_pool.Make<ModuleNode>(tokens, pos, length);
   } else if (tokens[pos].lexeme == "fn") {
-    function_ = new FunctionNode(tokens, pos, length);
+    function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
   } else if (tokens[pos].lexeme == "struct") {
-    struct_ = new StructNode(tokens, pos, length);
+    struct_ = node_pool.Make<StructNode>(tokens, pos, length);
   } else if (tokens[pos].lexeme == "enum") {
-    enumeration_ = new EnumerationNode(tokens, pos, length);
+    enumeration_ = node_pool.Make<EnumerationNode>(tokens, pos, length);
   } else if (tokens[pos].lexeme == "const") {
-    constant_item_ = new ConstantItemNode(tokens, pos, length);
+    constant_item_ = node_pool.Make<ConstantItemNode>(tokens, pos, length);
   } else if (tokens[pos].lexeme == "trait") {
-    trait_ = new TraitNode(tokens, pos, length);
+    trait_ = node_pool.Make<TraitNode>(tokens, pos, length);
   } else if (tokens[pos].lexeme == "impl") {
-    implementation_ = new ImplementationNode(tokens, pos, length);
+    implementation_ = node_pool.Make<ImplementationNode>(tokens, pos, length);
   } else {
     Error("try parsing Item Node but the first identifier or keyword is unexpected");
   }

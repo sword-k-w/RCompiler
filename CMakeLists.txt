@@ -25,4 +25,5 @@ aux_source_directory(${COMMON_DIR} COMMONS)
 
 add_executable(parser_test
         ${PARSERS}
-        ${COMMONS})
+        ${COMMONS}
+)

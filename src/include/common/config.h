@@ -44,7 +44,7 @@ constexpr std::string_view kWHILE = "while";
 constexpr std::string_view kASYNC = "async";
 constexpr std::string_view kAWAIT = "await";
 constexpr std::string_view kDYN = "dyn";
-constexpr std::string_view kSTRICT_KEYWORDS[] = {
+constexpr std::string_view kSTRICT_KEYWORDS[38] = {
   kAS, kBREAK, kCONST, kCONTINUE, kCRATE, kELSE, kENUM, kEXTERN, kFALSE, kFN, kFOR, kIF, kIMPL, kIN, kLET,
   kLOOP, kMATCH, kMOD, kMOVE, kMUT, kPUB, kREF, kRETURN, kSELF_LOWER, kSELF_UPPER, kSTATIC, kSTRUCT, kSUPER,
   kTRAIT, kTRUE, kTYPE, kUNSAFE, kUSE, kWHERE, kWHILE, kASYNC, kAWAIT, kDYN
@@ -65,7 +65,9 @@ constexpr std::string_view kVIRTUAL = "virtual";
 constexpr std::string_view kYIELD = "yield";
 constexpr std::string_view kTRY = "try";
 constexpr std::string_view kGEN = "gen";
-constexpr std::string_view kRESERVERD_KEYWORDS[] = {
+constexpr std::string_view kRESERVERD_KEYWORDS[14] = {
   kABSTRACT, kBECOME, kBOX, kDO, kFINAL, kMACRO, kOVERRIDE, kPRIV, kTYPEOF, kUNSIZED, kVIRTUAL, kTRY, kGEN
 };
+
+bool IsKeyword(const std::string_view &);
 #endif //CONFIG_H

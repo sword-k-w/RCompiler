@@ -4,7 +4,9 @@
 #include "parser/AST_node.h"
 
 class IdentifierOrKeywordNode : public ASTNode {
-
+public:
+  IdentifierOrKeywordNode() = delete;
+  IdentifierOrKeywordNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   std::string val_;
 };
