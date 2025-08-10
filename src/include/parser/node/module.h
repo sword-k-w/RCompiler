@@ -13,7 +13,7 @@ public:
 private:
   IdentifierOrKeywordNode *identifier_or_keyword_ = nullptr;
   std::vector<ItemNode *> items_;
-  bool semicolon = false;
+  bool semicolon_ = false;
 };
 
 #endif //MODULE_H

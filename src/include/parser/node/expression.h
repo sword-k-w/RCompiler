@@ -11,9 +11,6 @@ private:
   CharLiteralNode *char_literal_ = nullptr;
   StringLiteralNode *string_literal_ = nullptr;
   RawStringLiteralNode *raw_string_literal_ = nullptr;
-  ByteLiteralNode *byte_literal_ = nullptr;
-  ByteStringLiteralNode *byte_string_literal_ = nullptr;
-  RawByteStringLiteralNode *raw_byte_string_literal_ = nullptr;
   CStringLiteralNode *c_string_literal_ = nullptr;
   RawCStringLiteralNode *raw_c_string_literal_ = nullptr;
   IntegerLiteralNode *integer_literal_ = nullptr;
@@ -219,7 +216,9 @@ private:
 };
 
 class BlockExpressionNode : public ASTNode {
-
+public:
+  BlockExpressionNode() = delete;
+  BlockExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
 };
 

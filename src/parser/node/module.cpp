@@ -10,11 +10,11 @@ ModuleNode::ModuleNode(const std::vector<Token> &tokens, uint32_t &pos, const ui
   if (IsKeyword(tokens[pos].lexeme)) {
     Error("try parsing Module Node but get keyword instead of identifier");
   }
-  node_pool.Make<IdentifierOrKeywordNode>(tokens, pos, length);
+  identifier_or_keyword_ = node_pool.Make<IdentifierOrKeywordNode>(tokens, pos, length);
   ++pos;
   CheckLength(pos, length);
   if (tokens[pos].lexeme == ";") {
-    semicolon = true;
+    semicolon_ = true;
   } else if (tokens[pos].lexeme == "{") {
     ++pos;
     while (pos < length && tokens[pos].lexeme != "}") {
