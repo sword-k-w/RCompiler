@@ -29,24 +29,6 @@ private:
   std::string val_;
 };
 
-class ByteLiteralNode : public ASTNode {
-
-private:
-  int8_t val_;
-};
-
-class ByteStringLiteralNode : public ASTNode {
-
-private:
-  std::basic_string<int8_t> val_;
-};
-
-class RawByteStringLiteralNode : public ASTNode {
-
-private:
-  std::basic_string<int8_t> val_;
-};
-
 class CStringLiteralNode : public ASTNode {
 
 private:
