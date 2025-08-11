@@ -37,37 +37,6 @@ StructFieldsNode::StructFieldsNode(const std::vector<Token> &tokens, uint32_t &p
   }
 }
 
-TupleFieldNode::TupleFieldNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Tuple Field") {
-  try {
-    type_ = node_pool.Make<TypeNode>(tokens, pos, length);
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
-TupleFieldsNode::TupleFieldsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Tuple Fields") {
-  try {
-    tuple_field_s_.push_back(node_pool.Make<TupleFieldNode>(tokens, pos, length));
-    while (pos < length && tokens[pos].lexeme != ")") {
-      if (tokens[pos].lexeme != ",") {
-        throw Error("try parsing Tuple Fields Node but not comma");
-      }
-      ++pos;
-      ++comma_cnt_;
-      CheckLength(pos, length);
-      if (tokens[pos].lexeme == ")") {
-        break;
-      }
-      tuple_field_s_.push_back(node_pool.Make<TupleFieldNode>(tokens, pos, length));
-    }
-    if (pos >= length) {
-      throw Error("try parsing Tuple Fields Node but no }");
-    }
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
 StructNode::StructNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Struct") {
   try {
     CheckLength(pos, length);
@@ -84,6 +53,11 @@ StructNode::StructNode(const std::vector<Token> &tokens, uint32_t &pos, const ui
     if (tokens[pos].lexeme == "where") {
       where_clause_ = node_pool.Make<WhereClauseNode>(tokens, pos, length);
       CheckLength(pos, length);
+    }
+    if (tokens[pos].lexeme == ";") {
+      semicolon_ = true;
+      ++pos;
+    } else {
       if (tokens[pos].lexeme != "{") {
         throw Error("try parsing StructStruct Node but not get {");
       }
@@ -97,43 +71,6 @@ StructNode::StructNode(const std::vector<Token> &tokens, uint32_t &pos, const ui
         }
       }
       ++pos;
-    } else if (tokens[pos].lexeme == "{") {
-      ++pos;
-      CheckLength(pos, length);
-      if (tokens[pos].lexeme != "}") {
-        struct_fields_ = node_pool.Make<StructFieldsNode>(tokens, pos, length);
-        CheckLength(pos, length);
-        if (tokens[pos].lexeme != "}") {
-          throw Error("try parsing StructStruct Node but not get }");
-        }
-      }
-      ++pos;
-    } else if (tokens[pos].lexeme == ";") {
-      semicolon_ = true;
-      ++pos;
-    } else if (tokens[pos].lexeme == "(") {
-      ++pos;
-      CheckLength(pos, length);
-      if (tokens[pos].lexeme != ")") {
-        tuple_fields_ = node_pool.Make<TupleFieldsNode>(tokens, pos, length);
-        CheckLength(pos, length);
-        if (tokens[pos].lexeme != ")") {
-          throw Error("try parsing TupleStruct Node but not get )");
-        }
-      }
-      ++pos;
-      CheckLength(pos, length);
-      if (tokens[pos].lexeme == "<") {
-        where_clause_ = node_pool.Make<WhereClauseNode>(tokens, pos, length);
-      }
-      CheckLength(pos, length);
-      if (tokens[pos].lexeme != ";") {
-        throw Error("try parsing TupleStruct Node but not get ;");
-      }
-      semicolon_ = true;
-      ++pos;
-    } else {
-      throw Error("try parsing Struct Node but get unexpected token after identifier/generic params");
     }
   } catch (Error &err) {
     throw err;

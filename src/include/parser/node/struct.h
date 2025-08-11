@@ -25,23 +25,6 @@ private:
   uint32_t comma_cnt_ = 0;
 };
 
-class TupleFieldNode : public ASTNode {
-public:
-  TupleFieldNode() = delete;
-  TupleFieldNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  TypeNode *type_ = nullptr;
-};
-
-class TupleFieldsNode : public ASTNode {
-public:
-  TupleFieldsNode() = delete;
-  TupleFieldsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  std::vector<TupleFieldNode *> tuple_field_s_;
-  uint32_t comma_cnt_ = 0;
-};
-
 class StructNode : public ASTNode {
 public:
   StructNode() = delete;
@@ -51,7 +34,6 @@ private:
   GenericParamsNode *generic_params_ = nullptr;
   WhereClauseNode *where_clause_ = nullptr;
   StructFieldsNode *struct_fields_ = nullptr;
-  TupleFieldsNode *tuple_fields_ = nullptr;
   bool semicolon_ = false;
 };
 
