@@ -7,6 +7,8 @@ class ExpressionNode;
 
 class ItemNode;
 
+class AsscociatedItemNode;
+
 class ASTNode {
 public:
   ASTNode() = delete;

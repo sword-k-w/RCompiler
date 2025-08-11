@@ -22,6 +22,13 @@ private:
   ExpressionNode *expr_ = nullptr;
 };
 
+class AsscociatedItemNode : ASTNode {
+public:
+  AsscociatedItemNode() = delete;
+  AsscociatedItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+};
+
 class ItemNode : ASTNode {
 public:
   ItemNode() = delete;
