@@ -77,7 +77,27 @@ StructNode::StructNode(const std::vector<Token> &tokens, uint32_t &pos, const ui
     ++pos;
     identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
     CheckLength(pos, length);
-    if (tokens[pos].lexeme == "{") {
+    if (tokens[pos].lexeme == "<") {
+      generic_params_ = node_pool.Make<GenericParamsNode>(tokens, pos, length);
+      CheckLength(pos, length);
+    }
+    if (tokens[pos].lexeme == "where") {
+      where_clause_ = node_pool.Make<WhereClauseNode>(tokens, pos, length);
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme != "{") {
+        throw Error("try parsing StructStruct Node but not get {");
+      }
+      ++pos;
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme != "}") {
+        struct_fields_ = node_pool.Make<StructFieldsNode>(tokens, pos, length);
+        CheckLength(pos, length);
+        if (tokens[pos].lexeme != "}") {
+          throw Error("try parsing StructStruct Node but not get }");
+        }
+      }
+      ++pos;
+    } else if (tokens[pos].lexeme == "{") {
       ++pos;
       CheckLength(pos, length);
       if (tokens[pos].lexeme != "}") {
@@ -102,6 +122,10 @@ StructNode::StructNode(const std::vector<Token> &tokens, uint32_t &pos, const ui
         }
       }
       ++pos;
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme == "<") {
+        where_clause_ = node_pool.Make<WhereClauseNode>(tokens, pos, length);
+      }
       CheckLength(pos, length);
       if (tokens[pos].lexeme != ";") {
         throw Error("try parsing TupleStruct Node but not get ;");

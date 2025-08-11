@@ -9,6 +9,10 @@ TraitNode::TraitNode(const std::vector<Token> &tokens, uint32_t &pos, const uint
     ++pos;
     identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
     CheckLength(pos, length);
+    if (tokens[pos].lexeme == "<") {
+      generic_params_ = node_pool.Make<GenericParamsNode>(tokens, pos, length);
+    }
+    CheckLength(pos, length);
     if (tokens[pos].lexeme == ":") {
       colon_ = true;
       ++pos;
@@ -18,6 +22,10 @@ TraitNode::TraitNode(const std::vector<Token> &tokens, uint32_t &pos, const uint
         CheckLength(pos, length);
       }
     }
+    if (tokens[pos].lexeme == "where") {
+      where_clause_ = node_pool.Make<WhereClauseNode>(tokens, pos, length);
+      CheckLength(pos, length);
+    }
     if (tokens[pos].lexeme != "{") {
       throw Error("try parsing Trait Node but no {");
     }
@@ -26,7 +34,7 @@ TraitNode::TraitNode(const std::vector<Token> &tokens, uint32_t &pos, const uint
       asscociated_items_.push_back(node_pool.Make<AsscociatedItemNode>(tokens, pos, length));
     }
     if (pos >= length || tokens[pos].lexeme != "}") {
-      throw Error("try parsing Trait Node but no }");
+      Error("try parsing Trait Node but no }");
     }
     ++pos;
   } catch (Error &err) {

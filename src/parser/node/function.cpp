@@ -10,7 +10,10 @@ FunctionNode::FunctionNode(const std::vector<Token> &tokens, uint32_t &pos, cons
     identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "(") {
-      throw Error("try parsing Function Node but not '(' after generic params");
+      generic_params_ = node_pool.Make<GenericParamsNode>(tokens, pos, length);
+      if (pos >= length || tokens[pos].lexeme != "(") {
+        throw Error("try parsing Function Node but not '(' after generic params");
+      }
     }
     ++pos;
     CheckLength(pos, length);
@@ -24,6 +27,10 @@ FunctionNode::FunctionNode(const std::vector<Token> &tokens, uint32_t &pos, cons
     CheckLength(pos, length);
     if (tokens[pos].lexeme == "->") {
       function_return_type_ = node_pool.Make<FunctionReturnTypeNode>(tokens, pos, length);
+    }
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme == "where") {
+      where_clause_ = node_pool.Make<WhereClauseNode>(tokens, pos, length);
     }
     CheckLength(pos, length);
     if (tokens[pos].lexeme == ";") {
