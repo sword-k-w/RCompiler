@@ -24,7 +24,7 @@ public:
   FunctionNode() = delete;
   FunctionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  IdentifierOrKeywordNode *identifier_or_keyword_ = nullptr;
+  IdentifierNode *identifier_ = nullptr;
   GenericParamsNode *generic_params_ = nullptr;
   FunctionParametersNode *function_parameters_ = nullptr;
   FunctionReturnTypeNode *function_return_type_ = nullptr;

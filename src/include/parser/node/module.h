@@ -11,7 +11,7 @@ public:
   ModuleNode() = delete;
   ModuleNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  IdentifierOrKeywordNode *identifier_or_keyword_ = nullptr;
+  IdentifierNode *identifier_ = nullptr;
   std::vector<ItemNode *> items_;
   bool semicolon_ = false;
 };

@@ -6,11 +6,7 @@ ModuleNode::ModuleNode(const std::vector<Token> &tokens, uint32_t &pos, const ui
     Error("try parsing Module Node but the first token is not mod");
   }
   ++pos;
-  CheckLength(pos, length);
-  if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD || IsKeyword(tokens[pos].lexeme)) {
-    Error("try parsing Module Node but not identifier");
-  }
-  identifier_or_keyword_ = node_pool.Make<IdentifierOrKeywordNode>(tokens, pos, length);
+  identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
   CheckLength(pos, length);
   if (tokens[pos].lexeme == ";") {
     ++pos;

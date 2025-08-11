@@ -4,10 +4,10 @@
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
 
-class IdentifierOrKeywordNode : public ASTNode {
+class IdentifierNode : public ASTNode {
 public:
-  IdentifierOrKeywordNode() = delete;
-  IdentifierOrKeywordNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  IdentifierNode() = delete;
+  IdentifierNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   std::string val_;
 };

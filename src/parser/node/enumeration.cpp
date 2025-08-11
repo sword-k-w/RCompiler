@@ -38,11 +38,7 @@ EnumVariantDiscriminantNode::EnumVariantDiscriminantNode(const std::vector<Token
 }
 
 EnumVariantNode::EnumVariantNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Enum Variant") {
-  CheckLength(pos, length);
-  if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD || IsKeyword(tokens[pos].lexeme)) {
-    Error("try parsing Enum Variant Node but not identifier");
-  }
-  identifier_or_keyword_ = node_pool.Make<IdentifierOrKeywordNode>(tokens, pos, length);
+  identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
   CheckLength(pos, length);
   if (tokens[pos].lexeme == "(") {
     enum_variant_tuple_ = node_pool.Make<EnumVariantTupleNode>(tokens, pos, length);
@@ -81,11 +77,7 @@ EnumerationNode::EnumerationNode(const std::vector<Token> &tokens, uint32_t &pos
     Error("try parsing Enumeration Node but the first token is not enum");
   }
   ++pos;
-  CheckLength(pos, length);
-  if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD || IsKeyword(tokens[pos].lexeme)) {
-    Error("try parsing Enumeration Node but not identifier");
-  }
-  identifier_or_keyword_ = node_pool.Make<IdentifierOrKeywordNode>(tokens, pos, length);
+  identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
   CheckLength(pos, length);
   if (tokens[pos].lexeme == "<") {
     generic_params_ = node_pool.Make<GenericParamsNode>(tokens, pos, length);

@@ -1,11 +1,7 @@
 #include "parser/node/struct.h"
 
 StructFieldNode::StructFieldNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Struct Field") {
-  CheckLength(pos, length);
-  if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD || IsKeyword(tokens[pos].lexeme)) {
-    Error("try parsing Struct Field Node but not identifier");
-  }
-  identifier_or_keyword_ = node_pool.Make<IdentifierOrKeywordNode>(tokens, pos, length);
+  identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
   CheckLength(pos, length);
   if (tokens[pos].lexeme != ":") {
     Error("try parsing Struct Field Node but no :");
@@ -62,11 +58,7 @@ StructNode::StructNode(const std::vector<Token> &tokens, uint32_t &pos, const ui
     Error("try parsing Struct Node but the first token is not struct");
   }
   ++pos;
-  CheckLength(pos, length);
-  if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD || IsKeyword(tokens[pos].lexeme)) {
-    Error("try parsing Struct Node but not identifier");
-  }
-  identifier_or_keyword_ = node_pool.Make<IdentifierOrKeywordNode>(tokens, pos, length);
+  identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
   CheckLength(pos, length);
   if (tokens[pos].lexeme == "<") {
     generic_params_ = node_pool.Make<GenericParamsNode>(tokens, pos, length);

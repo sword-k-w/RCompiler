@@ -6,11 +6,7 @@ FunctionNode::FunctionNode(const std::vector<Token> &tokens, uint32_t &pos, cons
     Error("try parsing Function Node but the first token is not fn");
   }
   ++pos;
-  CheckLength(pos, length);
-  if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD || IsKeyword(tokens[pos].lexeme)) {
-    Error("try parsing Function Node but not identifier");
-  }
-  identifier_or_keyword_ = node_pool.Make<IdentifierOrKeywordNode>(tokens, pos, length);
+  identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
   CheckLength(pos, length);
   if (tokens[pos].lexeme != "(") {
     generic_params_ = node_pool.Make<GenericParamsNode>(tokens, pos, length);

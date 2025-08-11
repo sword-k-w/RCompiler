@@ -12,7 +12,7 @@ public:
   StructFieldNode() = delete;
   StructFieldNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  IdentifierOrKeywordNode *identifier_or_keyword_ = nullptr;
+  IdentifierNode *identifier_ = nullptr;
   TypeNode *type_ = nullptr;
 };
 
@@ -47,7 +47,7 @@ public:
   StructNode() = delete;
   StructNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  IdentifierOrKeywordNode *identifier_or_keyword_ = nullptr;
+  IdentifierNode *identifier_ = nullptr;
   GenericParamsNode *generic_params_ = nullptr;
   WhereClauseNode *where_clause_ = nullptr;
   StructFieldsNode *struct_fields_ = nullptr;

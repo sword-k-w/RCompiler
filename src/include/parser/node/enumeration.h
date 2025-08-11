@@ -36,7 +36,7 @@ public:
   EnumVariantNode() = delete;
   EnumVariantNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  IdentifierOrKeywordNode *identifier_or_keyword_ = nullptr;
+  IdentifierNode *identifier_ = nullptr;
   EnumVariantTupleNode *enum_variant_tuple_ = nullptr;
   EnumVariantStructNode *enum_variant_struct_ = nullptr;
   EnumVariantDiscriminantNode *enum_variant_discriminant_ = nullptr;
@@ -56,7 +56,7 @@ public:
   EnumerationNode() = delete;
   EnumerationNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  IdentifierOrKeywordNode *identifier_or_keyword_ = nullptr;
+  IdentifierNode *identifier_ = nullptr;
   GenericParamsNode *generic_params_ = nullptr;
   WhereClauseNode *where_clause_ = nullptr;
   EnumVariantsNode *enum_variants_ = nullptr;
