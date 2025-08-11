@@ -1,5 +1,38 @@
 #include "parser/node/item.h"
 
+ConstantItemNode::ConstantItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Constant Item") {
+  CheckLength(pos, length);
+  if (tokens[pos].lexeme != "const") {
+    Error("try parsing Constant Item Node but the first token is not const");
+  }
+  ++pos;
+  if (tokens[pos].lexeme == "_") {
+    underscore_ = true;
+    ++pos;
+  } else {
+    identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
+  }
+  CheckLength(pos, length);
+  if (tokens[pos].lexeme != ":") {
+    Error("try parsing Constant Item Node but no :");
+  }
+  ++pos;
+  type_ = node_pool.Make<TypeNode>(tokens, pos, length);
+  CheckLength(pos, length);
+  if (tokens[pos].lexeme != ";") {
+    if (tokens[pos].lexeme != "=") {
+      Error("try parsing Constant Item Node but no =");
+    }
+    ++pos;
+    expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != ";") {
+      Error("try parsing Constant Item Node but no ;");
+    }
+  }
+  ++pos;
+}
+
 ItemNode::ItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Item") {
   CheckLength(pos, length);
   if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD) {

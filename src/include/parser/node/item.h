@@ -2,6 +2,7 @@
 #define ITEM_H
 
 #include "lexer/lexer.h"
+#include "parser/node/terminal.h"
 #include "parser/node/AST_node.h"
 #include "parser/node/module.h"
 #include "parser/node/function.h"
@@ -14,7 +15,11 @@ class ConstantItemNode : ASTNode {
 public:
   ConstantItemNode() = delete;
   ConstantItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-
+private:
+  IdentifierNode *identifier_ = nullptr;
+  bool underscore_ = false;
+  TypeNode *type_ = nullptr;
+  ExpressionNode *expr_ = nullptr;
 };
 
 class ItemNode : ASTNode {
