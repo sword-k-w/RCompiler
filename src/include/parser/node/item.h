@@ -27,6 +27,8 @@ public:
   AsscociatedItemNode() = delete;
   AsscociatedItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
+  ConstantItemNode *constant_item_ = nullptr;
+  FunctionNode *function_ = nullptr;
 };
 
 class ItemNode : ASTNode {

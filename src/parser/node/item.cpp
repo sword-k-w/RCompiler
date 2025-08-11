@@ -33,6 +33,17 @@ ConstantItemNode::ConstantItemNode(const std::vector<Token> &tokens, uint32_t &p
   ++pos;
 }
 
+AsscociatedItemNode::AsscociatedItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Associated Item"){
+  CheckLength(pos, length);
+  if (tokens[pos].lexeme == "const") {
+    constant_item_ = node_pool.Make<ConstantItemNode>(tokens, pos, length);
+  } else if (tokens[pos].lexeme == "fn") {
+    function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
+  } else {
+    Error("try parsing Associated Item Node but first token isn't const or fn");
+  }
+}
+
 ItemNode::ItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Item") {
   CheckLength(pos, length);
   if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD) {
