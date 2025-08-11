@@ -6,7 +6,9 @@
 #include "parser/node/terminal.h"
 
 class LiteralExpressionNode : public ASTNode {
-
+public:
+  LiteralExpressionNode() = delete;
+  LiteralExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   CharLiteralNode *char_literal_ = nullptr;
   StringLiteralNode *string_literal_ = nullptr;
