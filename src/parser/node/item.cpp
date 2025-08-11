@@ -1,69 +1,81 @@
 #include "parser/node/item.h"
 
 ConstantItemNode::ConstantItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Constant Item") {
-  CheckLength(pos, length);
-  if (tokens[pos].lexeme != "const") {
-    Error("try parsing Constant Item Node but the first token is not const");
-  }
-  ++pos;
-  if (tokens[pos].lexeme == "_") {
-    underscore_ = true;
-    ++pos;
-  } else {
-    identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
-  }
-  CheckLength(pos, length);
-  if (tokens[pos].lexeme != ":") {
-    Error("try parsing Constant Item Node but no :");
-  }
-  ++pos;
-  type_ = node_pool.Make<TypeNode>(tokens, pos, length);
-  CheckLength(pos, length);
-  if (tokens[pos].lexeme != ";") {
-    if (tokens[pos].lexeme != "=") {
-      Error("try parsing Constant Item Node but no =");
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "const") {
+      throw Error("try parsing Constant Item Node but the first token is not const");
     }
     ++pos;
-    expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
+    if (tokens[pos].lexeme == "_") {
+      underscore_ = true;
+      ++pos;
+    } else {
+      identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
+    }
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != ":") {
+      throw Error("try parsing Constant Item Node but no :");
+    }
+    ++pos;
+    type_ = node_pool.Make<TypeNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != ";") {
-      Error("try parsing Constant Item Node but no ;");
+      if (tokens[pos].lexeme != "=") {
+        throw Error("try parsing Constant Item Node but no =");
+      }
+      ++pos;
+      expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme != ";") {
+        throw Error("try parsing Constant Item Node but no ;");
+      }
     }
+    ++pos;
+  } catch (Error &err) {
+    throw err;
   }
-  ++pos;
 }
 
 AsscociatedItemNode::AsscociatedItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Associated Item"){
-  CheckLength(pos, length);
-  if (tokens[pos].lexeme == "const") {
-    constant_item_ = node_pool.Make<ConstantItemNode>(tokens, pos, length);
-  } else if (tokens[pos].lexeme == "fn") {
-    function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
-  } else {
-    Error("try parsing Associated Item Node but first token isn't const or fn");
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme == "const") {
+      constant_item_ = node_pool.Make<ConstantItemNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "fn") {
+      function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
+    } else {
+      throw Error("try parsing Associated Item Node but first token isn't const or fn");
+    }
+  } catch (Error &err) {
+    throw err;
   }
 }
 
 ItemNode::ItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Item") {
-  CheckLength(pos, length);
-  if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD) {
-    Error("try parsing Item Node but first token isn't identifier or keyword");
-  }
-  if (tokens[pos].lexeme == "mod") {
-    module_ = node_pool.Make<ModuleNode>(tokens, pos, length);
-  } else if (tokens[pos].lexeme == "fn") {
-    function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
-  } else if (tokens[pos].lexeme == "struct") {
-    struct_ = node_pool.Make<StructNode>(tokens, pos, length);
-  } else if (tokens[pos].lexeme == "enum") {
-    enumeration_ = node_pool.Make<EnumerationNode>(tokens, pos, length);
-  } else if (tokens[pos].lexeme == "const") {
-    constant_item_ = node_pool.Make<ConstantItemNode>(tokens, pos, length);
-  } else if (tokens[pos].lexeme == "trait") {
-    trait_ = node_pool.Make<TraitNode>(tokens, pos, length);
-  } else if (tokens[pos].lexeme == "impl") {
-    implementation_ = node_pool.Make<ImplementationNode>(tokens, pos, length);
-  } else {
-    Error("try parsing Item Node but the first identifier or keyword is unexpected");
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD) {
+      throw Error("try parsing Item Node but first token isn't identifier or keyword");
+    }
+    if (tokens[pos].lexeme == "mod") {
+      module_ = node_pool.Make<ModuleNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "fn") {
+      function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "struct") {
+      struct_ = node_pool.Make<StructNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "enum") {
+      enumeration_ = node_pool.Make<EnumerationNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "const") {
+      constant_item_ = node_pool.Make<ConstantItemNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "trait") {
+      trait_ = node_pool.Make<TraitNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "impl") {
+      implementation_ = node_pool.Make<ImplementationNode>(tokens, pos, length);
+    } else {
+      throw Error("try parsing Item Node but the first identifier or keyword is unexpected");
+    }
+  } catch (Error &err) {
+    throw err;
   }
 }

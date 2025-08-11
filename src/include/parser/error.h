@@ -3,6 +3,13 @@
 
 #include <string>
 #include "parser/node_pool.hpp"
-void Error(const std::string_view &);
+
+class Error {
+public:
+  Error() = delete;
+  Error(const std::string &);
+private:
+  std::string_view info_;
+};
 
 #endif //ERROR_H

@@ -1,8 +1,10 @@
 #include "parser/error.h"
 #include <iostream>
 
-void Error(const std::string_view &info) {
-  std::cerr << "Error!\n" << info << '\n';
-  node_pool.Clear();
-  exit(-1);
-}
+Error::Error(const std::string &info) : info_(info) {}
+
+// void Error(const std::string_view &info) {
+//   std::cerr << "Error!\n" << info << '\n';
+//   node_pool.Clear();
+//   exit(-1);
+// }

@@ -4,7 +4,6 @@
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
 #include "parser/node/terminal.h"
-#include "parser/node/generic.h"
 #include "parser/node/type.h"
 
 class StructFieldNode : public ASTNode {
@@ -48,8 +47,6 @@ public:
   StructNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   IdentifierNode *identifier_ = nullptr;
-  GenericParamsNode *generic_params_ = nullptr;
-  WhereClauseNode *where_clause_ = nullptr;
   StructFieldsNode *struct_fields_ = nullptr;
   TupleFieldsNode *tuple_fields_ = nullptr;
   bool semicolon_ = false;
