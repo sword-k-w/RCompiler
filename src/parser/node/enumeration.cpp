@@ -1,23 +1,5 @@
 #include "parser/node/enumeration.h"
 
-EnumVariantTupleNode::EnumVariantTupleNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Enum Variant Tuple") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "(") {
-      throw Error("try parsing Enum Variant Tuple Node but no (");
-    }
-    ++pos;
-    tuple_fields_ = node_pool.Make<TupleFieldsNode>(tokens, pos, length);
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != ")") {
-      throw Error("try parsing Enum Variant Tuple Node but no )");
-    }
-    ++pos;
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
 EnumVariantStructNode::EnumVariantStructNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Enum Variant Struct") {
   try {
     CheckLength(pos, length);
@@ -53,10 +35,7 @@ EnumVariantNode::EnumVariantNode(const std::vector<Token> &tokens, uint32_t &pos
   try {
     identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
     CheckLength(pos, length);
-    if (tokens[pos].lexeme == "(") {
-      enum_variant_tuple_ = node_pool.Make<EnumVariantTupleNode>(tokens, pos, length);
-      CheckLength(pos, length);
-    } else if (tokens[pos].lexeme == "{") {
+    if (tokens[pos].lexeme == "{") {
       enum_variant_struct_ = node_pool.Make<EnumVariantStructNode>(tokens, pos, length);
       CheckLength(pos, length);
     }

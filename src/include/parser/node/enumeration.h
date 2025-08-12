@@ -7,14 +7,6 @@
 #include "parser/node/generic.h"
 #include "parser/node/struct.h"
 
-class EnumVariantTupleNode : public ASTNode {
-public:
-  EnumVariantTupleNode() = delete;
-  EnumVariantTupleNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  TupleFieldsNode *tuple_fields_ = nullptr;
-};
-
 class EnumVariantStructNode : public ASTNode {
 public:
   EnumVariantStructNode() = delete;
@@ -37,7 +29,6 @@ public:
   EnumVariantNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   IdentifierNode *identifier_ = nullptr;
-  EnumVariantTupleNode *enum_variant_tuple_ = nullptr;
   EnumVariantStructNode *enum_variant_struct_ = nullptr;
   EnumVariantDiscriminantNode *enum_variant_discriminant_ = nullptr;
 };

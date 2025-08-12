@@ -6,6 +6,7 @@
 #include "parser/node/generic.h"
 #include "parser/node/type.h"
 #include "parser/node/item.h"
+#include "parser/node/path.h"
 
 class ImplementationNode : public ASTNode {
 public:

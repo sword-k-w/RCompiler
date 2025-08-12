@@ -5,6 +5,7 @@
 #include "parser/node/AST_node.h"
 #include "parser/node/terminal.h"
 #include "parser/node/trait.h"
+#include "parser/node/path.h"
 
 class ParenthesizedTypeNode : public ASTNode {
 public:
@@ -28,13 +29,6 @@ public:
   TraitObjectTypeOneBoundNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
   TraitBoundNode *trait_bound_ = nullptr;
-};
-
-class TypePathNode : public ASTNode {
-public:
-  TypePathNode() = delete;
-  TypePathNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
 };
 
 class TupleTypeNode : public ASTNode {
