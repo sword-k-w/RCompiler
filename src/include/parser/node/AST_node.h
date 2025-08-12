@@ -2,12 +2,17 @@
 #define AST_NODE_H
 
 #include "parser/error.h"
+#include "parser/node_pool.hpp"
 
 class ExpressionNode;
 
 class ItemNode;
 
 class AsscociatedItemNode;
+
+class TypeNode;
+
+class TypeNoBoundsNode;
 
 class ASTNode {
 public:

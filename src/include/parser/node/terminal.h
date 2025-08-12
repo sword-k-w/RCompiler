@@ -61,4 +61,20 @@ private:
   const bool val_ = false;
 };
 
+class NeverTypeNode : public ASTNode {
+public:
+  NeverTypeNode() = delete;
+  NeverTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  const std::string_view val_ = "!";
+};
+
+class InferredTypeNode : public ASTNode {
+public:
+  InferredTypeNode() = delete;
+  InferredTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  const std::string_view val_ = "_";
+};
+
 #endif //TERMINAL_H

@@ -2,9 +2,8 @@
 #define ERROR_H
 
 #include <string>
-#include "parser/node_pool.hpp"
 
-class Error {
+class Error : public std::exception {
 public:
   Error() = delete;
   Error(const std::string &);

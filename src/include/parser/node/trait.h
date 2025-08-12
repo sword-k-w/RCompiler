@@ -7,6 +7,18 @@
 #include "parser/node/generic.h"
 #include "parser/node/item.h"
 
+class TraitBoundNode : public ASTNode {
+public:
+  TraitBoundNode() = delete;
+  TraitBoundNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+};
+
+class TypeParamBoundNode : public ASTNode {
+public:
+  TypeParamBoundNode() = delete;
+  TypeParamBoundNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+};
+
 class TypeParamBoundsNode : public ASTNode {
 public:
   TypeParamBoundsNode() = delete;
