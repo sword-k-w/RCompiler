@@ -14,6 +14,8 @@ class TypeNode;
 
 class TypeNoBoundsNode;
 
+class GenericArgsNode;
+
 class ASTNode {
 public:
   ASTNode() = delete;

@@ -45,7 +45,6 @@ TypePathFnInputsNode::TypePathFnInputsNode(const std::vector<Token> &tokens, uin
   }
 }
 
-
 TypePathFnNode::TypePathFnNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Type Path Fn") {
   try {
     CheckLength(pos, length);

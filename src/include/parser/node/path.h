@@ -7,6 +7,12 @@
 #include "parser/node/terminal.h"
 #include "parser/node/type.h"
 
+class SimplePathSegmentNode : public ASTNode {
+public:
+  SimplePathSegmentNode() = delete;
+  SimplePathSegmentNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+};
+
 class PathIdentSegmentNode : public ASTNode {
 public:
   PathIdentSegmentNode() = delete;

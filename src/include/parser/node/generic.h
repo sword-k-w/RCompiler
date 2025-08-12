@@ -7,6 +7,7 @@
 #include "parser/node/type.h"
 #include "parser/node/expression.h"
 #include "parser/node/trait.h"
+#include "parser/node/path.h"
 
 class TypeParamNode : public ASTNode {
 public:
@@ -50,11 +51,55 @@ private:
   uint32_t comma_cnt_ = 0;
 };
 
+class GenericArgsConstNode : public ASTNode {
+public:
+  GenericArgsConstNode();
+  GenericArgsConstNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  BlockExpressionNode *block_expr_ = nullptr;
+  LiteralExpressionNode *literal_expr = nullptr;
+  bool hyphen_ = false;
+  SimplePathSegmentNode *simple_path_segment_ = nullptr;
+};
+
+class GenericArgsBindingNode : public ASTNode {
+public:
+  GenericArgsBindingNode();
+  GenericArgsBindingNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  IdentifierNode *identifier_ = nullptr;
+  GenericArgsNode *generic_args_ = nullptr;
+  TypeNode *type_ = nullptr;
+};
+
+class GenericArgsBoundsNode : public ASTNode {
+public:
+  GenericArgsBoundsNode();
+  GenericArgsBoundsNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  IdentifierNode *identifier_ = nullptr;
+  GenericArgsNode *generic_args_ = nullptr;
+  TypeParamBoundsNode *type_param_bounds_ = nullptr;
+};
+
+class GenericArgNode : public ASTNode {
+public:
+  GenericArgNode();
+  GenericArgNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  TypeNode *type_ = nullptr;
+  GenericArgsConstNode *generic_args_const_ = nullptr;
+  GenericArgsBindingNode *generic_args_binding_ = nullptr;
+  GenericArgsBoundsNode *generic_args_bounds_ = nullptr;
+};
+
 class GenericArgsNode : public ASTNode {
 public:
   GenericArgsNode();
   GenericArgsNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
+  std::vector<GenericArgNode *> generic_arg_s_;
+  uint32_t comma_cnt_ = 0;
 };
 
 class WhereClauseNode : public ASTNode {

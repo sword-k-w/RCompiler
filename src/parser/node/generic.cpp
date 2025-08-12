@@ -21,13 +21,13 @@ TypeParamNode::TypeParamNode(const std::vector<Token> &tokens, uint32_t &pos, co
 ConstParamNode::ConstParamNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Const Param") {
   CheckLength(pos, length);
   if (tokens[pos].lexeme != "const") {
-    Error("try parsing Const Param Node but not const");
+    throw Error("try parsing Const Param Node but not const");
   }
   ++pos;
   identifier1_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
   CheckLength(pos, length);
   if (tokens[pos].lexeme != ":") {
-    Error("try parsing Const Param Node but no :");
+    throw Error("try parsing Const Param Node but no :");
   }
   ++pos;
   type_ = node_pool.Make<TypeNode>(tokens, pos, length);
@@ -70,11 +70,125 @@ GenericParamsNode::GenericParamsNode(const std::vector<Token> &tokens, uint32_t 
       ++comma_cnt_;
       ++pos;
     } else {
-      Error("try parsing Generic Params Node but not ,");
+      throw Error("try parsing Generic Params Node but not ,");
     }
   }
   if (pos >= length || tokens[pos].lexeme != ">") {
-    Error("try parsing Generic Params Node but no >");
+    throw Error("try parsing Generic Params Node but no >");
   }
   ++pos;
+}
+
+GenericArgsConstNode::GenericArgsConstNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Generic Args Const") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme == "{") {
+      block_expr_ = node_pool.Make<BlockExpressionNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "-") {
+      hyphen_ = true;
+      ++pos;
+      literal_expr = node_pool.Make<LiteralExpressionNode>(tokens, pos, length);
+    } else {
+      uint32_t tmp = pos;
+      try {
+        literal_expr = node_pool.Make<LiteralExpressionNode>(tokens, pos, length);
+      } catch (...) {
+        literal_expr = nullptr;
+        pos = tmp;
+        simple_path_segment_ = node_pool.Make<SimplePathSegmentNode>(tokens, pos, length);
+      }
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+GenericArgsBindingNode::GenericArgsBindingNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Generic Args Binding") {
+  try {
+    identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme == "<") {
+      generic_args_ = node_pool.Make<GenericArgsNode>(tokens, pos, length);
+      CheckLength(pos, length);
+    }
+    if (tokens[pos].lexeme != "=") {
+      throw Error("try parsing Generic Args Binding Node but no =");
+    }
+    ++pos;
+    type_ = node_pool.Make<TypeNode>(tokens, pos, length);
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+GenericArgsBoundsNode::GenericArgsBoundsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Generic Args Bounds") {
+  try {
+    identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme == "<") {
+      generic_args_ = node_pool.Make<GenericArgsNode>(tokens, pos, length);
+      CheckLength(pos, length);
+    }
+    if (tokens[pos].lexeme != ":") {
+      throw Error("try parsing Generic Args Bounds Node but no :");
+    }
+    ++pos;
+    type_param_bounds_ = node_pool.Make<TypeParamBoundsNode>(tokens, pos, length);
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+GenericArgNode::GenericArgNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Generic Arg") {
+  try {
+    uint32_t tmp = pos;
+    try {
+      type_ = node_pool.Make<TypeNode>(tokens, pos, length);
+    } catch (...) {
+      type_ = nullptr;
+      pos = tmp;
+      try {
+        generic_args_const_ = node_pool.Make<GenericArgsConstNode>(tokens, pos, length);
+      } catch (...) {
+        generic_args_const_ = nullptr;
+        pos = tmp;
+        try {
+          generic_args_binding_ = node_pool.Make<GenericArgsBindingNode>(tokens, pos, length);
+        } catch (...) {
+          generic_args_binding_ = nullptr;
+          pos = tmp;
+          generic_args_bounds_ = node_pool.Make<GenericArgsBoundsNode>(tokens, pos, length);
+        }
+      }
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+GenericArgsNode::GenericArgsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Generic Args") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "<") {
+      throw Error("try parsing Generic Args Node but no <");
+    }
+    ++pos;
+    while (pos < length && tokens[pos].lexeme != ">") {
+      generic_arg_s_.push_back(node_pool.Make<GenericArgNode>(tokens, pos, length));
+      if (tokens[pos].lexeme == ">") {
+        break;
+      }
+      if (tokens[pos].lexeme != ",") {
+        throw Error("try parsing Generic Args Node but not ,");
+      }
+      ++pos;
+      ++comma_cnt_;
+    }
+    if (pos >= length || tokens[pos].lexeme != ">") {
+      throw Error("try parsing Generic Args Node but no >");
+    }
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
 }
