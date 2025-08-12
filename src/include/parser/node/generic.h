@@ -50,6 +50,13 @@ private:
   uint32_t comma_cnt_ = 0;
 };
 
+class GenericArgsNode : public ASTNode {
+public:
+  GenericArgsNode();
+  GenericArgsNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+};
+
 class WhereClauseNode : public ASTNode {
 public:
   WhereClauseNode();

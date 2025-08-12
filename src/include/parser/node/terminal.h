@@ -61,6 +61,38 @@ private:
   const bool val_ = false;
 };
 
+class SuperNode : public ASTNode {
+public:
+  SuperNode() = delete;
+  SuperNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  const std::string_view val_ = "super";
+};
+
+class SelfLowerNode : public ASTNode {
+public:
+  SelfLowerNode() = delete;
+  SelfLowerNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  const std::string_view val_ = "self";
+};
+
+class SelfUpperNode : public ASTNode {
+public:
+  SelfUpperNode() = delete;
+  SelfUpperNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  const std::string_view val_ = "Self";
+};
+
+class CrateValNode : public ASTNode {
+public:
+  CrateValNode() = delete;
+  CrateValNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  const std::string_view val_ = "crate";
+};
+
 class NeverTypeNode : public ASTNode {
 public:
   NeverTypeNode() = delete;
