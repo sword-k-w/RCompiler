@@ -75,13 +75,6 @@ private:
   TypeNode *type_ = nullptr;
 };
 
-class QualifiedPathInTypeNode : public ASTNode {
-public:
-  QualifiedPathInTypeNode() = delete;
-  QualifiedPathInTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-};
-
 class BareFunctionTypeNode : public ASTNode {
 public:
   BareFunctionTypeNode() = delete;

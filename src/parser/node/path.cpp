@@ -111,3 +111,44 @@ TypePathNode::TypePathNode(const std::vector<Token> &tokens, uint32_t &pos, cons
     throw err;
   }
 }
+
+QualifiedPathTypeNode::QualifiedPathTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Qualified Path Type") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "<") {
+      throw Error("try parsing Qualified Path Type Node but no <");
+    }
+    ++pos;
+    type_ = node_pool.Make<TypeNode>(tokens, pos, length);
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != ">") {
+      if (tokens[pos].lexeme != "as") {
+        throw Error("try parsing Qualified Path Type Node but no as");
+      }
+      ++pos;
+      type_path_ = node_pool.Make<TypePathNode>(tokens, pos, length);
+      if (tokens[pos].lexeme != ">") {
+        throw Error("try parsing Qualified Path Type Node but no >");
+      }
+    }
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+QualifiedPathInTypeNode::QualifiedPathInTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Qualified Path In Type") {
+  try {
+    qualified_path_type_ = node_pool.Make<QualifiedPathTypeNode>(tokens, pos, length);
+    while (pos < length && tokens[pos].lexeme == "::") {
+      ++pos;
+      CheckLength(pos, length);
+      type_path_segments_.push_back(node_pool.Make<TypePathSegmentNode>(tokens, pos, length));
+    }
+    if (type_path_segments_.empty()) {
+      throw Error("try parsing Qualified Path In Type Node but no TypePathSegment");
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}

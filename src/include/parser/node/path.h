@@ -63,4 +63,22 @@ private:
   std::vector<TypePathSegmentNode *> type_path_segments_;
 };
 
+class QualifiedPathTypeNode : public ASTNode {
+public:
+  QualifiedPathTypeNode() = delete;
+  QualifiedPathTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  TypeNode *type_ = nullptr;
+  TypePathNode *type_path_ = nullptr;
+};
+
+class QualifiedPathInTypeNode : public ASTNode {
+public:
+  QualifiedPathInTypeNode() = delete;
+  QualifiedPathInTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  QualifiedPathTypeNode *qualified_path_type_ = nullptr
+  std::vector<TypePathSegmentNode *> type_path_segments_;
+};
+
 #endif //PATH_H
