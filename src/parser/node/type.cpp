@@ -155,6 +155,126 @@ SliceTypeNode::SliceTypeNode(const std::vector<Token> &tokens, uint32_t &pos, co
   }
 }
 
+MaybeNamedParamNode::MaybeNamedParamNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Maybe Named Param") {
+  try {
+    if (pos + 1 < length && tokens[pos].type == kIDENTIFIER_OR_KEYWORD && !IsKeyword(tokens[pos].lexeme) && tokens[pos + 1].lexeme == ":") {
+      identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
+      ++pos;
+      colon_ = true;
+      ++pos;
+    } else if (pos + 1 < length && tokens[pos].lexeme == "_" && tokens[pos + 1].lexeme == ":") {
+      inferred_type_ = node_pool.Make<InferredTypeNode>(tokens, pos, length);
+      ++pos;
+      colon_ = true;
+      ++pos;
+    }
+    type_ = node_pool.Make<TypeNode>(tokens, pos, length);
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+MaybeNamedFunctionParametersNode::MaybeNamedFunctionParametersNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("May be Named Function Parameters") {
+  try {
+    while (pos < length && tokens[pos].lexeme != ")") {
+      maybe_named_params_.push_back(node_pool.Make<MaybeNamedParamNode>(tokens, pos, length));
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme == ")") {
+        break;
+      }
+      if (tokens[pos].lexeme != ",") {
+        throw Error("try parsing Maybe Named Function Parameters Node but not ,");
+      }
+      ++comma_cnt_;
+    }
+    if (pos >= length || tokens[pos].lexeme != ")") {
+      throw Error("try parsing Maybe Named Function Parameters Node but no )");
+    }
+    if (maybe_named_params_.empty()) {
+      throw Error("try parsing Maybe Named Function Parameters Node but no MaybeNamedParam");
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+MaybeNamedFunctionParametersVariadicNode::MaybeNamedFunctionParametersVariadicNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Maybe Named Function Parameters Variadic") {
+  try {
+    while (pos < length && tokens[pos].lexeme != "...") {
+      maybe_named_params_.push_back(node_pool.Make<MaybeNamedParamNode>(tokens, pos, length));
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme != ",") {
+        throw Error("try parsing Maybe Named Function Parameters Variadic Node but not ,");
+      }
+      ++pos;
+    }
+    if (pos >= length || tokens[pos].lexeme != "...") {
+      throw Error("try parsing Maybe Named Function Parameters Variadic Node but no ...");
+    }
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+FunctionParametersMaybeNamedVariadicNode::FunctionParametersMaybeNamedVariadicNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Function Parameters Maybe Named Variadic") {
+  try {
+    uint32_t tmp = pos;
+    try {
+      maybe_named_function_parameters_ = node_pool.Make<MaybeNamedFunctionParametersNode>(tokens, pos, length);
+    } catch (...) {
+      maybe_named_function_parameters_ = nullptr;
+      pos = tmp;
+      maybe_named_function_parameters_variadic_ = node_pool.Make<MaybeNamedFunctionParametersVariadicNode>(tokens, pos, length);
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+BareFunctionReturnTypeNode::BareFunctionReturnTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Bare Function Return Type") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "->") {
+      throw Error("try parsing Bare Function Return Type Node but no ->");
+    }
+    ++pos;
+    type_no_bounds_ = node_pool.Make<TypeNoBoundsNode>(tokens, pos, length);
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+BareFunctionTypeNode::BareFunctionTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Bare Function Type") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "fn") {
+      throw Error("try parsing Bare Function Type Node but no fn");
+    }
+    ++pos;
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "(") {
+      throw Error("try parsing Bare Function Type Node but no (");
+    }
+    ++pos;
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != ")") {
+      function_parameters_maybe_named_variadic_ = node_pool.Make<FunctionParametersMaybeNamedVariadicNode>(tokens, pos, length);
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme != ")") {
+        throw Error("try parsing Bare Function Type Node but no )");
+      }
+    }
+    ++pos;
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme == "->") {
+      bare_function_return_type_ = node_pool.Make<BareFunctionReturnTypeNode>(tokens, pos, length);
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
 TypeNoBoundsNode::TypeNoBoundsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Type No Bounds") {
   try {
     CheckLength(pos, length);

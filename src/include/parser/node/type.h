@@ -75,11 +75,58 @@ private:
   TypeNode *type_ = nullptr;
 };
 
+class MaybeNamedParamNode : public ASTNode {
+public:
+  MaybeNamedParamNode() = delete;
+  MaybeNamedParamNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  IdentifierNode *identifier_ = nullptr;
+  InferredTypeNode *inferred_type_ = nullptr;
+  bool colon_ = false;
+  TypeNode *type_ = nullptr;
+};
+
+class MaybeNamedFunctionParametersNode : public ASTNode {
+public:
+  MaybeNamedFunctionParametersNode() = delete;
+  MaybeNamedFunctionParametersNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  std::vector<MaybeNamedParamNode *> maybe_named_params_;
+  uint32_t comma_cnt_ = 0;
+};
+
+class MaybeNamedFunctionParametersVariadicNode : public ASTNode {
+public:
+  MaybeNamedFunctionParametersVariadicNode() = delete;
+  MaybeNamedFunctionParametersVariadicNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  std::vector<MaybeNamedParamNode *> maybe_named_params_;
+};
+
+class FunctionParametersMaybeNamedVariadicNode : public ASTNode {
+public:
+  FunctionParametersMaybeNamedVariadicNode() = delete;
+  FunctionParametersMaybeNamedVariadicNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  MaybeNamedFunctionParametersNode *maybe_named_function_parameters_ = nullptr;
+  MaybeNamedFunctionParametersVariadicNode *maybe_named_function_parameters_variadic_ = nullptr;
+};
+
+class BareFunctionReturnTypeNode : public ASTNode {
+public:
+  BareFunctionReturnTypeNode() = delete;
+  BareFunctionReturnTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  TypeNoBoundsNode *type_no_bounds_ = nullptr;
+};
+
 class BareFunctionTypeNode : public ASTNode {
 public:
   BareFunctionTypeNode() = delete;
   BareFunctionTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
+  FunctionParametersMaybeNamedVariadicNode *function_parameters_maybe_named_variadic_ = nullptr;
+  BareFunctionReturnTypeNode *bare_function_return_type_ = nullptr;
 };
 
 class TypeNoBoundsNode : public ASTNode {
