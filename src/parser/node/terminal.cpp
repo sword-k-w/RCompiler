@@ -85,3 +85,14 @@ InferredTypeNode::InferredTypeNode(const std::vector<Token> &tokens, uint32_t &p
   }
 }
 
+RestPatternNode::RestPatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Rest Pattern") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "..") {
+      throw Error("expect ..");
+    }
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}

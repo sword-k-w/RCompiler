@@ -104,24 +104,24 @@ class TupleIndexingExpressionNode : public ASTNode {
 private:
 };
 
-class PathInExpression : public ASTNode {
+class PathInExpressionNode : public ASTNode {
 
 };
 
-class StructExprFields : public ASTNode {
+class StructExprFieldsNode : public ASTNode {
 
 };
 
-class StructBase : public ASTNode {
+class StructBaseNode : public ASTNode {
 
 };
 
 class StructExpressionNode : public ASTNode {
 
 private:
-  PathInExpression *path_in_expr_ = nullptr;
-  StructExprFields *struct_expr_fields_ = nullptr;
-  StructBase *struct_base_ = nullptr;
+  PathInExpressionNode *path_in_expr_ = nullptr;
+  StructExprFieldsNode *struct_expr_fields_ = nullptr;
+  StructBaseNode *struct_base_ = nullptr;
 };
 
 class CallExpressionNode : public ASTNode {

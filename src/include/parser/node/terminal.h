@@ -109,4 +109,12 @@ private:
   const std::string_view val_ = "_";
 };
 
+class RestPatternNode : public ASTNode {
+public:
+  RestPatternNode() = delete;
+  RestPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  const std::string_view val_ = "..";
+};
+
 #endif //TERMINAL_H

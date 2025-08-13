@@ -16,6 +16,12 @@ class TypeNoBoundsNode;
 
 class GenericArgsNode;
 
+class PatternNode;
+
+class PatternNoTopAltNode;
+
+class PatternWithoutRangeNode;
+
 class ASTNode {
 public:
   ASTNode() = delete;

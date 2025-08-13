@@ -4,3 +4,4 @@
 #include "parser/node/struct.h"
 #include "parser/node/crate.h"
 #include "parser/node/path.h"
+#include "parser/node/pattern.h"
