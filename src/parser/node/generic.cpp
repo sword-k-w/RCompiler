@@ -192,3 +192,41 @@ GenericArgsNode::GenericArgsNode(const std::vector<Token> &tokens, uint32_t &pos
     throw err;
   }
 }
+
+WhereClauseItemNode::WhereClauseItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Where Clause Item") {
+  try {
+    type_ = node_pool.Make<TypeNode>(tokens, pos, length);
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != ":") {
+      throw Error("try parsing Where Clause Item Node but no :");
+    }
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "," && tokens[pos].lexeme != ";" && tokens[pos].lexeme != "{") {
+      type_param_bounds_ = node_pool.Make<TypeParamBoundsNode>(tokens, pos, length);
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+WhereClauseNode::WhereClauseNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Where Clause") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "where") {
+      throw Error("try parsing Where Clause Node but no where");
+    }
+    while (pos < length && tokens[pos].lexeme != "{" && tokens[pos].lexeme != ";") {
+      where_clause_items_.push_back(node_pool.Make<WhereClauseItemNode>(tokens, pos, length));
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme == "{" || tokens[pos].lexeme == ";") {
+        break;
+      }
+      if (tokens[pos].lexeme != ",") {
+        throw Error("try parsing Where Clause Node but not ,");
+      }
+      ++pos;
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}

@@ -35,7 +35,7 @@ private:
 
 class GenericParamNode : public ASTNode {
 public:
-  GenericParamNode();
+  GenericParamNode() = delete;
   GenericParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   TypeParamNode *type_param_ = nullptr;
@@ -44,7 +44,7 @@ private:
 
 class GenericParamsNode : public ASTNode {
 public:
-  GenericParamsNode();
+  GenericParamsNode() = delete;
   GenericParamsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   std::vector<GenericParamNode *> generic_param_s_;
@@ -53,7 +53,7 @@ private:
 
 class GenericArgsConstNode : public ASTNode {
 public:
-  GenericArgsConstNode();
+  GenericArgsConstNode() = delete;
   GenericArgsConstNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
   BlockExpressionNode *block_expr_ = nullptr;
@@ -64,7 +64,7 @@ private:
 
 class GenericArgsBindingNode : public ASTNode {
 public:
-  GenericArgsBindingNode();
+  GenericArgsBindingNode() = delete;
   GenericArgsBindingNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
   IdentifierNode *identifier_ = nullptr;
@@ -74,7 +74,7 @@ private:
 
 class GenericArgsBoundsNode : public ASTNode {
 public:
-  GenericArgsBoundsNode();
+  GenericArgsBoundsNode() = delete;
   GenericArgsBoundsNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
   IdentifierNode *identifier_ = nullptr;
@@ -84,7 +84,7 @@ private:
 
 class GenericArgNode : public ASTNode {
 public:
-  GenericArgNode();
+  GenericArgNode() = delete;
   GenericArgNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
   TypeNode *type_ = nullptr;
@@ -95,11 +95,20 @@ private:
 
 class GenericArgsNode : public ASTNode {
 public:
-  GenericArgsNode();
+  GenericArgsNode() = delete;
   GenericArgsNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
   std::vector<GenericArgNode *> generic_arg_s_;
   uint32_t comma_cnt_ = 0;
+};
+
+class WhereClauseItemNode : public ASTNode {
+public:
+  WhereClauseItemNode() = delete;
+  WhereClauseItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  TypeNode *type_ = nullptr;
+  TypeParamBoundsNode *type_param_bounds_ = nullptr;
 };
 
 class WhereClauseNode : public ASTNode {
@@ -107,6 +116,8 @@ public:
   WhereClauseNode();
   WhereClauseNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
+  std::vector<WhereClauseItemNode *> where_clause_items_;
+  uint32_t comma_cnt_ = 0;
 };
 
 #endif //GENERIC_H
