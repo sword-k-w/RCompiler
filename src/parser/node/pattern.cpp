@@ -297,6 +297,136 @@ PatternWithoutRangeNode::PatternWithoutRangeNode(const std::vector<Token> &token
   }
 }
 
+RangePatternBoundNode::RangePatternBoundNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Range Pattern Bound") {
+  try {
+    uint32_t tmp = pos;
+    try {
+      literal_expr = node_pool.Make<LiteralExpressionNode>(tokens, pos, length);
+    } catch (...) {
+      literal_expr = nullptr;
+      pos = tmp;
+      path_expr = node_pool.Make<PathExpressionNode>(tokens, pos, length);
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+RangeExclusivePatternNode::RangeExclusivePatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Range Exclusive Pattern") {
+  try {
+    range_pattern_bound1_ = node_pool.Make<RangePatternBoundNode>(tokens, pos, length);
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "..") {
+      throw Error("try parsing Range Exclusive Pattern but no ..");
+    }
+    ++pos;
+    range_pattern_bound2_ = node_pool.Make<RangePatternBoundNode>(tokens, pos, length);
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+RangeInclusivePatternNode::RangeInclusivePatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Range Inclusive Pattern"){
+  try {
+    range_pattern_bound1_ = node_pool.Make<RangePatternBoundNode>(tokens, pos, length);
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "..=") {
+      throw Error("try parsing Range To Inclusive Pattern but no ..=");
+    }
+    ++pos;
+    range_pattern_bound2_ = node_pool.Make<RangePatternBoundNode>(tokens, pos, length);
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+RangeFromPatternNode::RangeFromPatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Range From Pattern") {
+  try {
+    range_pattern_bound_ = node_pool.Make<RangePatternBoundNode>(tokens, pos, length);
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "..") {
+      throw Error("try parsing Range To Inclusive Pattern but no ..");
+    }
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+RangeToExclusivePatternNode::RangeToExclusivePatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Range To Exclusive Pattern"){
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "..") {
+      throw Error("try parsing Range To Exclusive Pattern Node but no ..");
+    }
+    ++pos;
+    range_pattern_bound_ = node_pool.Make<RangePatternBoundNode>(tokens, pos, length);
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+RangeToInclusivePatternNode::RangeToInclusivePatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Range To Inclusive Pattern") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "..=") {
+      throw Error("try parsing Range To Inclusive Pattern Node but no ..=");
+    }
+    ++pos;
+    range_pattern_bound_ = node_pool.Make<RangePatternBoundNode>(tokens, pos, length);
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+ObsoleteRangePatternNode::ObsoleteRangePatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Obsolete Range Pattern") {
+  try {
+    range_pattern_bound1_ = node_pool.Make<RangePatternBoundNode>(tokens, pos, length);
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "...") {
+      throw Error("try parsing Obsolete Range Pattern but no ...");
+    }
+    ++pos;
+    range_pattern_bound2_ = node_pool.Make<RangePatternBoundNode>(tokens, pos, length);
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+RangePatternNode::RangePatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Range Pattern") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme == "..") {
+      range_to_exclusive_pattern_ = node_pool.Make<RangeToExclusivePatternNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "..=") {
+      range_to_inclusive_pattern_ = node_pool.Make<RangeToInclusivePatternNode>(tokens, pos, length);
+    } else {
+      uint32_t tmp = pos;
+      try {
+        range_exclusive_pattern_ = node_pool.Make<RangeExclusivePatternNode>(tokens, pos, length);
+      } catch (...) {
+        range_exclusive_pattern_ = nullptr;
+        pos = tmp;
+        try {
+          range_inclusive_pattern_ = node_pool.Make<RangeInclusivePatternNode>(tokens, pos, length);
+        } catch (...) {
+          range_inclusive_pattern_ = nullptr;
+          pos = tmp;
+          try {
+            range_from_pattern_ = node_pool.Make<RangeFromPatternNode>(tokens, pos, length);
+          } catch (...) {
+            range_from_pattern_ = nullptr;
+            pos = tmp;
+            obsolete_range_pattern_ = node_pool.Make<ObsoleteRangePatternNode>(tokens, pos, length);
+          }
+        }
+      }
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
 PatternNoTopAltNode::PatternNoTopAltNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Pattern No Top Alt") {
   try {
     uint32_t tmp = pos;

@@ -142,10 +142,77 @@ private:
   PathPatternNode *path_pattern_ = nullptr;
 };
 
+class RangePatternBoundNode : public ASTNode {
+public:
+  RangePatternBoundNode() = delete;
+  RangePatternBoundNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  LiteralExpressionNode *literal_expr = nullptr;
+  PathExpressionNode *path_expr = nullptr;
+};
+
+class RangeExclusivePatternNode : public ASTNode {
+public:
+  RangeExclusivePatternNode() = delete;
+  RangeExclusivePatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  RangePatternBoundNode *range_pattern_bound1_ = nullptr;
+  RangePatternBoundNode *range_pattern_bound2_ = nullptr;
+};
+
+class RangeInclusivePatternNode : public ASTNode {
+public:
+  RangeInclusivePatternNode() = delete;
+  RangeInclusivePatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  RangePatternBoundNode *range_pattern_bound1_ = nullptr;
+  RangePatternBoundNode *range_pattern_bound2_ = nullptr;
+};
+
+class RangeFromPatternNode : public ASTNode {
+public:
+  RangeFromPatternNode() = delete;
+  RangeFromPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  RangePatternBoundNode *range_pattern_bound_ = nullptr;
+};
+
+class RangeToExclusivePatternNode : public ASTNode {
+public:
+  RangeToExclusivePatternNode() = delete;
+  RangeToExclusivePatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  RangePatternBoundNode *range_pattern_bound_ = nullptr;
+};
+
+class RangeToInclusivePatternNode : public ASTNode {
+public:
+  RangeToInclusivePatternNode() = delete;
+  RangeToInclusivePatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  RangePatternBoundNode *range_pattern_bound_ = nullptr;
+};
+
+class ObsoleteRangePatternNode : public ASTNode {
+public:
+  ObsoleteRangePatternNode() = delete;
+  ObsoleteRangePatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  RangePatternBoundNode *range_pattern_bound1_ = nullptr;
+  RangePatternBoundNode *range_pattern_bound2_ = nullptr;
+};
+
 class RangePatternNode : public ASTNode {
 public:
   RangePatternNode() = delete;
   RangePatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  RangeExclusivePatternNode *range_exclusive_pattern_ = nullptr;
+  RangeInclusivePatternNode *range_inclusive_pattern_ = nullptr;
+  RangeFromPatternNode *range_from_pattern_ = nullptr;
+  RangeToExclusivePatternNode *range_to_exclusive_pattern_ = nullptr;
+  RangeToInclusivePatternNode *range_to_inclusive_pattern_ = nullptr;
+  ObsoleteRangePatternNode *obsolete_range_pattern_ = nullptr;
 };
 
 class PatternNoTopAltNode : public ASTNode {
