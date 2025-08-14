@@ -13,6 +13,20 @@ IdentifierNode::IdentifierNode(const std::vector<Token> &tokens, uint32_t &pos, 
   }
 }
 
+CharLiteralNode::CharLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Char Literal") {
+  try {
+    CheckLength(pos, length);
+    if(tokens[pos].type != kCHAR_LITERAL) {
+      throw Error("expect char literal");
+    }
+    val_ = tokens[pos].lexeme;
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+
 SuperNode::SuperNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Super") {
   try {
     CheckLength(pos, length);

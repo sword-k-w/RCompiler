@@ -13,35 +13,49 @@ private:
 };
 
 class CharLiteralNode : public ASTNode {
+public:
+  CharLiteralNode() = delete;
+  CharLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   char val_;
 };
 
 class StringLiteralNode : public ASTNode {
-
+public:
+  StringLiteralNode() = delete;
+  StringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   std::string val_;
 };
 
 class RawStringLiteralNode : public ASTNode {
-
+public:
+  RawStringLiteralNode() = delete;
+  RawStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   std::string val_;
 };
 
 class CStringLiteralNode : public ASTNode {
-
+public:
+  CStringLiteralNode() = delete;
+  CStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   std::string val_;
 };
 
 class RawCStringLiteralNode : public ASTNode {
-
+public:
+  RawCStringLiteralNode() = delete;
+  RawCStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   std::string val_;
 };
 
 class IntegerLiteralNode : public ASTNode {
+public:
+  IntegerLiteralNode() = delete;
+  IntegerLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 
 };
 
@@ -50,13 +64,17 @@ class FloatLiteralNode : public ASTNode {
 };
 
 class TrueNode : public ASTNode {
-
+public:
+  TrueNode() = delete;
+  TrueNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   const bool val_ = true;
 };
 
 class FalseNode : public ASTNode {
-
+public:
+  FalseNode() = delete;
+  FalseNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   const bool val_ = false;
 };

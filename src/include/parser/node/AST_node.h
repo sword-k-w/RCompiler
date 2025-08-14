@@ -4,6 +4,8 @@
 #include "parser/error.h"
 #include "parser/node_pool.hpp"
 
+class FunctionNode;
+
 class ExpressionNode;
 
 class ItemNode;
@@ -13,6 +15,10 @@ class AsscociatedItemNode;
 class TypeNode;
 
 class TypeNoBoundsNode;
+
+class GenericParamsNode;
+
+class WhereClauseNode;
 
 class GenericArgsNode;
 

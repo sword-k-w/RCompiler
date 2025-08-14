@@ -4,7 +4,6 @@
 #include "lexer/lexer.h"
 #include "parser/node/terminal.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/module.h"
 #include "parser/node/function.h"
 #include "parser/node/struct.h"
 #include "parser/node/enumeration.h"
@@ -37,7 +36,6 @@ public:
   ItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 
 private:
-  ModuleNode *module_ = nullptr;
   FunctionNode *function_ = nullptr;
   StructNode *struct_ = nullptr;
   EnumerationNode *enumeration_ = nullptr;

@@ -58,9 +58,7 @@ ItemNode::ItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32
     if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD) {
       throw Error("try parsing Item Node but first token isn't identifier or keyword");
     }
-    if (tokens[pos].lexeme == "mod") {
-      module_ = node_pool.Make<ModuleNode>(tokens, pos, length);
-    } else if (tokens[pos].lexeme == "fn") {
+    if (tokens[pos].lexeme == "fn") {
       function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "struct") {
       struct_ = node_pool.Make<StructNode>(tokens, pos, length);

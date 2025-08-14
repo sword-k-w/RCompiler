@@ -77,7 +77,7 @@ public:
   QualifiedPathInTypeNode() = delete;
   QualifiedPathInTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
-  QualifiedPathTypeNode *qualified_path_type_ = nullptr
+  QualifiedPathTypeNode *qualified_path_type_ = nullptr;
   std::vector<TypePathSegmentNode *> type_path_segments_;
 };
 
