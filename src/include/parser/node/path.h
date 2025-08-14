@@ -19,10 +19,8 @@ public:
   PathIdentSegmentNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
   IdentifierNode *identifier_ = nullptr;
-  SuperNode *super_ = nullptr;
   SelfLowerNode *self_lower_ = nullptr;
   SelfUpperNode *self_upper_ = nullptr;
-  CrateValNode *crate_val_ = nullptr;
 };
 
 class TypePathFnInputsNode : public ASTNode {
@@ -54,14 +52,7 @@ private:
   TypePathFnNode *type_path_fn_ = nullptr;
 };
 
-class TypePathNode : public ASTNode {
-public:
-  TypePathNode() = delete;
-  TypePathNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  uint32_t colon_cnt_ = 0;
-  std::vector<TypePathSegmentNode *> type_path_segments_;
-};
+using TypePathNode = PathIdentSegmentNode;
 
 class QualifiedPathTypeNode : public ASTNode {
 public:

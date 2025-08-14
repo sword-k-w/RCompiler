@@ -7,14 +7,10 @@ PathIdentSegmentNode::PathIdentSegmentNode(const std::vector<Token> &tokens, uin
       throw Error("try parsing Path Indent Segment Node but not identifier or keyword");
     }
     if (IsKeyword(tokens[pos].lexeme)) {
-      if (tokens[pos].lexeme == "super") {
-        super_ = node_pool.Make<SuperNode>(tokens, pos, length);
-      } else if (tokens[pos].lexeme == "self") {
+      if (tokens[pos].lexeme == "self") {
         self_lower_ = node_pool.Make<SelfLowerNode>(tokens, pos, length);
       } else if (tokens[pos].lexeme == "Self") {
         self_upper_ = node_pool.Make<SelfUpperNode>(tokens, pos, length);
-      } else if (tokens[pos].lexeme == "crate") {
-        crate_val_ = node_pool.Make<CrateValNode>(tokens, pos, length);
       } else {
         throw Error("try parsing Path Indent Segment Node but unexpected keyword");
       }
@@ -89,23 +85,6 @@ TypePathSegmentNode::TypePathSegmentNode(const std::vector<Token> &tokens, uint3
         ++pos;
         type_path_fn_ = node_pool.Make<TypePathFnNode>(tokens, pos, length);
       }
-    }
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
-TypePathNode::TypePathNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Type Path") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme == "::") {
-      ++colon_cnt_;
-    }
-    type_path_segments_.push_back(node_pool.Make<TypePathSegmentNode>(tokens, pos, length));
-    while (pos < length && tokens[pos].lexeme == "::") {
-      ++colon_cnt_;
-      ++pos;
-      type_path_segments_.push_back(node_pool.Make<TypePathSegmentNode>(tokens, pos, length));
     }
   } catch (Error &err) {
     throw err;
