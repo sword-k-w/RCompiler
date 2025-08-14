@@ -143,6 +143,12 @@ FunctionReturnTypeNode::FunctionReturnTypeNode(const std::vector<Token> &tokens,
 FunctionNode::FunctionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Function") {
   try {
     CheckLength(pos, length);
+    if (tokens[pos].lexeme == "const") {
+      const_ = true;
+      ++pos;
+      CheckLength(pos, length);
+    }
+    CheckLength(pos, length);
     if (tokens[pos].lexeme != "fn") {
       throw Error("try parsing Function Node but the first token is not fn");
     }

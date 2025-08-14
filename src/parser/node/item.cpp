@@ -65,7 +65,11 @@ ItemNode::ItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32
     } else if (tokens[pos].lexeme == "enum") {
       enumeration_ = node_pool.Make<EnumerationNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "const") {
-      constant_item_ = node_pool.Make<ConstantItemNode>(tokens, pos, length);
+      if (pos + 1 < length && tokens[pos + 1].lexeme == "fn") {
+        function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
+      } else {
+        constant_item_ = node_pool.Make<ConstantItemNode>(tokens, pos, length);
+      }
     } else if (tokens[pos].lexeme == "trait") {
       trait_ = node_pool.Make<TraitNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "impl") {

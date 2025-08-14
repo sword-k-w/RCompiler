@@ -79,6 +79,7 @@ public:
   FunctionNode() = delete;
   FunctionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
+  bool const_ = false;
   IdentifierNode *identifier_ = nullptr;
   GenericParamsNode *generic_params_ = nullptr;
   FunctionParametersNode *function_parameters_ = nullptr;
