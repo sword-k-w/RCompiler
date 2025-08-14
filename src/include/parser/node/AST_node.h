@@ -12,9 +12,9 @@ class ItemNode;
 
 class AsscociatedItemNode;
 
-class TypeNode;
-
 class TypeNoBoundsNode;
+
+using TypeNode = TypeNoBoundsNode;
 
 class GenericParamsNode;
 
@@ -22,9 +22,11 @@ class WhereClauseNode;
 
 class GenericArgsNode;
 
-class PatternNode;
+class PatternWithoutRangeNode;
 
-class PatternNoTopAltNode;
+using PatternNoTopAltNode = PatternWithoutRangeNode;
+
+using PatternNode = PatternNoTopAltNode;
 
 class PatternWithoutRangeNode;
 

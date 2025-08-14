@@ -7,48 +7,6 @@
 #include "parser/node/trait.h"
 #include "parser/node/path.h"
 
-class ParenthesizedTypeNode : public ASTNode {
-public:
-  ParenthesizedTypeNode() = delete;
-  ParenthesizedTypeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  TypeNode *type_;
-};
-
-class ImplTraitTypeOneBoundNode : public ASTNode {
-public:
-  ImplTraitTypeOneBoundNode() = delete;
-  ImplTraitTypeOneBoundNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  TraitBoundNode *trait_bound_ = nullptr;
-};
-
-class TraitObjectTypeOneBoundNode : public ASTNode {
-public:
-  TraitObjectTypeOneBoundNode() = delete;
-  TraitObjectTypeOneBoundNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  TraitBoundNode *trait_bound_ = nullptr;
-};
-
-class TupleTypeNode : public ASTNode {
-public:
-  TupleTypeNode() = delete;
-  TupleTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  std::vector<TypeNode *> types_;
-  uint32_t comma_cnt_ = 0;
-};
-
-class RawPointerTypeNode : public ASTNode {
-public:
-  RawPointerTypeNode() = delete;
-  RawPointerTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  bool mut_ = false;
-  TypeNoBoundsNode *type_no_bounds_ = nullptr;
-};
-
 class ReferenceTypeNode : public ASTNode {
 public:
   ReferenceTypeNode() = delete;
@@ -75,104 +33,16 @@ private:
   TypeNode *type_ = nullptr;
 };
 
-class MaybeNamedParamNode : public ASTNode {
-public:
-  MaybeNamedParamNode() = delete;
-  MaybeNamedParamNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  IdentifierNode *identifier_ = nullptr;
-  InferredTypeNode *inferred_type_ = nullptr;
-  bool colon_ = false;
-  TypeNode *type_ = nullptr;
-};
-
-class MaybeNamedFunctionParametersNode : public ASTNode {
-public:
-  MaybeNamedFunctionParametersNode() = delete;
-  MaybeNamedFunctionParametersNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  std::vector<MaybeNamedParamNode *> maybe_named_params_;
-  uint32_t comma_cnt_ = 0;
-};
-
-class MaybeNamedFunctionParametersVariadicNode : public ASTNode {
-public:
-  MaybeNamedFunctionParametersVariadicNode() = delete;
-  MaybeNamedFunctionParametersVariadicNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  std::vector<MaybeNamedParamNode *> maybe_named_params_;
-};
-
-class FunctionParametersMaybeNamedVariadicNode : public ASTNode {
-public:
-  FunctionParametersMaybeNamedVariadicNode() = delete;
-  FunctionParametersMaybeNamedVariadicNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  MaybeNamedFunctionParametersNode *maybe_named_function_parameters_ = nullptr;
-  MaybeNamedFunctionParametersVariadicNode *maybe_named_function_parameters_variadic_ = nullptr;
-};
-
-class BareFunctionReturnTypeNode : public ASTNode {
-public:
-  BareFunctionReturnTypeNode() = delete;
-  BareFunctionReturnTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  TypeNoBoundsNode *type_no_bounds_ = nullptr;
-};
-
-class BareFunctionTypeNode : public ASTNode {
-public:
-  BareFunctionTypeNode() = delete;
-  BareFunctionTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  FunctionParametersMaybeNamedVariadicNode *function_parameters_maybe_named_variadic_ = nullptr;
-  BareFunctionReturnTypeNode *bare_function_return_type_ = nullptr;
-};
-
 class TypeNoBoundsNode : public ASTNode {
 public:
   TypeNoBoundsNode() = delete;
   TypeNoBoundsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  ParenthesizedTypeNode *parenthesized_type_ = nullptr;
-  ImplTraitTypeOneBoundNode *impl_trait_type_one_bound_ = nullptr;
-  TraitObjectTypeOneBoundNode *trait_object_type_one_bound_ = nullptr;
   TypePathNode *type_path_ = nullptr;
-  TupleTypeNode *tuple_type_ = nullptr;
-  NeverTypeNode *never_type_ = nullptr;
-  RawPointerTypeNode *raw_pointer_type_ = nullptr;
   ReferenceTypeNode *reference_type_ = nullptr;
   ArrayTypeNode *array_type_ = nullptr;
   SliceTypeNode *slice_type_ = nullptr;
   InferredTypeNode *inferred_type_ = nullptr;
-  QualifiedPathInTypeNode *qualified_path_in_type_ = nullptr;
-  BareFunctionTypeNode *bare_function_type_ = nullptr;
-};
-
-class ImplTraitTypeNode : public ASTNode {
-public:
-  ImplTraitTypeNode() = delete;
-  ImplTraitTypeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  TypeParamBoundsNode *type_param_bounds_ = nullptr;
-};
-
-class TraitObjectTypeNode : public ASTNode {
-public:
-  TraitObjectTypeNode() = delete;
-  TraitObjectTypeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  TypeParamBoundsNode *type_param_bounds_ = nullptr;
-};
-
-class TypeNode : public ASTNode {
-public:
-  TypeNode() = delete;
-  TypeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  TypeNoBoundsNode *type_no_bounds_ = nullptr;
-  ImplTraitTypeNode *impl_trait_type_ = nullptr;
-  TraitObjectTypeNode *trait_object_type_ = nullptr;
 };
 
 #endif //TYPE_H
