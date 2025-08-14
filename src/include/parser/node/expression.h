@@ -21,11 +21,6 @@ private:
   FalseNode *false_ = nullptr;
 };
 
-class PathExpressionNode : public ASTNode {
-
-private:
-};
-
 class BorrowExpressionNode : public ASTNode {
 
 private:

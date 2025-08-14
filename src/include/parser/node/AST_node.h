@@ -30,6 +30,18 @@ using PatternNode = PatternNoTopAltNode;
 
 class PatternWithoutRangeNode;
 
+class PathInExpressionNode;
+
+using PathExpressionNode = PathInExpressionNode;
+
+class PathIdentSegmentNode;
+
+using PathExprSegmentNode = PathIdentSegmentNode;
+
+class IdentifierNode;
+
+using EnumVariantNode = IdentifierNode;
+
 class ASTNode {
 public:
   ASTNode() = delete;
