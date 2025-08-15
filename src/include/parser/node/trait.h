@@ -66,10 +66,8 @@ public:
   TraitNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   IdentifierNode *identifier_ = nullptr;
-  GenericParamsNode *generic_params_ = nullptr;
   bool colon_ = false;
   TypeParamBoundsNode *type_param_bounds_ = nullptr;
-  WhereClauseNode *where_clause_ = nullptr;
   std::vector<AsscociatedItemNode *> asscociated_items_;
 };
 
