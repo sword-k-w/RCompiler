@@ -7,12 +7,7 @@ ConstantItemNode::ConstantItemNode(const std::vector<Token> &tokens, uint32_t &p
       throw Error("try parsing Constant Item Node but the first token is not const");
     }
     ++pos;
-    if (tokens[pos].lexeme == "_") {
-      underscore_ = true;
-      ++pos;
-    } else {
-      identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
-    }
+    identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != ":") {
       throw Error("try parsing Constant Item Node but no :");

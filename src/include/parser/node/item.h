@@ -16,7 +16,6 @@ public:
   ConstantItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   IdentifierNode *identifier_ = nullptr;
-  bool underscore_ = false;
   TypeNode *type_ = nullptr;
   ExpressionNode *expr_ = nullptr;
 };
