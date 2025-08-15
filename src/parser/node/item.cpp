@@ -36,7 +36,11 @@ AsscociatedItemNode::AsscociatedItemNode(const std::vector<Token> &tokens, uint3
   try {
     CheckLength(pos, length);
     if (tokens[pos].lexeme == "const") {
-      constant_item_ = node_pool.Make<ConstantItemNode>(tokens, pos, length);
+      if (pos + 1 < length && tokens[pos + 1].lexeme == "fn") {
+        function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
+      } else {
+        constant_item_ = node_pool.Make<ConstantItemNode>(tokens, pos, length);
+      }
     } else if (tokens[pos].lexeme == "fn") {
       function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
     } else {
