@@ -13,11 +13,8 @@ public:
   ImplementationNode();
   ImplementationNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  GenericParamsNode *generic_params_ = nullptr;
-  bool exlamation_ = false;
   TypeNode *type_ = nullptr;
-  TypePathNode *type_path_ = nullptr;
-  WhereClauseNode *where_clause_ = nullptr;
+  IdentifierNode *identifier_ = nullptr;
   std::vector<AsscociatedItemNode *> asscociated_items_;
 };
 
