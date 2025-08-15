@@ -46,14 +46,6 @@ StructNode::StructNode(const std::vector<Token> &tokens, uint32_t &pos, const ui
     ++pos;
     identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
     CheckLength(pos, length);
-    if (tokens[pos].lexeme == "<") {
-      generic_params_ = node_pool.Make<GenericParamsNode>(tokens, pos, length);
-      CheckLength(pos, length);
-    }
-    if (tokens[pos].lexeme == "where") {
-      where_clause_ = node_pool.Make<WhereClauseNode>(tokens, pos, length);
-      CheckLength(pos, length);
-    }
     if (tokens[pos].lexeme == ";") {
       semicolon_ = true;
       ++pos;

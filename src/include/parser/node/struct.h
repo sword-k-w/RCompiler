@@ -31,8 +31,6 @@ public:
   StructNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   IdentifierNode *identifier_ = nullptr;
-  GenericParamsNode *generic_params_ = nullptr;
-  WhereClauseNode *where_clause_ = nullptr;
   StructFieldsNode *struct_fields_ = nullptr;
   bool semicolon_ = false;
 };
