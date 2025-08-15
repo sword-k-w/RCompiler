@@ -57,8 +57,6 @@ private:
   TupleStructItemsNode *tuple_struct_items_ = nullptr;
 };
 
-using PathPatternNode = PathExpressionNode;
-
 class PatternWithoutRangeNode : public ASTNode {
 public:
   PatternWithoutRangeNode() = delete;

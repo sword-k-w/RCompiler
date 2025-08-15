@@ -1,3 +1,4 @@
+/*
 #ifndef GENERIC_H
 #define GENERIC_H
 
@@ -121,3 +122,4 @@ private:
 };
 
 #endif //GENERIC_H
+*/

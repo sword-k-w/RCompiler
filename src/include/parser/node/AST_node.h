@@ -34,6 +34,8 @@ class PathInExpressionNode;
 
 using PathExpressionNode = PathInExpressionNode;
 
+using PathPatternNode = PathInExpressionNode;
+
 class PathIdentSegmentNode;
 
 using PathExprSegmentNode = PathIdentSegmentNode;

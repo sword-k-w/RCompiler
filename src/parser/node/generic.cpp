@@ -1,3 +1,4 @@
+/*
 #include "parser/node/generic.h"
 
 TypeParamNode::TypeParamNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Type Param") {
@@ -230,3 +231,5 @@ WhereClauseNode::WhereClauseNode(const std::vector<Token> &tokens, uint32_t &pos
     throw err;
   }
 }
+
+*/
