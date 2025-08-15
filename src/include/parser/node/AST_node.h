@@ -38,6 +38,10 @@ class PathIdentSegmentNode;
 
 using PathExprSegmentNode = PathIdentSegmentNode;
 
+using TypePathSegmentNode = PathIdentSegmentNode;
+
+using TypePathNode = TypePathSegmentNode;
+
 class IdentifierNode;
 
 using EnumVariantNode = IdentifierNode;
