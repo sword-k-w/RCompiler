@@ -54,42 +54,14 @@ SelfParamNode::SelfParamNode(const std::vector<Token> &tokens, uint32_t &pos, co
   }
 }
 
-FunctionParamPatternNode::FunctionParamPatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Function Param Pattern") {
+FunctionParamNode::FunctionParamNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Function Param") {
   try {
     pattern_no_top_alt_ = node_pool.Make<PatternNoTopAltNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != ":") {
-      throw Error("try parsing Function Param Pattern Node but no :");
+      throw Error("try parsing Function Param Node but no :");
     }
-    ++pos;
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme == "...") {
-      ellipsis_ = true;
-      ++pos;
-    } else {
-      type_ = node_pool.Make<TypeNode>(tokens, pos, length);
-    }
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
-FunctionParamNode::FunctionParamNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Function Param") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme == "...") {
-      ellipsis_ = true;
-      ++pos;
-    } else {
-      uint32_t tmp = pos;
-      try {
-        function_param_pattern_ = node_pool.Make<FunctionParamPatternNode>(tokens, pos, length);
-      } catch (...) {
-        function_param_pattern_ = nullptr;
-        pos = tmp;
-        type_ = node_pool.Make<TypeNode>(tokens, pos, length);
-      }
-    }
+    type_ = node_pool.Make<TypeNode>(tokens, pos, length);
   } catch (Error &err) {
     throw err;
   }
@@ -148,7 +120,6 @@ FunctionNode::FunctionNode(const std::vector<Token> &tokens, uint32_t &pos, cons
       ++pos;
       CheckLength(pos, length);
     }
-    CheckLength(pos, length);
     if (tokens[pos].lexeme != "fn") {
       throw Error("try parsing Function Node but the first token is not fn");
     }
@@ -156,10 +127,7 @@ FunctionNode::FunctionNode(const std::vector<Token> &tokens, uint32_t &pos, cons
     identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "(") {
-      generic_params_ = node_pool.Make<GenericParamsNode>(tokens, pos, length);
-      if (pos >= length || tokens[pos].lexeme != "(") {
-        throw Error("try parsing Function Node but not '(' after generic params");
-      }
+      throw Error("try parsing Function Node but not '('");
     }
     ++pos;
     CheckLength(pos, length);
@@ -173,10 +141,6 @@ FunctionNode::FunctionNode(const std::vector<Token> &tokens, uint32_t &pos, cons
     CheckLength(pos, length);
     if (tokens[pos].lexeme == "->") {
       function_return_type_ = node_pool.Make<FunctionReturnTypeNode>(tokens, pos, length);
-    }
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme == "where") {
-      where_clause_ = node_pool.Make<WhereClauseNode>(tokens, pos, length);
     }
     CheckLength(pos, length);
     if (tokens[pos].lexeme == ";") {

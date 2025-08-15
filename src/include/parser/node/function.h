@@ -36,23 +36,13 @@ private:
   TypedSelfNode *typed_self_ = nullptr;
 };
 
-class FunctionParamPatternNode : public ASTNode {
-public:
-  FunctionParamPatternNode() = delete;
-  FunctionParamPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  PatternNoTopAltNode *pattern_no_top_alt_ = nullptr;
-  TypeNode *type_ = nullptr;
-  bool ellipsis_ = false;
-};
 
 class FunctionParamNode : public ASTNode {
 public:
   FunctionParamNode() = delete;
   FunctionParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  FunctionParamPatternNode *function_param_pattern_ = nullptr;
-  bool ellipsis_ = false;
+  PatternNoTopAltNode *pattern_no_top_alt_ = nullptr;
   TypeNode *type_ = nullptr;
 };
 
@@ -81,10 +71,8 @@ public:
 private:
   bool const_ = false;
   IdentifierNode *identifier_ = nullptr;
-  GenericParamsNode *generic_params_ = nullptr;
   FunctionParametersNode *function_parameters_ = nullptr;
   FunctionReturnTypeNode *function_return_type_ = nullptr;
-  WhereClauseNode *where_clause_ = nullptr;
   bool semicolon_ = false;
   BlockExpressionNode *block_expr_ = nullptr;
 };
