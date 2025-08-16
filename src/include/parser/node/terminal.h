@@ -17,7 +17,7 @@ public:
   CharLiteralNode() = delete;
   CharLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  char val_;
+  std::string val_;
 };
 
 class StringLiteralNode : public ASTNode {
@@ -125,6 +125,14 @@ public:
   InferredTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
   const std::string_view val_ = "_";
+};
+
+class ContinueExpressionNode : public ASTNode {
+public:
+  ContinueExpressionNode() = delete;
+  ContinueExpressionNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  const std::string val_ = "continue";
 };
 
 #endif //TERMINAL_H

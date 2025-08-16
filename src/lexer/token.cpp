@@ -143,27 +143,6 @@ auto Lexer::CheckIntegerLiteral(uint32_t pos) const -> uint32_t {
   return pos;
 }
 
-auto Lexer::CheckFloatLiteral(uint32_t pos) const -> uint32_t {
-  uint32_t start = pos;
-  pos = CheckDecLiteral(pos);
-  if (pos == start) {
-    return start;
-  }
-  if (pos >= length_ || input_[pos] != '.') {
-    return start;
-  }
-  ++pos;
-  uint32_t tmp = pos;
-  pos = CheckDecLiteral(pos);
-  if (pos != tmp) {
-    return CheckSuffixNoE(pos);
-  }
-  if (pos < length_ && (input_[pos] == '.' || input_[pos] == '_' || CheckAsciiAlpha(pos))) {
-    return start;
-  }
-  return pos;
-}
-
 auto Lexer::CheckPunctuation(uint32_t pos) const -> uint32_t {
   if (pos + 2 < length_) {
     if (input_[pos] == '<' && input_[pos + 1] == '<' && input_[pos + 2] == '=') {
@@ -256,18 +235,6 @@ auto Lexer::CheckPunctuation(uint32_t pos) const -> uint32_t {
       || input_[pos] == ']' || input_[pos] == '(' || input_[pos] == ')') {
       return pos + 1;
     }
-  }
-  return pos;
-}
-
-auto Lexer::CheckReservedToken(uint32_t pos) const -> uint32_t {
-  uint32_t tmp = CheckReservedGuardedStringLiteral(pos);
-  if (tmp != pos) {
-    return tmp;
-  }
-  tmp = CheckReservedNumber(pos);
-  if (tmp != pos) {
-    return tmp;
   }
   return pos;
 }

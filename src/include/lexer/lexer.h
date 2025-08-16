@@ -9,12 +9,12 @@
 
 enum TokenType {
   kIDENTIFIER_OR_KEYWORD, kCHAR_LITERAL, kSTRING_LITERAL, kRAW_STRING_LITERAL, kC_STRING_LITERAL,
-  kRAW_C_STRING_LITERAL, kINTEGER_LITERAL, kFLOAT_LITERAL, kPUNCTUATION, kRESERVED_TOKEN
+  kRAW_C_STRING_LITERAL, kINTEGER_LITERAL, kPUNCTUATION
 };
 
 constexpr TokenType kTokenTypes[kTokenTypeCount] = {
   kIDENTIFIER_OR_KEYWORD, kCHAR_LITERAL, kSTRING_LITERAL, kRAW_STRING_LITERAL, kC_STRING_LITERAL,
-  kRAW_C_STRING_LITERAL, kINTEGER_LITERAL, kFLOAT_LITERAL, kPUNCTUATION, kRESERVED_TOKEN
+  kRAW_C_STRING_LITERAL, kINTEGER_LITERAL, kPUNCTUATION
 };
 
 struct Token {
@@ -36,12 +36,8 @@ struct Token {
       os << "RAW_C_STRING_LITERAL";
     } else if (type == kINTEGER_LITERAL) {
       os << "INTEGER_LITERAL";
-    } else if (type == kFLOAT_LITERAL) {
-      os << "FLOAT_LITERAL";
     } else if (type == kPUNCTUATION) {
       os << "PUNCTUATION";
-    } else if (type == kRESERVED_TOKEN) {
-      os << "RESERVED_TOKEN";
     } else {
       assert(0);
     }
@@ -91,15 +87,12 @@ private:
   auto CheckCStringLiteral(uint32_t) const -> uint32_t;
   auto CheckRawCStringLiteral(uint32_t) const -> uint32_t;
   auto CheckIntegerLiteral(uint32_t) const -> uint32_t;
-  auto CheckFloatLiteral(uint32_t) const -> uint32_t;
   auto CheckPunctuation(uint32_t) const -> uint32_t;
-  auto CheckReservedToken(uint32_t) const -> uint32_t;
 
   using CheckTokenFuncType = auto(Lexer::*)(uint32_t) const -> uint32_t;
   const CheckTokenFuncType check_token_func_[kTokenTypeCount] = {
     &Lexer::CheckIdentifierOrKeyWord, &Lexer::CheckCharLiteral, &Lexer::CheckStringLiteral, &Lexer::CheckRawStringLiteral,
-    &Lexer::CheckCStringLiteral, &Lexer::CheckRawCStringLiteral, &Lexer::CheckIntegerLiteral, &Lexer::CheckFloatLiteral,
-    &Lexer::CheckPunctuation, &Lexer::CheckReservedToken
+    &Lexer::CheckCStringLiteral, &Lexer::CheckRawCStringLiteral, &Lexer::CheckIntegerLiteral, &Lexer::CheckPunctuation
   };
 };
 

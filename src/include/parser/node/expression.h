@@ -68,12 +68,19 @@ class GroupedExpressionNode : public ASTNode {
 private:
 };
 
-class ArrayElementsNode {
-
+class ArrayElementsNode : public ASTNode {
+public:
+  ArrayElementsNode() = delete;
+  ArrayElementsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  std::vector<ExpressionNode *> exprs_;
+  bool semicolon_ = false;
 };
 
 class ArrayExpressionNode : public ASTNode {
-
+public:
+  ArrayExpressionNode() = delete;
+  ArrayExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   ArrayElementsNode *array_elements_ = nullptr;
 };
@@ -83,40 +90,26 @@ class IndexExpressionNode : public ASTNode {
 private:
 };
 
-class TupleElements : public ASTNode {
-
-private:
-};
-
-class TupleExpressionNode : public ASTNode {
-
-private:
-  TupleElements *tuple_elements_ = nullptr;
-};
-
-class TupleIndexingExpressionNode : public ASTNode {
-
-private:
-};
-
 class PathInExpressionNode : public ASTNode {
-
+public:
+  PathInExpressionNode() = delete;
+  PathInExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  std::vector<PathExprSegmentNode *> path_expr_segments_;
 };
 
 class StructExprFieldsNode : public ASTNode {
 
 };
 
-class StructBaseNode : public ASTNode {
-
-};
-
 class StructExpressionNode : public ASTNode {
-
+public:
+  StructExpressionNode() = delete;
+  StructExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  PathInExpressionNode *path_in_expr_ = nullptr;
+  IdentifierNode *identifier_ = nullptr;
+  SelfUpperNode *self_upper_ = nullptr;
   StructExprFieldsNode *struct_expr_fields_ = nullptr;
-  StructBaseNode *struct_base_ = nullptr;
 };
 
 class CallExpressionNode : public ASTNode {
@@ -134,51 +127,11 @@ class FieldExpressionNode : public ASTNode {
 private:
 };
 
-class ContinueExpressionNode : public ASTNode {
-
-private:
-  const std::string content_ = "continue";
-};
-
 class BreakExpressionNode : public ASTNode {
 
 private:
   const std::string content_ = "break";
   ExpressionNode *expr_ = nullptr;
-};
-
-class RangeExprNode : public ASTNode {
-
-};
-
-class RangeFromExprNode : public ASTNode {
-
-};
-
-class RangeToExprNode : public ASTNode {
-
-};
-
-class RangeFullExprNode : public ASTNode {
-
-};
-
-class RangeInclusiveExprNode : public ASTNode {
-
-};
-
-class RangeToInclusiveExprNode : public ASTNode {
-
-};
-
-class RangeExpressionNode : public ASTNode {
-
-private:
-  RangeExprNode *range_expr_ = nullptr;
-  RangeFromExprNode *range_from_expr_ = nullptr;
-  RangeFullExprNode *range_full_expr_ = nullptr;
-  RangeInclusiveExprNode *range_inclusive_expr_ = nullptr;
-  RangeToInclusiveExprNode *range_to_inclusive_expr_ = nullptr;
 };
 
 class ReturnExpressionNode : public ASTNode {
@@ -199,15 +152,12 @@ private:
   GroupedExpressionNode *grouped_expr_ = nullptr;
   ArrayExpressionNode *array_expr_ = nullptr;
   IndexExpressionNode *index_expr_ = nullptr;
-  TupleExpressionNode *tuple_expr_ = nullptr;
-  TupleIndexingExpressionNode *tuple_indexing_expr_ = nullptr;
   StructExpressionNode *struct_expr_ = nullptr;
   CallExpressionNode *call_expr_ = nullptr;
   MethodCallExpressionNode *method_call_expr_ = nullptr;
   FieldExpressionNode *field_expr_ = nullptr;
   ContinueExpressionNode *continue_expr_ = nullptr;
   BreakExpressionNode *break_expr_ = nullptr;
-  RangeExpressionNode *range_expr_ = nullptr;
   ReturnExpressionNode *return_expr_ = nullptr;
   UnderscoreExpressionNode *underscore_expr_ = nullptr;
 };

@@ -26,7 +26,6 @@ CharLiteralNode::CharLiteralNode(const std::vector<Token> &tokens, uint32_t &pos
   }
 }
 
-
 SuperNode::SuperNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Super") {
   try {
     CheckLength(pos, length);
@@ -99,11 +98,11 @@ InferredTypeNode::InferredTypeNode(const std::vector<Token> &tokens, uint32_t &p
   }
 }
 
-RestPatternNode::RestPatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Rest Pattern") {
+ContinueExpressionNode::ContinueExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Continue Expression") {
   try {
     CheckLength(pos, length);
-    if (tokens[pos].lexeme != "..") {
-      throw Error("expect ..");
+    if (tokens[pos].lexeme != "continue") {
+      throw Error("expect continue");
     }
     ++pos;
   } catch (Error &err) {
