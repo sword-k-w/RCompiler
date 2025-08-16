@@ -48,6 +48,12 @@ class IdentifierNode;
 
 using EnumVariantNode = IdentifierNode;
 
+class InferredTypeNode;
+
+using WildcardPatternNode = InferredTypeNode;
+
+using UnderscoreExpressionNode = InferredTypeNode;
+
 class ASTNode {
 public:
   ASTNode() = delete;

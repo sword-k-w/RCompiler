@@ -30,4 +30,12 @@ private:
   ExpressionStatementNode *expr_statement_ = nullptr;
 };
 
+class StatementsNode : public ASTNode {
+public:
+  StatementsNode() = delete;
+  StatementsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+
+};
+
 #endif //STATEMENT_H

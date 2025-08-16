@@ -4,6 +4,7 @@
 #include <string>
 #include "parser/node/AST_node.h"
 #include "parser/node/terminal.h"
+#include "parser/node/statement.h"
 
 class LiteralExpressionNode : public ASTNode {
 public:
@@ -98,8 +99,22 @@ private:
   std::vector<PathExprSegmentNode *> path_expr_segments_;
 };
 
-class StructExprFieldsNode : public ASTNode {
+class StructExprFieldNode : public ASTNode {
+public:
+  StructExprFieldNode() = delete;
+  StructExprFieldNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  IdentifierNode *identifier_ = nullptr;
+  ExpressionNode *expr_ = nullptr;
+};
 
+class StructExprFieldsNode : public ASTNode {
+public:
+  StructExprFieldsNode() = delete;
+  StructExprFieldsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  std::vector<StructExprFieldNode *> struct_expr_field_s_;
+  uint32_t comma_cnt = 0;
 };
 
 class StructExpressionNode : public ASTNode {
@@ -128,20 +143,19 @@ private:
 };
 
 class BreakExpressionNode : public ASTNode {
-
+public:
+  BreakExpressionNode() = delete;
+  BreakExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  const std::string content_ = "break";
   ExpressionNode *expr_ = nullptr;
 };
 
 class ReturnExpressionNode : public ASTNode {
-
+public:
+  ReturnExpressionNode() = delete;
+  ReturnExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-};
-
-class UnderscoreExpressionNode : public ASTNode {
-
-private:
+  ExpressionNode *expr_ = nullptr;
 };
 
 class ExpressionWithoutBlockNode : public ASTNode {
@@ -167,26 +181,83 @@ public:
   BlockExpressionNode() = delete;
   BlockExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
+  StatementsNode *statements_s_ = nullptr;
 };
 
 class ConstBlockExpressionNode : public ASTNode {
-
+public:
+  ConstBlockExpressionNode() = delete;
+  ConstBlockExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
+  BlockExpressionNode *block_expr_ = nullptr;
+};
+
+class InfiniteLoopExpressionNode : public ASTNode {
+public:
+  InfiniteLoopExpressionNode() = delete;
+  InfiniteLoopExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  BlockExpressionNode *block_expr_ = nullptr;
+};
+
+class ConditionsNode : public ASTNode {
+public:
+  ConditionsNode() = delete;
+  ConditionsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+};
+
+class PredicateLoopExpressionNode : public ASTNode {
+public:
+  PredicateLoopExpressionNode() = delete;
+  PredicateLoopExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  ConditionsNode *conditions_ = nullptr;
+  BlockExpressionNode *block_expr = nullptr;
 };
 
 class LoopExpressionNode : public ASTNode {
-
+public:
+  LoopExpressionNode() = delete;
+  LoopExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
+  InfiniteLoopExpressionNode *infinite_loop_expr_ = nullptr;
+  PredicateLoopExpressionNode *predicate_loop_expr_ = nullptr;
 };
 
 class IfExpressionNode : public ASTNode {
+public:
+  IfExpressionNode() = delete;
+  IfExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  ConditionsNode *conditions_ = nullptr;
+  BlockExpressionNode *block_expr1_ = nullptr;
+  BlockExpressionNode *block_expr2_ = nullptr;
+  IfExpressionNode *if_expr_ = nullptr;
+};
 
+class ScrutineeNode : public ASTNode {
+public:
+  ScrutineeNode() = delete;
+  ScrutineeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  ExpressionNode *expr_ = nullptr;
+};
+
+class MatchArmsNode : public ASTNode {
+public:
+  MatchArmsNode() = delete;
+  MatchArmsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
 };
 
 class MatchExpressionNode : public ASTNode {
-
+public:
+  MatchExpressionNode() = delete;
+  MatchExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
+  ScrutineeNode *scrutinee_ = nullptr;
+  MatchArmsNode *match_arms_ = nullptr;
 };
 
 class ExpressionWithBlockNode : public ASTNode {

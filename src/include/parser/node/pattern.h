@@ -27,8 +27,6 @@ private:
   PatternNoTopAltNode *pattern_no_top_alt_ = nullptr;
 };
 
-using WildcardPatternNode = InferredTypeNode;
-
 class ReferencePatternNode : public ASTNode {
 public:
   ReferencePatternNode() = delete;
