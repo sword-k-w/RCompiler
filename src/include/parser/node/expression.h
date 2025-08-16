@@ -122,8 +122,7 @@ public:
   StructExpressionNode() = delete;
   StructExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  IdentifierNode *identifier_ = nullptr;
-  SelfUpperNode *self_upper_ = nullptr;
+  PathInExpressionNode *path_in_expr = nullptr;
   StructExprFieldsNode *struct_expr_fields_ = nullptr;
 };
 

@@ -120,12 +120,7 @@ StructExprFieldsNode::StructExprFieldsNode(const std::vector<Token> &tokens, uin
 
 StructExpressionNode::StructExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Struct Expression") {
   try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme == "Self") {
-      self_upper_ = node_pool.Make<SelfUpperNode>(tokens, pos, length);
-    } else {
-      identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
-    }
+    path_in_expr = node_pool.Make<PathInExpressionNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "{") {
       throw Error("try parsing Struct Expression Node but no {");
