@@ -152,11 +152,30 @@ private:
   ExpressionNode *expr_ = nullptr;
 };
 
+class MatchArmGuardNode : public ASTNode {
+public:
+  MatchArmGuardNode() = delete;
+  MatchArmGuardNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  ExpressionNode *expr_;
+};
+
+class MatchArmNode : public ASTNode {
+public:
+  MatchArmNode() = delete;
+  MatchArmNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  PatternNode *pattern_ = nullptr;
+  MatchArmGuardNode *match_arm_guard_ = nullptr;
+};
+
 class MatchArmsNode : public ASTNode {
 public:
   MatchArmsNode() = delete;
   MatchArmsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
+  std::vector<MatchArmNode *> match_arm_s_;
+  std::vector<ExpressionNode *> expr_;
 };
 
 class MatchExpressionNode : public ASTNode {
@@ -193,7 +212,7 @@ enum ExpressionType {
   kLiteralExpr, kPathExpr, kArrayExpr, kStructExpr, kContinueExpr, kUnderscoreExpr, kBorrowExpr,
   kDereferenceExpr, kNegationExpr, kArithmeticOrLogicExpr, kComparisonExpr, kLazyBooleanExpr,
   kTypeCastExpr, kAssignmentExpr, kCompoundAssignmentExpr, kGroupedExpr, kIndexExpr, kCallExpr,
-  kMethodCallExpr, kFieldExpr, kBreakExpr, kReturnExpr
+  kMethodCallExpr, kFieldExpr, kBreakExpr, kReturnExpr, kBlockExpr
 };
 
 class ExpressionNode : public ASTNode {
@@ -201,6 +220,7 @@ public:
   ExpressionNode() = delete;
   ExpressionNode(const ExpressionNode &) = default;
   ExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &, const uint32_t & = 0);
+  ExpressionType Type() const;
 private:
   ExpressionType type_;
   std::string op_;
