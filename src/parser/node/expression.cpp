@@ -500,7 +500,6 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
       throw Error("try parsing Expression Node but unexpected token");
     }
 
-    ++pos;
     while (pos < length) {
       Token op = tokens[pos];
       auto it = infix_type.find(op.lexeme);
