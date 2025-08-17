@@ -140,33 +140,14 @@ StructExpressionNode::StructExpressionNode(const std::vector<Token> &tokens, uin
   }
 }
 
-BreakExpressionNode::BreakExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Break Expression") {
+ExpressionWithoutBlockNode::ExpressionWithoutBlockNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Expression Without Block") {
   try {
     CheckLength(pos, length);
-    if (tokens[pos].lexeme != "break") {
-      throw Error("try parsing Break Expression Node but no break");
+    if (tokens[pos].lexeme == "{" || tokens[pos].lexeme == "const" || tokens[pos].lexeme == "loop"
+      || tokens[pos].lexeme == "while" || tokens[pos].lexeme == "if" || tokens[pos].lexeme == "match") {
+      throw Error("try parsing Expression Without Block Node but with block");
     }
-    ++pos;
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != ";") {
-      expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
-    }
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
-ReturnExpressionNode::ReturnExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Return Expression") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "return") {
-      throw Error("try parsing Return Expression but no return");
-    }
-    ++pos;
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != ";") {
-      expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
-    }
+    expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
   } catch (Error &err) {
     throw err;
   }
@@ -295,6 +276,167 @@ MatchExpressionNode::MatchExpressionNode(const std::vector<Token> &tokens, uint3
       }
     }
     ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+ExpressionWithBlockNode::ExpressionWithBlockNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Expression With Block") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme == "{") {
+      block_expr_ = node_pool.Make<BlockExpressionNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "const") {
+      const_block_expr_ = node_pool.Make<ConstBlockExpressionNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "loop" || tokens[pos].lexeme == "while") {
+      loop_expr_ = node_pool.Make<LoopExpressionNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "if") {
+      if_expr_ = node_pool.Make<IfExpressionNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "match") {
+      match_expr_ = node_pool.Make<MatchExpressionNode>(tokens, pos, length);
+    } else {
+      throw Error("try parsing Expression With Block Node but unexpected token");
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+CallParamsNode::CallParamsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Call Params") {
+  try {
+    exprs_.push_back(node_pool.Make<ExpressionNode>(tokens, pos, length));
+    while (pos < length && tokens[pos].lexeme != ")") {
+      if (tokens[pos].lexeme != ",") {
+        throw Error("try parsing Call Params Node but not ,");
+      }
+      ++comma_cnt_;
+      ++pos;
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme == ")") {
+        break;
+      }
+      exprs_.push_back(node_pool.Make<ExpressionNode>(tokens, pos, length));
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length, const uint32_t &context_precedence) : ASTNode("Expression") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme == "&" || tokens[pos].lexeme == "&&") {
+      type_ = kBorrowExpr;
+      op_ = "borrow";
+      ++pos;
+      if (pos < length && tokens[pos].lexeme == "mut") {
+        mut_ = true;
+        ++pos;
+      }
+      expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{"borrow", false}].second);
+    } else if (tokens[pos].lexeme == "*") {
+      type_ = kDereferenceExpr;
+      ++pos;
+      expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+    } else if (tokens[pos].lexeme == "-" || tokens[pos].lexeme == "!") {
+      type_ = kNegationExpr;
+      op_ = tokens[pos].lexeme;
+      ++pos;
+      expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+    } else if (tokens[pos].lexeme == "return") {
+      type_ = kReturnExpr;
+      ++pos;
+      expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+    } else if (tokens[pos].lexeme == "break") {
+      type_ = kBreakExpr;
+      ++pos;
+      expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+    } else if (tokens[pos].lexeme == "{" || tokens[pos].lexeme == "const" || tokens[pos].lexeme == "loop"
+      || tokens[pos].lexeme == "while" || tokens[pos].lexeme == "if" || tokens[pos].lexeme == "match") {
+      expr_with_block_ = node_pool.Make<ExpressionWithBlockNode>(tokens, pos, length);
+    } else if (tokens[pos].type == kCHAR_LITERAL || tokens[pos].type == kSTRING_LITERAL || tokens[pos].type == kRAW_STRING_LITERAL ||
+      tokens[pos].type == kC_STRING_LITERAL || tokens[pos].type == kRAW_C_STRING_LITERAL || tokens[pos].type == kINTEGER_LITERAL ||
+      tokens[pos].lexeme == "true" || tokens[pos].lexeme == "false") {
+      type_ = kLiteralExpr;
+      literal_expr_ = node_pool.Make<LiteralExpressionNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "[") {
+      type_ = kArrayExpr;
+      array_expr_ = node_pool.Make<ArrayExpressionNode>(tokens, pos, length);
+    } else if (tokens[pos].type == kIDENTIFIER_OR_KEYWORD && (!IsKeyword(tokens[pos].lexeme) || tokens[pos].lexeme == "self" || tokens[pos].lexeme == "Self")) {
+      uint32_t tmp = pos;
+      try {
+        type_ = kStructExpr;
+        struct_expr_ = node_pool.Make<StructExpressionNode>(tokens, pos, length);
+      } catch (...) {
+        struct_expr_ = nullptr;
+        pos = tmp;
+        type_ = kPathExpr;
+        path_expr_ = node_pool.Make<PathExpressionNode>(tokens, pos, length);
+      }
+    } else if (tokens[pos].lexeme == "continue") {
+      type_ = kContinueExpr;
+      continue_expr_ = node_pool.Make<ContinueExpressionNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "_") {
+      type_ = kUnderscoreExpr;
+      underscore_expr_ = node_pool.Make<UnderscoreExpressionNode>(tokens, pos, length);
+    } else {
+      throw Error("try parsing Expression Node but unexpected token");
+    }
+
+    ++pos;
+    while (pos < length) {
+      Token op = tokens[pos];
+      auto it = infix_type.find(op.lexeme);
+      if (it != infix_type.end()) {
+        break;
+      }
+      uint32_t power = binding_power[{op.lexeme, true}].first;
+      if (context_precedence == power) {
+        throw Error("try parsing Expression Node but same binding power");
+      }
+      if (context_precedence > power) {
+        break;
+      }
+      ++pos;
+      expr1_ = node_pool.Make<ExpressionNode>(*this);
+      type_ = it->second;
+      op_ = op.lexeme;
+      if (op.lexeme == "(") {
+        call_params_ = node_pool.Make<CallParamsNode>(tokens, pos, length);
+      } else if (op.lexeme == ".") {
+        if (pos + 1 < length && tokens[pos + 1].lexeme == "(") {
+          type_ = kMethodCallExpr;
+          path_expr_segment_ = node_pool.Make<PathExprSegmentNode>(tokens, pos, length);
+          ++pos;
+          call_params_ = node_pool.Make<CallParamsNode>(tokens, pos, length);
+        } else {
+          identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
+        }
+      } else if (op.lexeme == "as") {
+        type_no_bounds_ = node_pool.Make<TypeNoBoundsNode>(tokens, pos, length);
+      } else {
+        expr2_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{op.lexeme, true}].second);
+      }
+      if (type_ == kMethodCallExpr) {
+        CheckLength(pos, length);
+        if (tokens[pos].lexeme != ")") {
+          throw Error("try parsing Method Call Expression Node but no )");
+        }
+        ++pos;
+      } else if (type_ == kIndexExpr) {
+        CheckLength(pos, length);
+        if (tokens[pos].lexeme != "]") {
+          throw Error("try parsing Index Expression Node but no ]");
+        }
+        ++pos;
+      } else if (type_ == kCallExpr) {
+        CheckLength(pos, length);
+        if (tokens[pos].lexeme != ")") {
+          throw Error("try parsing Call Expression Node but no )");
+        }
+        ++pos;
+      }
+    }
   } catch (Error &err) {
     throw err;
   }

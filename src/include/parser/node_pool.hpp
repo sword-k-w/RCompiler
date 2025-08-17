@@ -6,14 +6,38 @@
 #include "parser/error.h"
 #include "parser/node/AST_node.h"
 
+class ASTNode;
+
 class NodePool {
 public:
+  template<class T>
+  T *Make(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length, const uint32_t &context_precedence) {
+    try {
+      ASTNode *ptr = static_cast<T *>(operator new(sizeof(T)));
+      pool_.emplace_back(ptr);
+      new(ptr) T(tokens, pos, length, context_precedence);
+      return ptr;
+    } catch (Error &err) {
+      throw err;
+    }
+  }
   template<class T>
   T *Make(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) {
     try {
       ASTNode *ptr = static_cast<T *>(operator new(sizeof(T)));
       pool_.emplace_back(ptr);
       new(ptr) T(tokens, pos, length);
+      return ptr;
+    } catch (Error &err) {
+      throw err;
+    }
+  }
+  template<class T>
+  T *Make(const T &other) {
+    try {
+      ASTNode *ptr = static_cast<T *>(operator new(sizeof(T)));
+      pool_.emplace_back(ptr);
+      new(ptr) T(other);
       return ptr;
     } catch (Error &err) {
       throw err;
