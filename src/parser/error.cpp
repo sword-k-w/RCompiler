@@ -7,7 +7,6 @@ std::string Error::Info() const {
   return info_;
 }
 
-
 // void Error(const std::string_view &info) {
 //   std::cerr << "Error!\n" << info << '\n';
 //   node_pool.Clear();

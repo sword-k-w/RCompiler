@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #include <string>
+#include <cstdint>
 
 constexpr uint32_t kTokenTypeCount = 8;
 
