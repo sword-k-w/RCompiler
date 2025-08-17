@@ -161,7 +161,7 @@ auto Lexer::CheckReservedNumber(uint32_t pos) const -> uint32_t {
   if (tmp != pos && tmp < length_ && input_[pos] >= '8' && input_[pos] <= '9') {
     return pos + 1;
   }
-  tmp = std::max({CheckBinLiteral(pos), CheckOctLiteral(pos), CheckHexLiteral(pos)});
+  tmp = std::max(CheckBinLiteral(pos), std::max(CheckOctLiteral(pos), CheckHexLiteral(pos)));
   if (tmp != pos && tmp < length_ && input_[tmp] == '.') {
     ++tmp;
     if (tmp >= length_ || (input_[tmp] != '.' && input_[tmp] != '_' && !CheckAsciiAlpha(tmp))) {

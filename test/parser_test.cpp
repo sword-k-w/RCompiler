@@ -11,5 +11,6 @@ TEST(ParserTest, ExpressionTest) {
     b.Run<ExpressionNode>();
   } catch (Error &err) {
     std::cerr << err.Info() << '\n';
+    EXPECT_EQ(0, 1);
   }
 }

@@ -5,6 +5,7 @@ project(RCompiler CXX)
 find_package(GTest REQUIRED)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(${GTEST_INCLUDE_DIRS})
 include_directories(src/include)
