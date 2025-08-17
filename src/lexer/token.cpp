@@ -1,5 +1,3 @@
-#include <boost/xpressive/detail/core/access.hpp>
-
 #include "lexer/lexer.h"
 
 auto Lexer::CheckIdentifierOrKeyWord(uint32_t pos) const -> uint32_t {
