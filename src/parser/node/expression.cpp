@@ -187,6 +187,58 @@ ConstBlockExpressionNode::ConstBlockExpressionNode(const std::vector<Token> &tok
   }
 }
 
+LetChainConditionNode::LetChainConditionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Let Chain Condition") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme == "let") {
+      pattern_ = node_pool.Make<PatternNode>(tokens, pos, length);
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme != "=") {
+        throw Error("try parsing Let Chain Condition Node but no =");
+      }
+      ++pos;
+    }
+    expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
+    if (expr_->Type() == kStructExpr || expr_->Type() == kLazyBooleanExpr || expr_->Type() == kAssignmentExpr || expr_->Type() == kCompoundAssignmentExpr) {
+      throw Error("try parsing Let Chain Condition Node but Excluded Conditions");
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+LetChainNode::LetChainNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Let Chain") {
+  try {
+    let_chain_conditions_.push_back(node_pool.Make<LetChainConditionNode>(tokens, pos, length));
+    while (pos < length && tokens[pos].lexeme == "&&") {
+      ++pos;
+      let_chain_conditions_.push_back(node_pool.Make<LetChainConditionNode>(tokens, pos, length));
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+ConditionsNode::ConditionsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Conditions") {
+  try {
+    uint32_t tmp = pos;
+    try {
+      expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
+      if (expr_->Type() == kStructExpr) {
+        throw Error("");
+      }
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme != "{") {
+        throw Error("");
+      }
+    } catch (...) {
+      let_chain_ = node_pool.Make<LetChainNode>(tokens, pos, length);
+    }
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
 InfiniteLoopExpressionNode::InfiniteLoopExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Infinite Loop Expression") {
   try {
     CheckLength(pos, length);
@@ -307,7 +359,7 @@ MatchArmsNode::MatchArmsNode(const std::vector<Token> &tokens, uint32_t &pos, co
       comma = true;
       if (tokens[pos].lexeme == ",") {
         ++pos;
-      } else if (expr_.back()->Type() != kBlockExpr) {
+      } else if (expr_.back()->Type() != kExprWithBlock) {
         comma = false;
       }
     }
@@ -417,7 +469,7 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
       expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
     } else if (tokens[pos].lexeme == "{" || tokens[pos].lexeme == "const" || tokens[pos].lexeme == "loop"
       || tokens[pos].lexeme == "while" || tokens[pos].lexeme == "if" || tokens[pos].lexeme == "match") {
-      type_ = kBlockExpr;
+      type_ = kExprWithBlock;
       expr_with_block_ = node_pool.Make<ExpressionWithBlockNode>(tokens, pos, length);
     } else if (tokens[pos].type == kCHAR_LITERAL || tokens[pos].type == kSTRING_LITERAL || tokens[pos].type == kRAW_STRING_LITERAL ||
       tokens[pos].type == kC_STRING_LITERAL || tokens[pos].type == kRAW_C_STRING_LITERAL || tokens[pos].type == kINTEGER_LITERAL ||

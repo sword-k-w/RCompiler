@@ -108,11 +108,30 @@ private:
   BlockExpressionNode *block_expr_ = nullptr;
 };
 
+class LetChainConditionNode : public ASTNode {
+public:
+  LetChainConditionNode() = delete;
+  LetChainConditionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  ExpressionNode *expr_ = nullptr;
+  PatternNode *pattern_ = nullptr;
+};
+
+class LetChainNode : public ASTNode {
+public:
+  LetChainNode() = delete;
+  LetChainNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+private:
+  std::vector<LetChainConditionNode *> let_chain_conditions_;
+};
+
 class ConditionsNode : public ASTNode {
 public:
   ConditionsNode() = delete;
   ConditionsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
+  ExpressionNode *expr_ = nullptr;
+  LetChainNode *let_chain_ = nullptr;
 };
 
 class PredicateLoopExpressionNode : public ASTNode {
@@ -212,7 +231,7 @@ enum ExpressionType {
   kLiteralExpr, kPathExpr, kArrayExpr, kStructExpr, kContinueExpr, kUnderscoreExpr, kBorrowExpr,
   kDereferenceExpr, kNegationExpr, kArithmeticOrLogicExpr, kComparisonExpr, kLazyBooleanExpr,
   kTypeCastExpr, kAssignmentExpr, kCompoundAssignmentExpr, kGroupedExpr, kIndexExpr, kCallExpr,
-  kMethodCallExpr, kFieldExpr, kBreakExpr, kReturnExpr, kBlockExpr
+  kMethodCallExpr, kFieldExpr, kBreakExpr, kReturnExpr, kExprWithBlock
 };
 
 class ExpressionNode : public ASTNode {
@@ -320,7 +339,5 @@ std::map<std::string, ExpressionType> infix_type = {
   {"return", kReturnExpr},
   {"break", kBreakExpr},
 };
-
-
 
 #endif //EXPRESSION_H

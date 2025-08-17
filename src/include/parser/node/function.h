@@ -6,6 +6,7 @@
 #include "parser/node/terminal.h"
 #include "parser/node/generic.h"
 #include "parser/node/expression.h"
+#include "parser/node/pattern.h"
 
 class ShorthandSelfNode : public ASTNode {
 public:

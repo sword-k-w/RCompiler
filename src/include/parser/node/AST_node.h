@@ -1,7 +1,6 @@
 #ifndef AST_NODE_H
 #define AST_NODE_H
 
-#include "parser/error.h"
 #include "parser/node_pool.hpp"
 
 class FunctionNode;
@@ -53,6 +52,20 @@ class InferredTypeNode;
 using WildcardPatternNode = InferredTypeNode;
 
 using UnderscoreExpressionNode = InferredTypeNode;
+
+class BlockExpressionNode;
+
+class StatementsNode;
+
+class StructNode;
+
+class TraitNode;
+
+class ImplementationNode;
+
+class EnumerationNode;
+
+class LiteralExpressionNode;
 
 class ASTNode {
 public:

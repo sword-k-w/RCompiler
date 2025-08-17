@@ -59,3 +59,4 @@ leaf expression:
 * StructExpression
 * ContinueExpression
 * UnderscoreExpression
+* ExpressionWithBlock

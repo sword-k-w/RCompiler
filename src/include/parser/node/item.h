@@ -10,7 +10,7 @@
 #include "parser/node/trait.h"
 #include "parser/node/implementation.h"
 
-class ConstantItemNode : ASTNode {
+class ConstantItemNode : public ASTNode {
 public:
   ConstantItemNode() = delete;
   ConstantItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -20,7 +20,7 @@ private:
   ExpressionNode *expr_ = nullptr;
 };
 
-class AsscociatedItemNode : ASTNode {
+class AsscociatedItemNode : public ASTNode {
 public:
   AsscociatedItemNode() = delete;
   AsscociatedItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -29,7 +29,7 @@ private:
   FunctionNode *function_ = nullptr;
 };
 
-class ItemNode : ASTNode {
+class ItemNode : public ASTNode {
 public:
   ItemNode() = delete;
   ItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
