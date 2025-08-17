@@ -72,9 +72,8 @@ class ExpressionWithoutBlockNode;
 class ASTNode {
 public:
   ASTNode() = delete;
-  ASTNode(const std::string_view &);
+  explicit ASTNode(const std::string_view &);
   void CheckLength(const uint32_t &, const uint32_t &) const;
-  virtual ~ASTNode() = 0;
   // virtual void accept(Visitor *) = 0;
 private:
   const std::string name_;

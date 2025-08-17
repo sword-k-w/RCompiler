@@ -51,6 +51,8 @@ public:
   }
 private:
   std::vector<ASTNode *> pool_;
-} node_pool;
+};
+
+inline NodePool node_pool;
 
 #endif //NODE_POOL_H

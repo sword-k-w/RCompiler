@@ -259,7 +259,7 @@ private:
 };
 
 // true means binary, false means unary
-std::map<std::pair<std::string, bool>, std::pair<uint32_t, uint32_t>> binding_power = {
+inline std::map<std::pair<std::string, bool>, std::pair<uint32_t, uint32_t>> binding_power = {
   {{".", true}, {500000, 500001}},
   {{"(", true}, {200000, 200001}},
   {{"[", true}, {200000, 200001}},
@@ -301,7 +301,7 @@ std::map<std::pair<std::string, bool>, std::pair<uint32_t, uint32_t>> binding_po
   {{"break", false}, {0, 200}}
 };
 
-std::map<std::string, ExpressionType> infix_type = {
+inline std::map<std::string, ExpressionType> infix_type = {
   {".", kFieldExpr}, // uncertain
   {"(", kCallExpr},
   {"[", kIndexExpr},
