@@ -3,6 +3,11 @@
 
 Error::Error(const std::string &info) : info_(info) {}
 
+std::string_view Error::Info() const {
+  return info_;
+}
+
+
 // void Error(const std::string_view &info) {
 //   std::cerr << "Error!\n" << info << '\n';
 //   node_pool.Clear();

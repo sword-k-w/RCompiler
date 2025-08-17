@@ -25,6 +25,12 @@ file(GLOB_RECURSE PARSER_SRCS
 aux_source_directory(${COMMON_DIR} COMMONS)
 
 add_executable(parser_test
+        src/data_loader/data_loader.cpp
+        src/lexer/lexer.cpp
+        src/lexer/single.cpp
+        src/lexer/intermediate.cpp
+        src/lexer/meaningless.cpp
+        src/lexer/token.cpp
         ${PARSER_SRCS}
         ${COMMONS}
 )

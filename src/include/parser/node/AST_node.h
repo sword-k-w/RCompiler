@@ -67,6 +67,8 @@ class EnumerationNode;
 
 class LiteralExpressionNode;
 
+class ExpressionWithoutBlockNode;
+
 class ASTNode {
 public:
   ASTNode() = delete;
