@@ -130,7 +130,7 @@ auto Lexer::CheckRawCStringLiteral(uint32_t pos) const -> uint32_t {
 }
 
 auto Lexer::CheckIntegerLiteral(uint32_t pos) const -> uint32_t {
-  uint32_t tmp = std::max({CheckBinLiteral(pos), CheckOctLiteral(pos), CheckHexLiteral(pos)});
+  uint32_t tmp = std::max(std::max(CheckBinLiteral(pos), CheckOctLiteral(pos)), CheckHexLiteral(pos));
   if (tmp != pos) {
     return CheckSuffixNoE(tmp);
   }
