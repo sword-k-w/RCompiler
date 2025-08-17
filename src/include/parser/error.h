@@ -7,9 +7,9 @@ class Error : public std::exception {
 public:
   Error() = delete;
   Error(const std::string &);
-  std::string_view Info() const;
+  std::string Info() const;
 private:
-  std::string_view info_;
+  std::string info_;
 };
 
 #endif //ERROR_H

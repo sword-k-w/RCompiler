@@ -3,7 +3,7 @@
 
 Error::Error(const std::string &info) : info_(info) {}
 
-std::string_view Error::Info() const {
+std::string Error::Info() const {
   return info_;
 }
 

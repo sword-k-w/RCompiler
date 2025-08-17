@@ -49,6 +49,10 @@ public:
       operator delete (ptr);
     }
   }
+
+  ~NodePool() {
+    Clear();
+  }
 private:
   std::vector<ASTNode *> pool_;
 };
