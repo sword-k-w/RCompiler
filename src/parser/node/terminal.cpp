@@ -16,10 +16,99 @@ IdentifierNode::IdentifierNode(const std::vector<Token> &tokens, uint32_t &pos, 
 CharLiteralNode::CharLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Char Literal") {
   try {
     CheckLength(pos, length);
-    if(tokens[pos].type != kCHAR_LITERAL) {
+    if (tokens[pos].type != kCHAR_LITERAL) {
       throw Error("expect char literal");
     }
     val_ = tokens[pos].lexeme;
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+StringLiteralNode::StringLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("String Literal") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].type != kSTRING_LITERAL) {
+      throw Error("expect string literal");
+    }
+    val_ = tokens[pos].lexeme;
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+RawStringLiteralNode::RawStringLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Raw String Literal") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].type != kRAW_STRING_LITERAL) {
+      throw Error("expect raw string literal");
+    }
+    val_ = tokens[pos].lexeme;
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+CStringLiteralNode::CStringLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("C String Literal") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].type != kC_STRING_LITERAL) {
+      throw Error("expect c string literal");
+    }
+    val_ = tokens[pos].lexeme;
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+RawCStringLiteralNode::RawCStringLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Raw C String Literal") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].type != kRAW_C_STRING_LITERAL) {
+      throw Error("expect raw c string literal");
+    }
+    val_ = tokens[pos].lexeme;
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+IntegerLiteralNode::IntegerLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Integer Literal") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].type != kINTEGER_LITERAL) {
+      throw Error("expect integer literal");
+    }
+    val_ = tokens[pos].lexeme;
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+TrueNode::TrueNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("True") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "true") {
+      throw Error("expect true");
+    }
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
+
+FalseNode::FalseNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("False") {
+  try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "false") {
+      throw Error("expect false");
+    }
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -67,18 +156,6 @@ CrateValNode::CrateValNode(const std::vector<Token> &tokens, uint32_t &pos, cons
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "crate") {
       throw Error("expect crate");
-    }
-    ++pos;
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
-NeverTypeNode::NeverTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Never Type") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "!") {
-      throw Error("expect !");
     }
     ++pos;
   } catch (Error &err) {

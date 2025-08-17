@@ -56,11 +56,8 @@ class IntegerLiteralNode : public ASTNode {
 public:
   IntegerLiteralNode() = delete;
   IntegerLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-
-};
-
-class FloatLiteralNode : public ASTNode {
-
+private:
+  std::string val_;
 };
 
 class TrueNode : public ASTNode {
@@ -109,14 +106,6 @@ public:
   CrateValNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
   const std::string_view val_ = "crate";
-};
-
-class NeverTypeNode : public ASTNode {
-public:
-  NeverTypeNode() = delete;
-  NeverTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  const std::string_view val_ = "!";
 };
 
 class InferredTypeNode : public ASTNode {

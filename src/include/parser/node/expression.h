@@ -19,7 +19,6 @@ private:
   CStringLiteralNode *c_string_literal_ = nullptr;
   RawCStringLiteralNode *raw_c_string_literal_ = nullptr;
   IntegerLiteralNode *integer_literal_ = nullptr;
-  FloatLiteralNode *float_literal_ = nullptr;
   TrueNode *true_ = nullptr;
   FalseNode *false_ = nullptr;
 };
