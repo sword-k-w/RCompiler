@@ -151,18 +151,6 @@ SelfUpperNode::SelfUpperNode(const std::vector<Token> &tokens, uint32_t &pos, co
   }
 }
 
-CrateValNode::CrateValNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Crate Val") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "crate") {
-      throw Error("expect crate");
-    }
-    ++pos;
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
 InferredTypeNode::InferredTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Inferred Type") {
   try {
     CheckLength(pos, length);

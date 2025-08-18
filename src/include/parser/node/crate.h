@@ -6,6 +6,7 @@
 #include "parser/node/item.h"
 
 class CrateNode : public ASTNode {
+  friend class Printer;
 public:
   CrateNode() = delete;
   CrateNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

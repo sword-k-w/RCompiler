@@ -9,7 +9,7 @@ class ExpressionNode;
 
 class ItemNode;
 
-class AsscociatedItemNode;
+class AssociatedItemNode;
 
 class TypeNoBoundsNode;
 
@@ -68,6 +68,8 @@ class EnumerationNode;
 class LiteralExpressionNode;
 
 class ExpressionWithoutBlockNode;
+
+class Printer;
 
 class ASTNode {
 public:

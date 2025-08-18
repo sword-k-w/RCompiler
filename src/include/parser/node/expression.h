@@ -9,6 +9,7 @@
 #include <set>
 
 class LiteralExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   LiteralExpressionNode() = delete;
   LiteralExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -24,15 +25,18 @@ private:
 };
 
 class ArrayElementsNode : public ASTNode {
+  friend class Printer;
 public:
   ArrayElementsNode() = delete;
   ArrayElementsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   std::vector<ExpressionNode *> exprs_;
+  uint32_t comma_cnt_ = 0;
   bool semicolon_ = false;
 };
 
 class ArrayExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   ArrayExpressionNode() = delete;
   ArrayExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -41,6 +45,7 @@ private:
 };
 
 class PathInExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   PathInExpressionNode() = delete;
   PathInExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -49,6 +54,7 @@ private:
 };
 
 class StructExprFieldNode : public ASTNode {
+  friend class Printer;
 public:
   StructExprFieldNode() = delete;
   StructExprFieldNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -58,24 +64,27 @@ private:
 };
 
 class StructExprFieldsNode : public ASTNode {
+  friend class Printer;
 public:
   StructExprFieldsNode() = delete;
   StructExprFieldsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   std::vector<StructExprFieldNode *> struct_expr_field_s_;
-  uint32_t comma_cnt = 0;
+  uint32_t comma_cnt_ = 0;
 };
 
 class StructExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   StructExpressionNode() = delete;
   StructExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  PathInExpressionNode *path_in_expr = nullptr;
+  PathInExpressionNode *path_in_expr_ = nullptr;
   StructExprFieldsNode *struct_expr_fields_ = nullptr;
 };
 
 class ExpressionWithoutBlockNode : public ASTNode {
+  friend class Printer;
 public:
   ExpressionWithoutBlockNode() = delete;
   ExpressionWithoutBlockNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -84,14 +93,16 @@ private:
 };
 
 class BlockExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   BlockExpressionNode() = delete;
   BlockExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  StatementsNode *statements_s_ = nullptr;
+  StatementsNode *statements_ = nullptr;
 };
 
 class ConstBlockExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   ConstBlockExpressionNode() = delete;
   ConstBlockExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -100,6 +111,7 @@ private:
 };
 
 class InfiniteLoopExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   InfiniteLoopExpressionNode() = delete;
   InfiniteLoopExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -108,6 +120,7 @@ private:
 };
 
 class LetChainConditionNode : public ASTNode {
+  friend class Printer;
 public:
   LetChainConditionNode() = delete;
   LetChainConditionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -117,6 +130,7 @@ private:
 };
 
 class LetChainNode : public ASTNode {
+  friend class Printer;
 public:
   LetChainNode() = delete;
   LetChainNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -125,6 +139,7 @@ private:
 };
 
 class ConditionsNode : public ASTNode {
+  friend class Printer;
 public:
   ConditionsNode() = delete;
   ConditionsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -134,15 +149,17 @@ private:
 };
 
 class PredicateLoopExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   PredicateLoopExpressionNode() = delete;
   PredicateLoopExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   ConditionsNode *conditions_ = nullptr;
-  BlockExpressionNode *block_expr = nullptr;
+  BlockExpressionNode *block_expr_ = nullptr;
 };
 
 class LoopExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   LoopExpressionNode() = delete;
   LoopExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -152,6 +169,7 @@ private:
 };
 
 class IfExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   IfExpressionNode() = delete;
   IfExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -163,6 +181,7 @@ private:
 };
 
 class ScrutineeNode : public ASTNode {
+  friend class Printer;
 public:
   ScrutineeNode() = delete;
   ScrutineeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -171,6 +190,7 @@ private:
 };
 
 class MatchArmGuardNode : public ASTNode {
+  friend class Printer;
 public:
   MatchArmGuardNode() = delete;
   MatchArmGuardNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -179,6 +199,7 @@ private:
 };
 
 class MatchArmNode : public ASTNode {
+  friend class Printer;
 public:
   MatchArmNode() = delete;
   MatchArmNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -188,15 +209,18 @@ private:
 };
 
 class MatchArmsNode : public ASTNode {
+  friend class Printer;
 public:
   MatchArmsNode() = delete;
   MatchArmsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   std::vector<MatchArmNode *> match_arm_s_;
   std::vector<ExpressionNode *> expr_;
+  std::vector<bool> comma_;
 };
 
 class MatchExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   MatchExpressionNode() = delete;
   MatchExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -206,6 +230,7 @@ private:
 };
 
 class ExpressionWithBlockNode : public ASTNode {
+  friend class Printer;
 public:
   ExpressionWithBlockNode() = delete;
   ExpressionWithBlockNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -218,6 +243,7 @@ private:
 };
 
 class CallParamsNode : public ASTNode {
+  friend class Printer;
 public:
   CallParamsNode() = delete;
   CallParamsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -233,7 +259,10 @@ enum ExpressionType {
   kMethodCallExpr, kFieldExpr, kBreakExpr, kReturnExpr, kExprWithBlock
 };
 
+void Print(ExpressionType, std::ostream &);
+
 class ExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   ExpressionNode() = delete;
   ExpressionNode(const ExpressionNode &) = default;
@@ -266,7 +295,8 @@ inline std::map<std::pair<std::string, bool>, std::pair<uint32_t, uint32_t>> bin
   {{"-", false}, {0, 100000}},
   {{"!", false}, {0, 100000}},
   {{"*", false}, {0, 100000}},
-  {{"borrow", false}, {0, 100000}},
+  {{"&", false}, {0, 100000}},
+  {{"&&", false}, {0, 100000}},
   {{"as", true}, {800000, 800001}},
   {{"*", true}, {500000, 500001}},
   {{"/", true}, {500000, 500001}},
@@ -298,7 +328,8 @@ inline std::map<std::pair<std::string, bool>, std::pair<uint32_t, uint32_t>> bin
   {{"<<=", true}, {501, 500}},
   {{">>=", true}, {501, 500}},
   {{"return", false}, {0, 200}},
-  {{"break", false}, {0, 200}}
+  {{"break", false}, {0, 200}},
+  {{"(", false}, {0, 0}},
 };
 
 inline std::map<std::string, ExpressionType> infix_type = {

@@ -33,6 +33,7 @@ ExpressionStatementNode::ExpressionStatementNode(const std::vector<Token> &token
     expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme == ";") {
+      semicolon_ = true;
       ++pos;
     } else if (expr_->Type() != kExprWithBlock) {
       throw Error("try parsing Expression Statement Node but no ;");

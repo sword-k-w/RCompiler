@@ -9,13 +9,14 @@
 #include "parser/node/path.h"
 
 class ImplementationNode : public ASTNode {
+  friend class Printer;
 public:
   ImplementationNode();
   ImplementationNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   TypeNode *type_ = nullptr;
   IdentifierNode *identifier_ = nullptr;
-  std::vector<AsscociatedItemNode *> asscociated_items_;
+  std::vector<AssociatedItemNode *> associated_items_;
 };
 
 #endif //IMPLEMENTATION_H

@@ -14,7 +14,7 @@ TraitNode::TraitNode(const std::vector<Token> &tokens, uint32_t &pos, const uint
     }
     ++pos;
     while (pos < length && tokens[pos].lexeme != "}") {
-      asscociated_items_.push_back(node_pool.Make<AsscociatedItemNode>(tokens, pos, length));
+      asscociated_items_.push_back(node_pool.Make<AssociatedItemNode>(tokens, pos, length));
     }
     if (pos >= length || tokens[pos].lexeme != "}") {
       throw Error("try parsing Trait Node but no }");

@@ -8,6 +8,7 @@
 #include "parser/node/struct.h"
 
 class EnumVariantsNode : public ASTNode {
+  friend class Printer;
 public:
   EnumVariantsNode() = delete;
   EnumVariantsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -17,6 +18,7 @@ private:
 };
 
 class EnumerationNode : public ASTNode {
+  friend class Printer;
 public:
   EnumerationNode() = delete;
   EnumerationNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

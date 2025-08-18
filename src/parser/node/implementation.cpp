@@ -16,7 +16,7 @@ ImplementationNode::ImplementationNode(const std::vector<Token> &tokens, uint32_
       }
       ++pos;
       while (pos < length && tokens[pos].lexeme != "}") {
-        asscociated_items_.push_back(node_pool.Make<AsscociatedItemNode>(tokens, pos, length));
+        associated_items_.push_back(node_pool.Make<AssociatedItemNode>(tokens, pos, length));
       }
       if (pos >= length || tokens[pos].lexeme != "}") {
         throw Error("try parsing Implementation Node but no }");
@@ -38,7 +38,7 @@ ImplementationNode::ImplementationNode(const std::vector<Token> &tokens, uint32_
       }
       ++pos;
       while (pos < length && tokens[pos].lexeme != "}") {
-        asscociated_items_.push_back(node_pool.Make<AsscociatedItemNode>(tokens, pos, length));
+        asscociated_items_.push_back(node_pool.Make<AssociatedItemNode>(tokens, pos, length));
       }
       if (pos >= length || tokens[pos].lexeme != "}") {
         throw Error("try parsing Implementation Node but no }");

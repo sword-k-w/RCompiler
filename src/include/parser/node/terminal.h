@@ -5,6 +5,7 @@
 #include "parser/node/AST_node.h"
 
 class IdentifierNode : public ASTNode {
+  friend class Printer;
 public:
   IdentifierNode() = delete;
   IdentifierNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -13,6 +14,7 @@ private:
 };
 
 class CharLiteralNode : public ASTNode {
+  friend class Printer;
 public:
   CharLiteralNode() = delete;
   CharLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -21,6 +23,7 @@ private:
 };
 
 class StringLiteralNode : public ASTNode {
+  friend class Printer;
 public:
   StringLiteralNode() = delete;
   StringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -29,6 +32,7 @@ private:
 };
 
 class RawStringLiteralNode : public ASTNode {
+  friend class Printer;
 public:
   RawStringLiteralNode() = delete;
   RawStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -37,6 +41,7 @@ private:
 };
 
 class CStringLiteralNode : public ASTNode {
+  friend class Printer;
 public:
   CStringLiteralNode() = delete;
   CStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -45,6 +50,7 @@ private:
 };
 
 class RawCStringLiteralNode : public ASTNode {
+  friend class Printer;
 public:
   RawCStringLiteralNode() = delete;
   RawCStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -53,6 +59,7 @@ private:
 };
 
 class IntegerLiteralNode : public ASTNode {
+  friend class Printer;
 public:
   IntegerLiteralNode() = delete;
   IntegerLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -61,6 +68,7 @@ private:
 };
 
 class TrueNode : public ASTNode {
+  friend class Printer;
 public:
   TrueNode() = delete;
   TrueNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -69,6 +77,7 @@ private:
 };
 
 class FalseNode : public ASTNode {
+  friend class Printer;
 public:
   FalseNode() = delete;
   FalseNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -77,6 +86,7 @@ private:
 };
 
 class SuperNode : public ASTNode {
+  friend class Printer;
 public:
   SuperNode() = delete;
   SuperNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
@@ -85,6 +95,7 @@ private:
 };
 
 class SelfLowerNode : public ASTNode {
+  friend class Printer;
 public:
   SelfLowerNode() = delete;
   SelfLowerNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
@@ -93,6 +104,7 @@ private:
 };
 
 class SelfUpperNode : public ASTNode {
+  friend class Printer;
 public:
   SelfUpperNode() = delete;
   SelfUpperNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
@@ -100,15 +112,8 @@ private:
   const std::string_view val_ = "Self";
 };
 
-class CrateValNode : public ASTNode {
-public:
-  CrateValNode() = delete;
-  CrateValNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  const std::string_view val_ = "crate";
-};
-
 class InferredTypeNode : public ASTNode {
+  friend class Printer;
 public:
   InferredTypeNode() = delete;
   InferredTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
@@ -117,6 +122,7 @@ private:
 };
 
 class ContinueExpressionNode : public ASTNode {
+  friend class Printer;
 public:
   ContinueExpressionNode() = delete;
   ContinueExpressionNode(const std::vector<Token>&, uint32_t&, const uint32_t&);

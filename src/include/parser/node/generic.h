@@ -11,6 +11,7 @@
 #include "parser/node/path.h"
 
 class TypeParamNode : public ASTNode {
+  friend class Printer;
 public:
   TypeParamNode() = delete;
   TypeParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -22,6 +23,7 @@ private:
 };
 
 class ConstParamNode : public ASTNode {
+  friend class Printer;
 public:
   ConstParamNode() = delete;
   ConstParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -35,6 +37,7 @@ private:
 };
 
 class GenericParamNode : public ASTNode {
+  friend class Printer;
 public:
   GenericParamNode() = delete;
   GenericParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -44,6 +47,7 @@ private:
 };
 
 class GenericParamsNode : public ASTNode {
+  friend class Printer;
 public:
   GenericParamsNode() = delete;
   GenericParamsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -53,6 +57,7 @@ private:
 };
 
 class GenericArgsConstNode : public ASTNode {
+  friend class Printer;
 public:
   GenericArgsConstNode() = delete;
   GenericArgsConstNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
@@ -64,6 +69,7 @@ private:
 };
 
 class GenericArgsBindingNode : public ASTNode {
+  friend class Printer;
 public:
   GenericArgsBindingNode() = delete;
   GenericArgsBindingNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
@@ -74,6 +80,7 @@ private:
 };
 
 class GenericArgsBoundsNode : public ASTNode {
+  friend class Printer;
 public:
   GenericArgsBoundsNode() = delete;
   GenericArgsBoundsNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
@@ -84,6 +91,7 @@ private:
 };
 
 class GenericArgNode : public ASTNode {
+  friend class Printer;
 public:
   GenericArgNode() = delete;
   GenericArgNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
@@ -95,6 +103,7 @@ private:
 };
 
 class GenericArgsNode : public ASTNode {
+  friend class Printer;
 public:
   GenericArgsNode() = delete;
   GenericArgsNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
@@ -104,6 +113,7 @@ private:
 };
 
 class WhereClauseItemNode : public ASTNode {
+  friend class Printer;
 public:
   WhereClauseItemNode() = delete;
   WhereClauseItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -113,6 +123,7 @@ private:
 };
 
 class WhereClauseNode : public ASTNode {
+  friend class Printer;
 public:
   WhereClauseNode();
   WhereClauseNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

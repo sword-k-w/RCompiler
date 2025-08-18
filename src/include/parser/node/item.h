@@ -11,6 +11,7 @@
 #include "parser/node/implementation.h"
 
 class ConstantItemNode : public ASTNode {
+  friend class Printer;
 public:
   ConstantItemNode() = delete;
   ConstantItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -20,16 +21,18 @@ private:
   ExpressionNode *expr_ = nullptr;
 };
 
-class AsscociatedItemNode : public ASTNode {
+class AssociatedItemNode : public ASTNode {
+  friend class Printer;
 public:
-  AsscociatedItemNode() = delete;
-  AsscociatedItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  AssociatedItemNode() = delete;
+  AssociatedItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   ConstantItemNode *constant_item_ = nullptr;
   FunctionNode *function_ = nullptr;
 };
 
 class ItemNode : public ASTNode {
+  friend class Printer;
 public:
   ItemNode() = delete;
   ItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

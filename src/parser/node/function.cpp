@@ -81,18 +81,25 @@ FunctionParametersNode::FunctionParametersNode(const std::vector<Token> &tokens,
       self_param_ = nullptr;
       comma_cnt_ = 0;
       pos = tmp;
-      function_params_.push_back(node_pool.Make<FunctionParamNode>(tokens, pos, length));
-      while (pos < length && tokens[pos].lexeme != ")") {
-        if (tokens[pos].lexeme != ",") {
-          throw Error("try parsing Function Parameters Node but not ,");
-        }
-        ++comma_cnt_;
-        ++pos;
-        if (tokens[pos].lexeme == ")") {
-          break;
-        }
-        function_params_.push_back(node_pool.Make<FunctionParamNode>(tokens, pos, length));
+    }
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme == ")") {
+      return;
+    }
+    if (self_param_ != nullptr && !comma_cnt_) {
+      throw Error("try parsing Function Parameters Node but no comma between Self Param and Function Param");
+    }
+    function_params_.push_back(node_pool.Make<FunctionParamNode>(tokens, pos, length));
+    while (pos < length && tokens[pos].lexeme != ")") {
+      if (tokens[pos].lexeme != ",") {
+        throw Error("try parsing Function Parameters Node but not ,");
       }
+      ++comma_cnt_;
+      ++pos;
+      if (tokens[pos].lexeme == ")") {
+        break;
+      }
+      function_params_.push_back(node_pool.Make<FunctionParamNode>(tokens, pos, length));
     }
   } catch (Error &err) {
     throw err;

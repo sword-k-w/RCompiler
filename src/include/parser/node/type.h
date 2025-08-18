@@ -8,6 +8,7 @@
 #include "parser/node/path.h"
 
 class ReferenceTypeNode : public ASTNode {
+  friend class Printer;
 public:
   ReferenceTypeNode() = delete;
   ReferenceTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
@@ -17,6 +18,7 @@ private:
 };
 
 class ArrayTypeNode : public ASTNode {
+  friend class Printer;
 public:
   ArrayTypeNode() = delete;
   ArrayTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
@@ -26,6 +28,7 @@ private:
 };
 
 class SliceTypeNode : public ASTNode {
+  friend class Printer;
 public:
   SliceTypeNode() = delete;
   SliceTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
@@ -34,6 +37,7 @@ private:
 };
 
 class TypeNoBoundsNode : public ASTNode {
+  friend class Printer;
 public:
   TypeNoBoundsNode() = delete;
   TypeNoBoundsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

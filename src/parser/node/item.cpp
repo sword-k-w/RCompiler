@@ -32,7 +32,7 @@ ConstantItemNode::ConstantItemNode(const std::vector<Token> &tokens, uint32_t &p
   }
 }
 
-AsscociatedItemNode::AsscociatedItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Associated Item"){
+AssociatedItemNode::AssociatedItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Associated Item"){
   try {
     CheckLength(pos, length);
     if (tokens[pos].lexeme == "const") {

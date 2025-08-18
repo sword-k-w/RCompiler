@@ -15,7 +15,10 @@ include_directories(src/include)
 set(LEXER_DIR ./src/lexer)
 set(PARSER_DIR ./src/parser)
 set(COMMON_DIR ./src/common)
+set(VISITOR_DIR ./src/visitor)
 
+file(GLOB_RECURSE VISITOR_SRCS
+    "${VISITOR_DIR}/*.cpp")
 file(GLOB_RECURSE PARSER_SRCS
     "${PARSER_DIR}/*.cpp")
 aux_source_directory(${COMMON_DIR} COMMON_SRCS)
@@ -27,6 +30,7 @@ add_executable(parser_test
         ${PARSER_SRCS}
         ${COMMON_SRCS}
         ${LEXER_SRCS}
+        ${VISITOR_SRCS}
 )
 
 target_link_libraries(parser_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})

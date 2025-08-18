@@ -40,6 +40,7 @@ ArrayElementsNode::ArrayElementsNode(const std::vector<Token> &tokens, uint32_t 
         if (tokens[pos].lexeme != ",") {
           throw Error("try parsing Array Elements Node but not ,");
         }
+        ++comma_cnt_;
         ++pos;
         CheckLength(pos, length);
         if (tokens[pos].lexeme == "]") {
@@ -106,7 +107,7 @@ StructExprFieldsNode::StructExprFieldsNode(const std::vector<Token> &tokens, uin
       if (tokens[pos].lexeme != ",") {
         throw Error("try parsing Struct Expr Fields Node but not ,");
       }
-      ++comma_cnt;
+      ++comma_cnt_;
       ++pos;
       if (tokens[pos].lexeme == "}") {
         break;
@@ -120,7 +121,7 @@ StructExprFieldsNode::StructExprFieldsNode(const std::vector<Token> &tokens, uin
 
 StructExpressionNode::StructExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Struct Expression") {
   try {
-    path_in_expr = node_pool.Make<PathInExpressionNode>(tokens, pos, length);
+    path_in_expr_ = node_pool.Make<PathInExpressionNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "{") {
       throw Error("try parsing Struct Expression Node but no {");
@@ -162,7 +163,7 @@ BlockExpressionNode::BlockExpressionNode(const std::vector<Token> &tokens, uint3
     ++pos;
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "}") {
-      statements_s_ = node_pool.Make<StatementsNode>(tokens, pos, length);
+      statements_ = node_pool.Make<StatementsNode>(tokens, pos, length);
       CheckLength(pos, length);
       if (tokens[pos].lexeme != "}") {
         throw Error("try parsing Block Expression Node but no }");
@@ -260,7 +261,7 @@ PredicateLoopExpressionNode::PredicateLoopExpressionNode(const std::vector<Token
     }
     ++pos;
     conditions_ = node_pool.Make<ConditionsNode>(tokens, pos, length);
-    block_expr = node_pool.Make<BlockExpressionNode>(tokens, pos, length);
+    block_expr_ = node_pool.Make<BlockExpressionNode>(tokens, pos, length);
   } catch (Error &err) {
     throw err;
   }
@@ -358,8 +359,10 @@ MatchArmsNode::MatchArmsNode(const std::vector<Token> &tokens, uint32_t &pos, co
       expr_.push_back(node_pool.Make<ExpressionNode>(tokens, pos, length));
       comma = true;
       if (tokens[pos].lexeme == ",") {
+        comma_.push_back(true);
         ++pos;
       } else if (expr_.back()->Type() != kExprWithBlock) {
+        comma_.push_back(false);
         comma = false;
       }
     }
@@ -443,7 +446,7 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
     CheckLength(pos, length);
     if (tokens[pos].lexeme == "&" || tokens[pos].lexeme == "&&") {
       type_ = kBorrowExpr;
-      op_ = "borrow";
+      op_ = tokens[pos].lexeme;
       ++pos;
       if (pos < length && tokens[pos].lexeme == "mut") {
         mut_ = true;
@@ -462,11 +465,26 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
     } else if (tokens[pos].lexeme == "return") {
       type_ = kReturnExpr;
       ++pos;
+      if (pos < length && tokens[pos].lexeme == ";") {
+        return;
+      }
       expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
     } else if (tokens[pos].lexeme == "break") {
       type_ = kBreakExpr;
       ++pos;
+      if (pos < length && tokens[pos].lexeme == ";") {
+        return;
+      }
       expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+    } else if (tokens[pos].lexeme == "(") {
+      type_ = kGroupedExpr;
+      ++pos;
+      expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme != ")") {
+        throw Error("try parsing Grouped Expression but no )");
+      }
+      ++pos;
     } else if (tokens[pos].lexeme == "{" || tokens[pos].lexeme == "const" || tokens[pos].lexeme == "loop"
       || tokens[pos].lexeme == "while" || tokens[pos].lexeme == "if" || tokens[pos].lexeme == "match") {
       type_ = kExprWithBlock;
@@ -499,11 +517,10 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
     } else {
       throw Error("try parsing Expression Node but unexpected token");
     }
-
     while (pos < length) {
       Token op = tokens[pos];
       auto it = infix_type.find(op.lexeme);
-      if (it != infix_type.end()) {
+      if (it == infix_type.end()) {
         break;
       }
       uint32_t power = binding_power[{op.lexeme, true}].first;
@@ -560,4 +577,52 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
 
 ExpressionType ExpressionNode::Type() const {
   return type_;
+}
+
+void Print(ExpressionType type, std::ostream &os) {
+  if (type == kLiteralExpr) {
+    os << "Literal Expr";
+  } else if (type == kPathExpr) {
+    os << "Path Expr";
+  } else if (type == kArrayExpr) {
+    os << "Array Expr";
+  } else if (type == kStructExpr) {
+    os << "Struct Expr";
+  } else if (type == kContinueExpr) {
+    os << "Continue Expr";
+  } else if (type == kUnderscoreExpr) {
+    os << "Underscore Expr";
+  } else if (type == kBorrowExpr) {
+    os << "Borrow Expr";
+  } else if (type == kDereferenceExpr) {
+    os << "Dereference Expr";
+  } else if (type == kNegationExpr) {
+    os << "Negation Expr";
+  } else if (type == kArithmeticOrLogicExpr) {
+    os << "Arithmetic Or Logic Expr";
+  } else if (type == kComparisonExpr) {
+    os << "Lazy Boolean Expr";
+  } else if (type == kTypeCastExpr) {
+    os << "Type Cast Expr";
+  } else if (type == kAssignmentExpr) {
+    os << "Assignment Expr";
+  } else if (type == kCompoundAssignmentExpr) {
+    os << "Compound Assignment Expr";
+  } else if (type == kGroupedExpr) {
+    os << "Grouped Expr";
+  } else if (type == kIndexExpr) {
+    os << "Index Expr";
+  } else if (type == kCallExpr) {
+    os << "Call Expr";
+  } else if (type == kMethodCallExpr) {
+    os << "Method Call Expr";
+  } else if (type == kFieldExpr) {
+    os << "Field Expr";
+  } else if (type == kBreakExpr) {
+    os << "Break Expr";
+  } else if (type == kReturnExpr) {
+    os << "Return Expr";
+  } else {
+    os << "Expr With Block";
+  }
 }
