@@ -131,11 +131,13 @@ void Printer::Visit(ArrayElementsNode *node) {
       prefixes_.emplace(next);
       is_lasts_.emplace(i + 1 == node->exprs_.size() && node->comma_cnt_ < node->exprs_.size());
       Visit(node->exprs_[i]);
-      os_ << next;
-      if (i + 1 == node->exprs_.size() && node->comma_cnt_ == node->exprs_.size()) {
-        os_ << "└──,\n";
-      } else {
-        os_ << "├──,\n";
+      if (i + 1 <= node->comma_cnt_) {
+        os_ << next;
+        if (i + 1 == node->exprs_.size() && node->comma_cnt_ == node->exprs_.size()) {
+          os_ << "└──,\n";
+        } else {
+          os_ << "├──,\n";
+        }
       }
     }
   }
@@ -214,11 +216,13 @@ void Printer::Visit(StructExprFieldsNode *node) {
     prefixes_.emplace(next);
     is_lasts_.emplace(i + 1 == node->struct_expr_field_s_.size() && node->comma_cnt_ < node->struct_expr_field_s_.size());
     Visit(node->struct_expr_field_s_[i]);
-    os_ << next;
-    if (i + 1 == node->struct_expr_field_s_.size() && node->comma_cnt_ == node->struct_expr_field_s_.size()) {
-      os_ << "└──,\n";
-    } else {
-      os_ << "├──,\n";
+    if (i + 1 <= node->comma_cnt_) {
+      os_ << next;
+      if (i + 1 == node->struct_expr_field_s_.size() && node->comma_cnt_ == node->struct_expr_field_s_.size()) {
+        os_ << "└──,\n";
+      } else {
+        os_ << "├──,\n";
+      }
     }
   }
 
@@ -580,11 +584,13 @@ void Printer::Visit(CallParamsNode *node) {
     prefixes_.emplace(next);
     is_lasts_.emplace(i + 1 == node->exprs_.size() && node->comma_cnt_ < node->exprs_.size());
     Visit(node->exprs_[i]);
-    os_ << next;
-    if (i + 1 == node->exprs_.size() && node->comma_cnt_ == node->exprs_.size()) {
-      os_ << "└──,\n";
-    } else {
-      os_ << "├──,\n";
+    if (i + 1 <= node->comma_cnt_) {
+      os_ << next;
+      if (i + 1 == node->exprs_.size() && node->comma_cnt_ == node->exprs_.size()) {
+        os_ << "└──,\n";
+      } else {
+        os_ << "├──,\n";
+      }
     }
   }
 
@@ -834,11 +840,13 @@ void Printer::Visit(FunctionParametersNode *node) {
       prefixes_.emplace(next);
       is_lasts_.emplace(i + 1 == node->function_params_.size() && node->comma_cnt_ < node->function_params_.size() + 1);
       Visit(node->function_params_[i]);
-      os_ << next;
-      if (i + 1 == node->function_params_.size() && node->comma_cnt_ == node->function_params_.size() + 1) {
-        os_ << "└──,\n";
-      } else {
-        os_ << "├──,\n";
+      if (i + 1 <= node->comma_cnt_) {
+        os_ << next;
+        if (i + 1 == node->function_params_.size() && node->comma_cnt_ == node->function_params_.size() + 1) {
+          os_ << "└──,\n";
+        } else {
+          os_ << "├──,\n";
+        }
       }
     }
   }
@@ -1091,11 +1099,13 @@ void Printer::Visit(TupleStructItemsNode *node) {
     prefixes_.emplace(next);
     is_lasts_.emplace(i + 1 == node->patterns_.size() && node->comma_cnt_ < node->patterns_.size());
     Visit(node->patterns_[i]);
-    os_ << next;
-    if (i + 1 == node->patterns_.size() && node->comma_cnt_ == node->patterns_.size()) {
-      os_ << "└──,\n";
-    } else {
-      os_ << "├──,\n";
+    if (node->comma_cnt_) {
+      os_ << next;
+      if (i + 1 == node->patterns_.size() && node->comma_cnt_ == node->patterns_.size()) {
+        os_ << "└──,\n";
+      } else {
+        os_ << "├──,\n";
+      }
     }
   }
 
@@ -1275,11 +1285,13 @@ void Printer::Visit(StructFieldsNode *node) {
     prefixes_.emplace(next);
     is_lasts_.emplace(i + 1 == node->struct_field_s_.size() && node->comma_cnt_ < node->struct_field_s_.size());
     Visit(node->struct_field_s_[i]);
-    os_ << next;
-    if (i + 1 == node->struct_field_s_.size() && node->comma_cnt_ == node->struct_field_s_.size()) {
-      os_ << "└──,\n";
-    } else {
-      os_ << "├──,\n";
+    if (i + 1 <= node->comma_cnt_) {
+      os_ << next;
+      if (i + 1 == node->struct_field_s_.size() && node->comma_cnt_ == node->struct_field_s_.size()) {
+        os_ << "└──,\n";
+      } else {
+        os_ << "├──,\n";
+      }
     }
   }
 

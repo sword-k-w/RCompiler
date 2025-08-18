@@ -535,13 +535,17 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
       type_ = it->second;
       op_ = op.lexeme;
       if (op.lexeme == "(") {
-        call_params_ = node_pool.Make<CallParamsNode>(tokens, pos, length);
+        if (tokens[pos].lexeme != ")") {
+          call_params_ = node_pool.Make<CallParamsNode>(tokens, pos, length);
+        }
       } else if (op.lexeme == ".") {
         if (pos + 1 < length && tokens[pos + 1].lexeme == "(") {
           type_ = kMethodCallExpr;
           path_expr_segment_ = node_pool.Make<PathExprSegmentNode>(tokens, pos, length);
           ++pos;
-          call_params_ = node_pool.Make<CallParamsNode>(tokens, pos, length);
+          if (pos < length && tokens[pos].lexeme != ")") {
+            call_params_ = node_pool.Make<CallParamsNode>(tokens, pos, length);
+          }
         } else {
           identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
         }
