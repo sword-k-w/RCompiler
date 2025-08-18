@@ -34,13 +34,13 @@ TEST(ParserTest, ExpressionBasicTest2) {
   TestCode<ExpressionNode>("1+2");
 }
 
-// TEST(ParserTest, ExpressionBasicTest3) {
-//   TestCode<ExpressionNode>("a.b.c");
-// }
-//
-// TEST(ParserTest, ExpressionBasicTest4) {
-//   TestCode<ExpressionNode>("(a+b)*d[4]");
-// }
+TEST(ParserTest, ExpressionBasicTest3) {
+  TestCode<ExpressionNode>("a.b.c");
+}
+
+TEST(ParserTest, ExpressionBasicTest4) {
+  TestCode<ExpressionNode>("(a+b)*d[4]");
+}
 
 TEST(ParserTest, ExpressionBasicTest5) {
   TestCode<ExpressionNode>("*a+&mut b");
