@@ -10,8 +10,8 @@ public:
   explicit Parser(const std::vector<Token> &tokens) : tokens_(tokens), length_(tokens.size()) {}
   template<class T>
   T *Run() {
+    uint32_t pos = 0;
     try {
-      uint32_t pos = 0;
       return node_pool.Make<T>(tokens_, pos, length_);
     } catch (Error &err) {
       throw err;

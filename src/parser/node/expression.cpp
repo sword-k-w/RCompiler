@@ -390,6 +390,7 @@ MatchExpressionNode::MatchExpressionNode(const std::vector<Token> &tokens, uint3
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "}") {
       match_arms_ = node_pool.Make<MatchArmsNode>(tokens, pos, length);
+      CheckLength(pos, length);
       if (tokens[pos].lexeme != "}") {
         throw Error("try parsing Match Expression Node but no }");
       }

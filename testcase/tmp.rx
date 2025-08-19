@@ -1,3 +1,2 @@
-fn main() {
-    let length = numbers.len();
+fn pick_operator(value: i32) -> Op {
 }

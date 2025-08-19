@@ -45,10 +45,7 @@ TEST(ParserTest, ExpressionBasicTest5) {
 }
 
 TEST(ParserTest, ExpressionBasicTest6) {
-  ExpressionNode *root = TestCode<ExpressionNode>("a.b()+c()*e(f,g)");
-  Printer printer(std::cerr);
-  printer.Prepare();
-  printer.Visit(root);
+  TestCode<ExpressionNode>("a.b()+c()*e(f,g)");
 }
 
 void TestTestcase(const std::string &s, bool print) {
@@ -93,6 +90,6 @@ TEST(ParserTest, TestcaseTest_Array8) {
   TestTestcase("../testcase/semantic-1/array8/array8.rx", false);
 }
 
-TEST(ParserTest, TestcaseTest_Basic3) {
-  TestTestcase("../testcase/semantic-1/basic3/basic3.rx", true);
+TEST(ParserTest, TestcaseTest_Tmp) {
+  TestTestcase("../testcase/tmp.rx", true);
 }

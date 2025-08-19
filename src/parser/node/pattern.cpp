@@ -113,16 +113,16 @@ PatternWithoutRangeNode::PatternWithoutRangeNode(const std::vector<Token> &token
         literal_pattern_ = nullptr;
         pos = tmp;
         try {
-          identifier_pattern_ = node_pool.Make<IdentifierPatternNode>(tokens, pos, length);
+          path_pattern_ = node_pool.Make<PathPatternNode>(tokens, pos, length);
         } catch (...) {
-          identifier_pattern_ = nullptr;
+          path_pattern_ = nullptr;
           pos = tmp;
           try {
             tuple_struct_pattern_ = node_pool.Make<TupleStructPatternNode>(tokens, pos, length);
           } catch (...) {
             tuple_struct_pattern_ = nullptr;
             pos = tmp;
-            path_pattern_ = node_pool.Make<PathPatternNode>(tokens, pos, length);
+            identifier_pattern_ = node_pool.Make<IdentifierPatternNode>(tokens, pos, length);
           }
         }
       }
