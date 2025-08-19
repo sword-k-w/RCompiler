@@ -74,7 +74,7 @@ public:
   void Visit(SuperNode *node) override;
   void Visit(SelfLowerNode *node) override;
   void Visit(SelfUpperNode *node) override;
-  void Visit(InferredTypeNode *node) override;
+  void Visit(UnderscoreExpressionNode *node) override;
   void Visit(ContinueExpressionNode *node) override;
   void Visit(TraitNode *node) override;
   void Visit(ReferenceTypeNode *node) override;

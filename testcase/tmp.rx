@@ -1,2 +1,0 @@
-fn pick_operator(value: i32) -> Op {
-}

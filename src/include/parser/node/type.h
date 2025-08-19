@@ -46,7 +46,6 @@ private:
   ReferenceTypeNode *reference_type_ = nullptr;
   ArrayTypeNode *array_type_ = nullptr;
   SliceTypeNode *slice_type_ = nullptr;
-  InferredTypeNode *inferred_type_ = nullptr;
 };
 
 #endif //TYPE_H

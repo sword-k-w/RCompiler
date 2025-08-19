@@ -47,11 +47,9 @@ class IdentifierNode;
 
 using EnumVariantNode = IdentifierNode;
 
-class InferredTypeNode;
+class UnderscoreExpressionNode;
 
-using WildcardPatternNode = InferredTypeNode;
-
-using UnderscoreExpressionNode = InferredTypeNode;
+using WildcardPatternNode = UnderscoreExpressionNode;
 
 class BlockExpressionNode;
 

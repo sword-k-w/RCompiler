@@ -151,7 +151,7 @@ SelfUpperNode::SelfUpperNode(const std::vector<Token> &tokens, uint32_t &pos, co
   }
 }
 
-InferredTypeNode::InferredTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Inferred Type") {
+UnderscoreExpressionNode::UnderscoreExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Inferred Type") {
   try {
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "_") {

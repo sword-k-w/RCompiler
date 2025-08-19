@@ -175,7 +175,7 @@ void Printer::Visit(PathInExpressionNode *node) {
   is_lasts_.emplace(node->path_expr_segments_.size() == 1);
   Visit(node->path_expr_segments_[0]);
   for (uint32_t i = 1; i < node->path_expr_segments_.size(); ++i) {
-    os_ << next << "├──::";
+    os_ << next << "├──::\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(i + 1 == node->path_expr_segments_.size());
     Visit(node->path_expr_segments_[i]);
@@ -534,17 +534,17 @@ void Printer::Visit(MatchExpressionNode *node) {
 
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
 
-  os_ << "├──match\n";
+  os_ << next << "├──match\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
   Visit(node->scrutinee_);
-  os_ << "├──{\n";
+  os_ << next << "├──{\n";
   if (node->match_arms_) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
     Visit(node->match_arms_);
   }
-  os_ << "└──}\n";
+  os_ << next << "└──}\n";
   prefixes_.pop();
   is_lasts_.pop();
 }
@@ -834,13 +834,13 @@ void Printer::Visit(FunctionParametersNode *node) {
       prefixes_.emplace(next);
       is_lasts_.emplace(false);
       Visit(node->self_param_);
-      os_ << next << "└──,\n";
+      os_ << next << "├──,\n";
     }
     for (uint32_t i = 0; i < node->function_params_.size(); ++i) {
       prefixes_.emplace(next);
       is_lasts_.emplace(i + 1 == node->function_params_.size() && node->comma_cnt_ < node->function_params_.size() + 1);
       Visit(node->function_params_[i]);
-      if (i + 1 <= node->comma_cnt_) {
+      if (i + 1 < node->comma_cnt_) {
         os_ << next;
         if (i + 1 == node->function_params_.size() && node->comma_cnt_ == node->function_params_.size() + 1) {
           os_ << "└──,\n";
@@ -1469,10 +1469,10 @@ void Printer::Visit(SelfUpperNode *node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(InferredTypeNode *node) {
+void Printer::Visit(UnderscoreExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Inferred Type\n";
+  os_ << "Underscore Expression\n";
 
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   os_ << next << "└──" << node->val_ << '\n';
@@ -1584,10 +1584,8 @@ void Printer::Visit(TypeNoBoundsNode *node) {
     Visit(node->reference_type_);
   } else if (node->array_type_ != nullptr) {
     Visit(node->array_type_);
-  } else if (node->slice_type_ != nullptr) {
-    Visit(node->slice_type_);
   } else {
-    Visit(node->inferred_type_);
+    Visit(node->slice_type_);
   }
 
   prefixes_.pop();

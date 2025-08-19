@@ -70,7 +70,7 @@ public:
   virtual void Visit(SuperNode *node) = 0;
   virtual void Visit(SelfLowerNode *node) = 0;
   virtual void Visit(SelfUpperNode *node) = 0;
-  virtual void Visit(InferredTypeNode *node) = 0;
+  virtual void Visit(UnderscoreExpressionNode *node) = 0;
   virtual void Visit(ContinueExpressionNode *node) = 0;
   virtual void Visit(TraitNode *node) = 0;
   virtual void Visit(ReferenceTypeNode *node) = 0;

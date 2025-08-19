@@ -112,11 +112,11 @@ private:
   const std::string_view val_ = "Self";
 };
 
-class InferredTypeNode : public ASTNode {
+class UnderscoreExpressionNode : public ASTNode {
   friend class Printer;
 public:
-  InferredTypeNode() = delete;
-  InferredTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+  UnderscoreExpressionNode() = delete;
+  UnderscoreExpressionNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
   const std::string_view val_ = "_";
 };

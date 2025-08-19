@@ -9,11 +9,12 @@ LetStatementNode::LetStatementNode(const std::vector<Token> &tokens, uint32_t &p
     ++pos;
     pattern_no_top_alt_ = node_pool.Make<PatternNoTopAltNode>(tokens, pos, length);
     CheckLength(pos, length);
-    if (tokens[pos].lexeme == ":") {
-      ++pos;
-      type_ = node_pool.Make<TypeNode>(tokens, pos, length);
-      CheckLength(pos, length);
+    if (tokens[pos].lexeme != ":") {
+      throw Error("try parsing Let Statement but no :");
     }
+    ++pos;
+    type_ = node_pool.Make<TypeNode>(tokens, pos, length);
+    CheckLength(pos, length);
     if (tokens[pos].lexeme == "=") {
       ++pos;
       expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);

@@ -606,6 +606,8 @@ void Print(ExpressionType type, std::ostream &os) {
   } else if (type == kArithmeticOrLogicExpr) {
     os << "Arithmetic Or Logic Expr";
   } else if (type == kComparisonExpr) {
+    os << "Comparison Expr";
+  } else if (type == kLazyBooleanExpr) {
     os << "Lazy Boolean Expr";
   } else if (type == kTypeCastExpr) {
     os << "Type Cast Expr";

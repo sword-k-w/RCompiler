@@ -63,9 +63,7 @@ SliceTypeNode::SliceTypeNode(const std::vector<Token> &tokens, uint32_t &pos, co
 TypeNoBoundsNode::TypeNoBoundsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Type No Bounds") {
   try {
     CheckLength(pos, length);
-    if (tokens[pos].lexeme == "_") {
-      inferred_type_ = node_pool.Make<InferredTypeNode>(tokens, pos, length);
-    } else if (tokens[pos].lexeme == "&") {
+    if (tokens[pos].lexeme == "&") {
       reference_type_ = node_pool.Make<ReferenceTypeNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "[") {
       uint32_t tmp = pos;
