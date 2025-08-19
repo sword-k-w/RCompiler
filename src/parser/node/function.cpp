@@ -61,6 +61,7 @@ FunctionParamNode::FunctionParamNode(const std::vector<Token> &tokens, uint32_t 
     if (tokens[pos].lexeme != ":") {
       throw Error("try parsing Function Param Node but no :");
     }
+    ++pos;
     type_ = node_pool.Make<TypeNode>(tokens, pos, length);
   } catch (Error &err) {
     throw err;
