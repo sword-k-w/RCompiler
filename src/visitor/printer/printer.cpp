@@ -370,13 +370,15 @@ void Printer::Visit(ConditionsNode *node) {
 
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
 
+  os_ << next << "├──(\n";
   prefixes_.emplace(next);
-  is_lasts_.emplace(true);
+  is_lasts_.emplace(false);
   if (node->expr_ != nullptr) {
     Visit(node->expr_);
   } else {
     Visit(node->let_chain_);
   }
+  os_ << next << "└──)\n";
 
   prefixes_.pop();
   is_lasts_.pop();

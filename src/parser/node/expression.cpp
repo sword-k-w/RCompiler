@@ -222,6 +222,10 @@ LetChainNode::LetChainNode(const std::vector<Token> &tokens, uint32_t &pos, cons
 
 ConditionsNode::ConditionsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Conditions") {
   try {
+    CheckLength(pos, length);
+    if (tokens[pos].lexeme != "(") {
+      throw Error("try parsing Conditions Node but no (");
+    }
     uint32_t tmp = pos;
     try {
       expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
@@ -229,12 +233,17 @@ ConditionsNode::ConditionsNode(const std::vector<Token> &tokens, uint32_t &pos, 
         throw Error("");
       }
       CheckLength(pos, length);
-      if (tokens[pos].lexeme != "{") {
+      if (tokens[pos].lexeme != ")") {
         throw Error("");
       }
     } catch (...) {
       let_chain_ = node_pool.Make<LetChainNode>(tokens, pos, length);
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme != ")") {
+        throw Error("try parsing Conditions Node but no )");
+      }
     }
+    ++pos;
   } catch (Error &err) {
     throw err;
   }
