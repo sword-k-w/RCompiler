@@ -23,8 +23,6 @@ public:
   void Visit(BlockExpressionNode *node) override;
   void Visit(ConstBlockExpressionNode *node) override;
   void Visit(InfiniteLoopExpressionNode *node) override;
-  void Visit(LetChainConditionNode *node) override;
-  void Visit(LetChainNode *node) override;
   void Visit(ConditionsNode *node) override;
   void Visit(PredicateLoopExpressionNode *node) override;
   void Visit(LoopExpressionNode *node) override;

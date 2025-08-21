@@ -316,53 +316,6 @@ void Printer::Visit(InfiniteLoopExpressionNode *node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(LetChainConditionNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Let Chain Condition\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-
-  if (node->pattern_ == nullptr) {
-    prefixes_.emplace(next);
-    is_lasts_.emplace(true);
-    Visit(node->expr_);
-  } else {
-    os_ << next << "├──let\n";
-    prefixes_.emplace(next);
-    is_lasts_.emplace(false);
-    Visit(node->pattern_);
-    os_ << next << "├──=\n";
-    prefixes_.emplace(next);
-    is_lasts_.emplace(true);
-    Visit(node->expr_);
-  }
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
-void Printer::Visit(LetChainNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Let Chain\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-
-  prefixes_.emplace(next);
-  is_lasts_.emplace(node->let_chain_conditions_.size() == 1);
-  Visit(node->let_chain_conditions_[0]);
-  for (uint32_t i = 1; i < node->let_chain_conditions_.size(); ++i) {
-    os_ << next << "├──&&";
-    prefixes_.emplace(next);
-    is_lasts_.emplace(i + 1 == node->let_chain_conditions_.size());
-    Visit(node->let_chain_conditions_[i]);
-  }
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
 void Printer::Visit(ConditionsNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
@@ -373,11 +326,7 @@ void Printer::Visit(ConditionsNode *node) {
   os_ << next << "├──(\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  if (node->expr_ != nullptr) {
-    Visit(node->expr_);
-  } else {
-    Visit(node->let_chain_);
-  }
+  Visit(node->expr_);
   os_ << next << "└──)\n";
 
   prefixes_.pop();

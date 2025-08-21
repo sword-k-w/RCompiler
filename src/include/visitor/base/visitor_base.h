@@ -19,8 +19,6 @@ public:
   virtual void Visit(BlockExpressionNode *node) = 0;
   virtual void Visit(ConstBlockExpressionNode *node) = 0;
   virtual void Visit(InfiniteLoopExpressionNode *node) = 0;
-  virtual void Visit(LetChainConditionNode *node) = 0;
-  virtual void Visit(LetChainNode *node) = 0;
   virtual void Visit(ConditionsNode *node) = 0;
   virtual void Visit(PredicateLoopExpressionNode *node) = 0;
   virtual void Visit(LoopExpressionNode *node) = 0;

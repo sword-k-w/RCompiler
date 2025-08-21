@@ -119,25 +119,6 @@ private:
   BlockExpressionNode *block_expr_ = nullptr;
 };
 
-class LetChainConditionNode : public ASTNode {
-  friend class Printer;
-public:
-  LetChainConditionNode() = delete;
-  LetChainConditionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  ExpressionNode *expr_ = nullptr;
-  PatternNode *pattern_ = nullptr;
-};
-
-class LetChainNode : public ASTNode {
-  friend class Printer;
-public:
-  LetChainNode() = delete;
-  LetChainNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  std::vector<LetChainConditionNode *> let_chain_conditions_;
-};
-
 class ConditionsNode : public ASTNode {
   friend class Printer;
 public:
@@ -145,7 +126,6 @@ public:
   ConditionsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   ExpressionNode *expr_ = nullptr;
-  LetChainNode *let_chain_ = nullptr;
 };
 
 class PredicateLoopExpressionNode : public ASTNode {
