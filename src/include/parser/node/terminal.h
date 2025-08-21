@@ -130,4 +130,13 @@ private:
   const std::string val_ = "continue";
 };
 
+class UnitTypeNode : public ASTNode {
+  friend class Printer;
+public:
+  UnitTypeNode() = delete;
+  UnitTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+private:
+  const std::string val_ = "()";
+};
+
 #endif //TERMINAL_H

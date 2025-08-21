@@ -1556,17 +1556,14 @@ void Printer::Visit(ArrayTypeNode *node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(SliceTypeNode *node) {
+void Printer::Visit(UnitTypeNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Slice Type\n";
+  os_ << "Unit Type\n";
 
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-  os_ << next << "├──[\n";
-  prefixes_.emplace(next);
-  is_lasts_.emplace(false);
-  Visit(node->type_);
-  os_ << next << "└──]\n";
+  os_ << next << "├──(\n";
+  os_ << next << "└──)\n";
 
   prefixes_.pop();
   is_lasts_.pop();
@@ -1587,7 +1584,7 @@ void Printer::Visit(TypeNoBoundsNode *node) {
   } else if (node->array_type_ != nullptr) {
     Visit(node->array_type_);
   } else {
-    Visit(node->slice_type_);
+    Visit(node->unit_type_);
   }
 
   prefixes_.pop();

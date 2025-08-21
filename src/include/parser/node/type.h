@@ -27,15 +27,6 @@ private:
   ExpressionNode *expr_ = nullptr;
 };
 
-class SliceTypeNode : public ASTNode {
-  friend class Printer;
-public:
-  SliceTypeNode() = delete;
-  SliceTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
-private:
-  TypeNode *type_ = nullptr;
-};
-
 class TypeNoBoundsNode : public ASTNode {
   friend class Printer;
 public:
@@ -45,7 +36,7 @@ private:
   TypePathNode *type_path_ = nullptr;
   ReferenceTypeNode *reference_type_ = nullptr;
   ArrayTypeNode *array_type_ = nullptr;
-  SliceTypeNode *slice_type_ = nullptr;
+  UnitTypeNode *unit_type_ = nullptr;
 };
 
 #endif //TYPE_H

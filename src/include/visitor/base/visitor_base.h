@@ -75,7 +75,7 @@ public:
   virtual void Visit(TraitNode *node) = 0;
   virtual void Visit(ReferenceTypeNode *node) = 0;
   virtual void Visit(ArrayTypeNode *node) = 0;
-  virtual void Visit(SliceTypeNode *node) = 0;
+  virtual void Visit(UnitTypeNode *node) = 0;
   virtual void Visit(TypeNoBoundsNode *node) = 0;
 };
 

@@ -42,38 +42,15 @@ ArrayTypeNode::ArrayTypeNode(const std::vector<Token> &tokens, uint32_t &pos, co
   }
 }
 
-SliceTypeNode::SliceTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Slice Type") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "[") {
-      throw Error("try parsing Slice Type Node but no [");
-    }
-    ++pos;
-    type_ = node_pool.Make<TypeNode>(tokens, pos, length);
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "]") {
-      throw Error("try parsing Slice Type Node but no ]");
-    }
-    ++pos;
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
 TypeNoBoundsNode::TypeNoBoundsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Type No Bounds") {
   try {
     CheckLength(pos, length);
     if (tokens[pos].lexeme == "&") {
       reference_type_ = node_pool.Make<ReferenceTypeNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "[") {
-      uint32_t tmp = pos;
-      try {
-        array_type_ = node_pool.Make<ArrayTypeNode>(tokens, pos, length);
-      } catch (...) {
-        array_type_ = nullptr;
-        pos = tmp;
-        slice_type_ = node_pool.Make<SliceTypeNode>(tokens, pos, length);
-      }
+      array_type_ = node_pool.Make<ArrayTypeNode>(tokens, pos, length);
+    } else if (tokens[pos].lexeme == "(") {
+      unit_type_ = node_pool.Make<UnitTypeNode>(tokens, pos, length);
     } else {
       type_path_ = node_pool.Make<TypePathNode>(tokens, pos, length);
     }

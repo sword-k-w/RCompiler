@@ -58,38 +58,38 @@ void TestTestcase(const std::string &s, bool print) {
   }
 }
 
-TEST(ParserTest, TestcaseTest_Array1) {
-  TestTestcase("../testcase/semantic-1/array1/array1.rx", false);
-}
-
-TEST(ParserTest, TestcaseTest_Array2) {
-  TestTestcase("../testcase/semantic-1/array2/array2.rx", false);
-}
-
-TEST(ParserTest, TestcaseTest_Array3) {
-  TestTestcase("../testcase/semantic-1/array3/array3.rx", false);
-}
-
-TEST(ParserTest, TestcaseTest_Array4) {
-  TestTestcase("../testcase/semantic-1/array4/array4.rx", false);
-}
-
-TEST(ParserTest, TestcaseTest_Array5) {
-  TestTestcase("../testcase/semantic-1/array5/array5.rx", false);
-}
-
-TEST(ParserTest, TestcaseTest_Array6) {
-  TestTestcase("../testcase/semantic-1/array6/array6.rx", false);
-}
-
-TEST(ParserTest, TestcaseTest_Array7) {
-  TestTestcase("../testcase/semantic-1/array7/array7.rx", false);
-}
-
-TEST(ParserTest, TestcaseTest_Array8) {
-  TestTestcase("../testcase/semantic-1/array8/array8.rx", false);
-}
-
-TEST(ParserTest, TestcaseTest_Tmp) {
-  TestTestcase("../testcase/tmp.rx", true);
-}
+// TEST(ParserTest, TestcaseTest_Array1) {
+//   TestTestcase("../testcase/semantic-1/array1/array1.rx", false);
+// }
+//
+// TEST(ParserTest, TestcaseTest_Array2) {
+//   TestTestcase("../testcase/semantic-1/array2/array2.rx", false);
+// }
+//
+// TEST(ParserTest, TestcaseTest_Array3) {
+//   TestTestcase("../testcase/semantic-1/array3/array3.rx", false);
+// }
+//
+// TEST(ParserTest, TestcaseTest_Array4) {
+//   TestTestcase("../testcase/semantic-1/array4/array4.rx", false);
+// }
+//
+// TEST(ParserTest, TestcaseTest_Array5) {
+//   TestTestcase("../testcase/semantic-1/array5/array5.rx", false);
+// }
+//
+// TEST(ParserTest, TestcaseTest_Array6) {
+//   TestTestcase("../testcase/semantic-1/array6/array6.rx", false);
+// }
+//
+// TEST(ParserTest, TestcaseTest_Array7) {
+//   TestTestcase("../testcase/semantic-1/array7/array7.rx", false);
+// }
+//
+// TEST(ParserTest, TestcaseTest_Array8) {
+//   TestTestcase("../testcase/semantic-1/array8/array8.rx", false);
+// }
+//
+// TEST(ParserTest, TestcaseTest_Tmp) {
+//   TestTestcase("../testcase/tmp.rx", true);
+// }

@@ -79,7 +79,7 @@ public:
   void Visit(TraitNode *node) override;
   void Visit(ReferenceTypeNode *node) override;
   void Visit(ArrayTypeNode *node) override;
-  void Visit(SliceTypeNode *node) override;
+  void Visit(UnitTypeNode *node) override;
   void Visit(TypeNoBoundsNode *node) override;
 private:
   std::ostream &os_;

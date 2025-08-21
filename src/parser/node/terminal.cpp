@@ -174,3 +174,16 @@ ContinueExpressionNode::ContinueExpressionNode(const std::vector<Token> &tokens,
     throw err;
   }
 }
+
+UnitTypeNode::UnitTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Unit Type") {
+  try {
+    CheckLength(pos + 1, length);
+    if (tokens[pos].lexeme != "(" || tokens[pos].lexeme != ")") {
+      throw Error("expect ()");
+    }
+    ++pos;
+    ++pos;
+  } catch (Error &err) {
+    throw err;
+  }
+}
