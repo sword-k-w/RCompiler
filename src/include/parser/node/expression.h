@@ -180,55 +180,6 @@ private:
   IfExpressionNode *if_expr_ = nullptr;
 };
 
-class ScrutineeNode : public ASTNode {
-  friend class Printer;
-public:
-  ScrutineeNode() = delete;
-  ScrutineeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  ExpressionNode *expr_ = nullptr;
-};
-
-class MatchArmGuardNode : public ASTNode {
-  friend class Printer;
-public:
-  MatchArmGuardNode() = delete;
-  MatchArmGuardNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  ExpressionNode *expr_;
-};
-
-class MatchArmNode : public ASTNode {
-  friend class Printer;
-public:
-  MatchArmNode() = delete;
-  MatchArmNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  PatternNode *pattern_ = nullptr;
-  MatchArmGuardNode *match_arm_guard_ = nullptr;
-};
-
-class MatchArmsNode : public ASTNode {
-  friend class Printer;
-public:
-  MatchArmsNode() = delete;
-  MatchArmsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  std::vector<MatchArmNode *> match_arm_s_;
-  std::vector<ExpressionNode *> expr_;
-  std::vector<bool> comma_;
-};
-
-class MatchExpressionNode : public ASTNode {
-  friend class Printer;
-public:
-  MatchExpressionNode() = delete;
-  MatchExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-private:
-  ScrutineeNode *scrutinee_ = nullptr;
-  MatchArmsNode *match_arms_ = nullptr;
-};
-
 class ExpressionWithBlockNode : public ASTNode {
   friend class Printer;
 public:
@@ -239,7 +190,6 @@ private:
   ConstBlockExpressionNode *const_block_expr_ = nullptr;
   LoopExpressionNode *loop_expr_ = nullptr;
   IfExpressionNode *if_expr_ = nullptr;
-  MatchExpressionNode *match_expr_ = nullptr;
 };
 
 class CallParamsNode : public ASTNode {

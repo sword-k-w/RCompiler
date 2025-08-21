@@ -29,11 +29,6 @@ public:
   void Visit(PredicateLoopExpressionNode *node) override;
   void Visit(LoopExpressionNode *node) override;
   void Visit(IfExpressionNode *node) override;
-  void Visit(ScrutineeNode *node) override;
-  void Visit(MatchArmGuardNode *node) override;
-  void Visit(MatchArmNode *node) override;
-  void Visit(MatchArmsNode *node) override;
-  void Visit(MatchExpressionNode *node) override;
   void Visit(ExpressionWithBlockNode *node) override;
   void Visit(CallParamsNode *node) override;
   void Visit(ExpressionNode *node) override;

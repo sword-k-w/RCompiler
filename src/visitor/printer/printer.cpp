@@ -454,103 +454,6 @@ void Printer::Visit(IfExpressionNode *node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(ScrutineeNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Scrutinee\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-  prefixes_.emplace(next);
-  is_lasts_.emplace(true);
-  Visit(node->expr_);
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
-void Printer::Visit(MatchArmGuardNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Match Arm Guard\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-  os_ << next << "├──if\n";
-  prefixes_.emplace(next);
-  is_lasts_.emplace(true);
-  Visit(node->expr_);
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
-void Printer::Visit(MatchArmNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Match Arm\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-  prefixes_.emplace(next);
-  is_lasts_.emplace(node->match_arm_guard_ == nullptr);
-  Visit(node->pattern_);
-  if (node->match_arm_guard_ != nullptr) {
-    prefixes_.emplace(next);
-    is_lasts_.emplace(true);
-    Visit(node->match_arm_guard_);
-  }
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
-void Printer::Visit(MatchArmsNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Match Arms\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-  for (uint32_t i = 0; i < node->match_arm_s_.size(); ++i) {
-    prefixes_.emplace(next);
-    is_lasts_.emplace(false);
-    Visit(node->match_arm_s_[i]);
-    os_ << next << "├──=>\n";
-    prefixes_.emplace(next);
-    is_lasts_.emplace(i + 1 == node->match_arm_s_.size() && node->comma_[i]);
-    Visit(node->expr_[i]);
-    if (node->comma_[i]) {
-      if (i + 1 == node->match_arm_s_.size()) {
-        os_ << next << "└──,\n";
-      } else {
-        os_ << next << "├──,\n";
-      }
-    }
-  }
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
-void Printer::Visit(MatchExpressionNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Match Expression\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-
-  os_ << next << "├──match\n";
-  prefixes_.emplace(next);
-  is_lasts_.emplace(false);
-  Visit(node->scrutinee_);
-  os_ << next << "├──{\n";
-  if (node->match_arms_) {
-    prefixes_.emplace(next);
-    is_lasts_.emplace(false);
-    Visit(node->match_arms_);
-  }
-  os_ << next << "└──}\n";
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
 void Printer::Visit(ExpressionWithBlockNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
@@ -565,10 +468,8 @@ void Printer::Visit(ExpressionWithBlockNode *node) {
     Visit(node->const_block_expr_);
   } else if (node->loop_expr_ != nullptr) {
     Visit(node->loop_expr_);
-  } else if (node->if_expr_ != nullptr) {
-    Visit(node->if_expr_);
   } else {
-    Visit(node->match_expr_);
+    Visit(node->if_expr_);
   }
 
   prefixes_.pop();

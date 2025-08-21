@@ -25,11 +25,6 @@ public:
   virtual void Visit(PredicateLoopExpressionNode *node) = 0;
   virtual void Visit(LoopExpressionNode *node) = 0;
   virtual void Visit(IfExpressionNode *node) = 0;
-  virtual void Visit(ScrutineeNode *node) = 0;
-  virtual void Visit(MatchArmGuardNode *node) = 0;
-  virtual void Visit(MatchArmNode *node) = 0;
-  virtual void Visit(MatchArmsNode *node) = 0;
-  virtual void Visit(MatchExpressionNode *node) = 0;
   virtual void Visit(ExpressionWithBlockNode *node) = 0;
   virtual void Visit(CallParamsNode *node) = 0;
   virtual void Visit(ExpressionNode *node) = 0;

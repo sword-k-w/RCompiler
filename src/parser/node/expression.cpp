@@ -317,99 +317,6 @@ IfExpressionNode::IfExpressionNode(const std::vector<Token> &tokens, uint32_t &p
   }
 }
 
-ScrutineeNode::ScrutineeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Scrutinee") {
-  try {
-    expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
-    if (expr_->Type() == kStructExpr) {
-      throw Error("try parsing Scrutinee Node but struct expression");
-    }
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
-MatchArmGuardNode::MatchArmGuardNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Match Arm Guard") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "if") {
-      throw Error("try parsing Match Arm Guard Node but no if");
-    }
-    ++pos;
-    expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
-MatchArmNode::MatchArmNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Match Arm") {
-  try {
-    pattern_ = node_pool.Make<PatternNode>(tokens, pos, length);
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme == "if") {
-      match_arm_guard_ = node_pool.Make<MatchArmGuardNode>(tokens, pos, length);
-    }
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
-MatchArmsNode::MatchArmsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Match Arms") {
-  try {
-    bool bad_comma = false;
-    bool comma = true;
-    while (pos < length && tokens[pos].lexeme != "}") {
-      bad_comma |= !comma;
-      match_arm_s_.push_back(node_pool.Make<MatchArmNode>(tokens, pos, length));
-      CheckLength(pos, length);
-      if (tokens[pos].lexeme != "=>") {
-        throw Error("try parsing Match Arms Node but no =>");
-      }
-      ++pos;
-      expr_.push_back(node_pool.Make<ExpressionNode>(tokens, pos, length));
-      comma = true;
-      if (tokens[pos].lexeme == ",") {
-        comma_.push_back(true);
-        ++pos;
-      } else if (expr_.back()->Type() != kExprWithBlock) {
-        comma_.push_back(false);
-        comma = false;
-      }
-    }
-    if (bad_comma) {
-      throw Error("try parsing Match Arms Node but bad comma");
-    }
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
-MatchExpressionNode::MatchExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Match Expression") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "match") {
-      throw Error("try parsing Match Expression Node but no match");
-    }
-    ++pos;
-    scrutinee_ = node_pool.Make<ScrutineeNode>(tokens, pos, length);
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "{") {
-      throw Error("try parsing Match Expression Node but no {");
-    }
-    ++pos;
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "}") {
-      match_arms_ = node_pool.Make<MatchArmsNode>(tokens, pos, length);
-      CheckLength(pos, length);
-      if (tokens[pos].lexeme != "}") {
-        throw Error("try parsing Match Expression Node but no }");
-      }
-    }
-    ++pos;
-  } catch (Error &err) {
-    throw err;
-  }
-}
-
 ExpressionWithBlockNode::ExpressionWithBlockNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Expression With Block") {
   try {
     CheckLength(pos, length);
@@ -421,8 +328,6 @@ ExpressionWithBlockNode::ExpressionWithBlockNode(const std::vector<Token> &token
       loop_expr_ = node_pool.Make<LoopExpressionNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "if") {
       if_expr_ = node_pool.Make<IfExpressionNode>(tokens, pos, length);
-    } else if (tokens[pos].lexeme == "match") {
-      match_expr_ = node_pool.Make<MatchExpressionNode>(tokens, pos, length);
     } else {
       throw Error("try parsing Expression With Block Node but unexpected token");
     }
