@@ -144,11 +144,10 @@ StructExpressionNode::StructExpressionNode(const std::vector<Token> &tokens, uin
 ExpressionWithoutBlockNode::ExpressionWithoutBlockNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Expression Without Block") {
   try {
     CheckLength(pos, length);
-    if (tokens[pos].lexeme == "{" || tokens[pos].lexeme == "const" || tokens[pos].lexeme == "loop"
-      || tokens[pos].lexeme == "while" || tokens[pos].lexeme == "if" || tokens[pos].lexeme == "match") {
+    expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
+    if (expr_->Type() == kExprWithBlock) {
       throw Error("try parsing Expression Without Block Node but with block");
     }
-    expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
   } catch (Error &err) {
     throw err;
   }
@@ -194,6 +193,7 @@ ConditionsNode::ConditionsNode(const std::vector<Token> &tokens, uint32_t &pos, 
     if (tokens[pos].lexeme != "(") {
       throw Error("try parsing Conditions Node but no (");
     }
+    ++pos;
     expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
     if (expr_->Type() == kStructExpr) {
       throw Error("try parsing Conditions Node but no struct expr");
@@ -401,6 +401,9 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
         throw Error("try parsing Expression Node but same binding power");
       }
       if (context_precedence > power) {
+        break;
+      }
+      if (type_ == kExprWithBlock && (op.lexeme == "(" || op.lexeme == "[" || op.lexeme == "{") ) {
         break;
       }
       ++pos;

@@ -385,7 +385,7 @@ void Printer::Visit(IfExpressionNode *node) {
   is_lasts_.emplace(false);
   Visit(node->conditions_);
   prefixes_.emplace(next);
-  is_lasts_.emplace(false);
+  is_lasts_.emplace(node->block_expr2_ == nullptr && node->if_expr_ == nullptr);
   Visit(node->block_expr1_);
   if (node->block_expr2_ != nullptr) {
     os_ << next << "├──else\n";

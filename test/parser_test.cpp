@@ -18,6 +18,7 @@ T *TestCode(const std::string &s) {
       x.Print(std::cerr);
       std::cerr << '\n';
     }
+    std::cerr << tokens.size() << '\n';
     std::cerr << err.Info() << '\n';
     EXPECT_EQ(0, 1);
     return nullptr;
@@ -90,6 +91,6 @@ void TestTestcase(const std::string &s, bool print) {
 //   TestTestcase("../testcase/semantic-1/array8/array8.rx", false);
 // }
 //
-// TEST(ParserTest, TestcaseTest_Tmp) {
-//   TestTestcase("../testcase/tmp.rx", true);
-// }
+TEST(ParserTest, TestcaseTest_Tmp) {
+  TestTestcase("../testcase/tmp.rx", true);
+}
