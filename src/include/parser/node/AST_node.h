@@ -1,73 +1,8 @@
-#ifndef AST_NODE_H
-#define AST_NODE_H
+#pragma once
 
-#include "parser/node_pool.hpp"
-
-class FunctionNode;
-
-class ExpressionNode;
-
-class ItemNode;
-
-class AssociatedItemNode;
-
-class TypeNoBoundsNode;
-
-using TypeNode = TypeNoBoundsNode;
-
-class GenericParamsNode;
-
-class WhereClauseNode;
-
-class GenericArgsNode;
-
-class PatternWithoutRangeNode;
-
-using PatternNoTopAltNode = PatternWithoutRangeNode;
-
-using PatternNode = PatternNoTopAltNode;
-
-class PatternWithoutRangeNode;
-
-class PathInExpressionNode;
-
-using PathExpressionNode = PathInExpressionNode;
-
-using PathPatternNode = PathInExpressionNode;
-
-class PathIdentSegmentNode;
-
-using PathExprSegmentNode = PathIdentSegmentNode;
-
-using TypePathSegmentNode = PathIdentSegmentNode;
-
-using TypePathNode = TypePathSegmentNode;
-
-class IdentifierNode;
-
-using EnumVariantNode = IdentifierNode;
-
-class UnderscoreExpressionNode;
-
-using WildcardPatternNode = UnderscoreExpressionNode;
-
-class BlockExpressionNode;
-
-class StatementsNode;
-
-class StructNode;
-
-class TraitNode;
-
-class ImplementationNode;
-
-class EnumerationNode;
-
-class LiteralExpressionNode;
-
-class ExpressionWithoutBlockNode;
-
-class Printer;
+#include "parser/class_declaration.h"
+#include <string>
+#include <cstdint>
 
 class ASTNode {
 public:
@@ -78,5 +13,3 @@ public:
 private:
   const std::string name_;
 };
-
-#endif //AST_NODE_H

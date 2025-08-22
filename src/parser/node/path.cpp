@@ -1,4 +1,6 @@
 #include "parser/node/path.h"
+#include "common/error.h"
+#include "parser/node_pool.h"
 
 PathIdentSegmentNode::PathIdentSegmentNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Path Indent Segment") {
   try {

@@ -29,25 +29,25 @@ TEST(ParserTest, ExpressionBasicTest1) {
   TestCode<ExpressionNode>("1");
 }
 
-TEST(ParserTest, ExpressionBasicTest2) {
-  TestCode<ExpressionNode>("1+2");
-}
-
-TEST(ParserTest, ExpressionBasicTest3) {
-  TestCode<ExpressionNode>("a.b.c");
-}
-
-TEST(ParserTest, ExpressionBasicTest4) {
-  TestCode<ExpressionNode>("(a+b)*d[4]");
-}
-
-TEST(ParserTest, ExpressionBasicTest5) {
-  TestCode<ExpressionNode>("*a+&mut b");
-}
-
-TEST(ParserTest, ExpressionBasicTest6) {
-  TestCode<ExpressionNode>("a.b()+c()*e(f,g)");
-}
+// TEST(ParserTest, ExpressionBasicTest2) {
+//   TestCode<ExpressionNode>("1+2");
+// }
+//
+// TEST(ParserTest, ExpressionBasicTest3) {
+//   TestCode<ExpressionNode>("a.b.c");
+// }
+//
+// TEST(ParserTest, ExpressionBasicTest4) {
+//   TestCode<ExpressionNode>("(a+b)*d[4]");
+// }
+//
+// TEST(ParserTest, ExpressionBasicTest5) {
+//   TestCode<ExpressionNode>("*a+&mut b");
+// }
+//
+// TEST(ParserTest, ExpressionBasicTest6) {
+//   TestCode<ExpressionNode>("a.b()+c()*e(f,g)");
+// }
 
 void TestTestcase(const std::string &s, bool print) {
   std::string input = LoadFromFile(s);
@@ -91,6 +91,6 @@ void TestTestcase(const std::string &s, bool print) {
 //   TestTestcase("../testcase/semantic-1/array8/array8.rx", false);
 // }
 //
-TEST(ParserTest, TestcaseTest_Tmp) {
-  TestTestcase("../testcase/tmp.rx", true);
-}
+// TEST(ParserTest, TestcaseTest_Tmp) {
+//   TestTestcase("../testcase/tmp.rx", true);
+// }

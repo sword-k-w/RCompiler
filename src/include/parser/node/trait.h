@@ -1,11 +1,9 @@
-#ifndef TRAIT_H
-#define TRAIT_H
+#pragma once
 
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/terminal.h"
-#include "parser/node/generic.h"
-#include "parser/node/item.h"
+#include <cstdint>
 
 class TraitNode : public ASTNode {
   friend class Printer;
@@ -16,5 +14,3 @@ private:
   IdentifierNode *identifier_ = nullptr;
   std::vector<AssociatedItemNode *> asscociated_items_;
 };
-
-#endif //TRAIT_H

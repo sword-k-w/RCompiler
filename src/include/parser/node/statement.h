@@ -1,12 +1,9 @@
-#ifndef STATEMENT_H
-#define STATEMENT_H
+#pragma once
 
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/item.h"
-#include "parser/node/pattern.h"
-#include "parser/node/type.h"
-#include "parser/node/expression.h"
+#include <cstdint>
 
 class LetStatementNode : public ASTNode {
   friend class Printer;
@@ -50,5 +47,3 @@ private:
   std::vector<StatementNode *> statement_s_;
   ExpressionWithoutBlockNode *expr_without_block_ = nullptr;
 };
-
-#endif //STATEMENT_H

@@ -1,4 +1,6 @@
 #include "parser/node/function.h"
+#include "common/error.h"
+#include "parser/node_pool.h"
 
 ShorthandSelfNode::ShorthandSelfNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Shorthand Self") {
   try {

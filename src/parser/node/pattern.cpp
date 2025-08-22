@@ -1,4 +1,6 @@
 #include "parser/node/pattern.h"
+#include "common/error.h"
+#include "parser/node_pool.h"
 
 LiteralPatternNode::LiteralPatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Literal Pattern") {
   try {

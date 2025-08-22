@@ -1,4 +1,6 @@
 #include "parser/node/terminal.h"
+#include "common/error.h"
+#include "parser/node_pool.h"
 
 IdentifierNode::IdentifierNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Identifier") {
   try {

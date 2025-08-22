@@ -1,11 +1,9 @@
-#ifndef STRUCT_H
-#define STRUCT_H
+#pragma once
 
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/terminal.h"
-#include "parser/node/generic.h"
-#include "parser/node/type.h"
+#include <cstdint>
 
 class StructFieldNode : public ASTNode {
   friend class Printer;
@@ -37,5 +35,3 @@ private:
   StructFieldsNode *struct_fields_ = nullptr;
   bool semicolon_ = false;
 };
-
-#endif //STRUCT_H

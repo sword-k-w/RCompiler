@@ -1,11 +1,9 @@
-#ifndef PATTERN_H
-#define PATTERN_H
+#pragma once
 
-#include "terminal.h"
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/terminal.h"
-#include "parser/node/expression.h"
+#include <cstdint>
 
 class LiteralPatternNode : public ASTNode {
   friend class Printer;
@@ -73,4 +71,3 @@ private:
   TupleStructPatternNode *tuple_struct_pattern_ = nullptr;
   PathPatternNode *path_pattern_ = nullptr;
 };
-#endif //PATTERN_H

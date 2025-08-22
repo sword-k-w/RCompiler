@@ -1,11 +1,9 @@
-#ifndef TYPE_H
-#define TYPE_H
+#pragma once
 
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/terminal.h"
-#include "parser/node/trait.h"
-#include "parser/node/path.h"
+#include <cstdint>
 
 class ReferenceTypeNode : public ASTNode {
   friend class Printer;
@@ -38,5 +36,3 @@ private:
   ArrayTypeNode *array_type_ = nullptr;
   UnitTypeNode *unit_type_ = nullptr;
 };
-
-#endif //TYPE_H

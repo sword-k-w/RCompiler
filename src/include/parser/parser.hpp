@@ -1,8 +1,8 @@
-#ifndef PARSER_H
-#define PARSER_H
+#pragma once
 
 #include "lexer/lexer.h"
-#include "parser/node_pool.hpp"
+#include "parser/node_pool.h"
+#include "common/error.h"
 
 class Parser {
 public:
@@ -21,5 +21,3 @@ private:
   std::vector<Token> tokens_;
   uint32_t length_;
 };
-
-#endif //PARSER_H

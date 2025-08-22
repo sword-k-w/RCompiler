@@ -1,9 +1,9 @@
-#ifndef CRATE_H
-#define CRATE_H
+#pragma once
 
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/item.h"
+#include <cstdint>
 
 class CrateNode : public ASTNode {
   friend class Printer;
@@ -13,5 +13,3 @@ public:
 private:
   std::vector<ItemNode *> items_;
 };
-
-#endif //CRATE_H

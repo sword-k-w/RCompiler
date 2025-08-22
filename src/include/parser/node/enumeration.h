@@ -1,11 +1,10 @@
-#ifndef ENUMERATION_H
-#define ENUMERATION_H
+#pragma once
 
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/terminal.h"
-#include "parser/node/generic.h"
-#include "parser/node/struct.h"
+#include <string>
+#include <cstdint>
 
 class EnumVariantsNode : public ASTNode {
   friend class Printer;
@@ -27,4 +26,3 @@ private:
   EnumVariantsNode *enum_variants_ = nullptr;
 };
 
-#endif //ENUMERATION_H

@@ -1,9 +1,9 @@
-#ifndef PATH_H
-#define PATH_H
+#pragma once
 
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/terminal.h"
+#include <cstdint>
 
 class PathIdentSegmentNode : public ASTNode {
   friend class Printer;
@@ -16,4 +16,3 @@ private:
   SelfUpperNode *self_upper_ = nullptr;
 };
 
-#endif //PATH_H

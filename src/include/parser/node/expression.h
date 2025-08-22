@@ -1,10 +1,10 @@
-#ifndef EXPRESSION_H
-#define EXPRESSION_H
+#pragma once
 
-#include <string>
+#include "parser/class_declaration.h"
+#include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/terminal.h"
-#include "parser/node/statement.h"
+#include <string>
+#include <cstdint>
 #include <map>
 #include <set>
 
@@ -299,5 +299,3 @@ inline std::map<std::string, ExpressionType> infix_type = {
   {"return", kReturnExpr},
   {"break", kBreakExpr},
 };
-
-#endif //EXPRESSION_H

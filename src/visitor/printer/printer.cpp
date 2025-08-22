@@ -1,4 +1,18 @@
 #include "visitor/printer/printer.h"
+#include "parser/node/AST_node.h"
+#include "parser/node/crate.h"
+#include "parser/node/enumeration.h"
+#include "parser/node/expression.h"
+#include "parser/node/function.h"
+#include "parser/node/implementation.h"
+#include "parser/node/item.h"
+#include "parser/node/path.h"
+#include "parser/node/pattern.h"
+#include "parser/node/statement.h"
+#include "parser/node/struct.h"
+#include "parser/node/terminal.h"
+#include "parser/node/trait.h"
+#include "parser/node/type.h"
 
 Printer::Printer(std::ostream &os) : os_(os) {}
 

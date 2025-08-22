@@ -1,12 +1,9 @@
-#ifndef IMPLEMENTATION_H
-#define IMPLEMENTATION_H
+#pragma once
 
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/generic.h"
-#include "parser/node/type.h"
-#include "parser/node/item.h"
-#include "parser/node/path.h"
+#include <cstdint>
 
 class ImplementationNode : public ASTNode {
   friend class Printer;
@@ -18,5 +15,3 @@ private:
   IdentifierNode *identifier_ = nullptr;
   std::vector<AssociatedItemNode *> associated_items_;
 };
-
-#endif //IMPLEMENTATION_H

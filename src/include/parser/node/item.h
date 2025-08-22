@@ -1,14 +1,9 @@
-#ifndef ITEM_H
-#define ITEM_H
+#pragma once
 
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
-#include "parser/node/terminal.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/function.h"
-#include "parser/node/struct.h"
-#include "parser/node/enumeration.h"
-#include "parser/node/trait.h"
-#include "parser/node/implementation.h"
+#include <cstdint>
 
 class ConstantItemNode : public ASTNode {
   friend class Printer;
@@ -45,5 +40,3 @@ private:
   TraitNode *trait_ = nullptr;
   ImplementationNode *implementation_ = nullptr;
 };
-
-#endif //ITEM_H

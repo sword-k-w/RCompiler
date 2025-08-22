@@ -2,6 +2,7 @@
 #ifndef GENERIC_H
 #define GENERIC_H
 
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
 #include "parser/node/terminal.h"

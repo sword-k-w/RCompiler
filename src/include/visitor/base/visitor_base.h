@@ -1,7 +1,7 @@
 #ifndef VISITOR_BASE_H
 #define VISITOR_BASE_H
 
-#include "parser/node/crate.h"
+#include "parser/class_declaration.h"
 
 class VisitorBase {
 public:

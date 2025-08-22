@@ -1,4 +1,6 @@
 #include "parser/node/expression.h"
+#include "common/error.h"
+#include "parser/node_pool.h"
 
 LiteralExpressionNode::LiteralExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Litearal Expression") {
   try {

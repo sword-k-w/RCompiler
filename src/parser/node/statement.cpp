@@ -1,4 +1,7 @@
 #include "parser/node/statement.h"
+#include "common/error.h"
+#include "parser/node_pool.h"
+#include "parser/node/expression.h"
 
 LetStatementNode::LetStatementNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Let Statement") {
   try {

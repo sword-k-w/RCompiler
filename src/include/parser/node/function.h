@@ -1,12 +1,9 @@
-#ifndef FUNCTION_H
-#define FUNCTION_H
+#pragma once
 
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
-#include "parser/node/terminal.h"
-#include "parser/node/generic.h"
-#include "parser/node/expression.h"
-#include "parser/node/pattern.h"
+#include <cstdint>
 
 class ShorthandSelfNode : public ASTNode {
   friend class Printer;
@@ -84,5 +81,3 @@ private:
   bool semicolon_ = false;
   BlockExpressionNode *block_expr_ = nullptr;
 };
-
-#endif //FUNCTION_H

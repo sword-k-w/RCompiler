@@ -1,4 +1,6 @@
 #include "parser/node/type.h"
+#include "common/error.h"
+#include "parser/node_pool.h"
 
 ReferenceTypeNode::ReferenceTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Reference Type") {
   try {

@@ -3,6 +3,7 @@
 
 #include "visitor/base/visitor_base.h"
 #include <stack>
+#include <iostream>
 
 class Printer : public VisitorBase {
 public:

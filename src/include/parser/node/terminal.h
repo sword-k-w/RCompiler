@@ -1,8 +1,9 @@
-#ifndef TERMINAL_H
-#define TERMINAL_H
+#pragma once
 
+#include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
+#include <cstdint>
 
 class IdentifierNode : public ASTNode {
   friend class Printer;
@@ -138,5 +139,3 @@ public:
 private:
   const std::string val_ = "()";
 };
-
-#endif //TERMINAL_H
