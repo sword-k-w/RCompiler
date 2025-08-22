@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "lexer/lexer.h"
-#include "parser/error.h"
+#include "common/error.h"
 
 class ASTNode;
 
