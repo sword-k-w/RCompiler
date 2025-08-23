@@ -1,6 +1,13 @@
 #include "parser/node/item.h"
 #include "common/error.h"
-#include "parser/node_pool.h"
+#include "parser/node/terminal.h"
+#include "parser/node/type.h"
+#include "parser/node/expression.h"
+#include "parser/node/function.h"
+#include "parser/node/struct.h"
+#include "parser/node/enumeration.h"
+#include "parser/node/trait.h"
+#include "parser/node/implementation.h"
 
 ConstantItemNode::ConstantItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Constant Item") {
   try {
@@ -9,20 +16,20 @@ ConstantItemNode::ConstantItemNode(const std::vector<Token> &tokens, uint32_t &p
       throw Error("try parsing Constant Item Node but the first token is not const");
     }
     ++pos;
-    identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
+    identifier_ = std::make_shared<IdentifierNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != ":") {
       throw Error("try parsing Constant Item Node but no :");
     }
     ++pos;
-    type_ = node_pool.Make<TypeNode>(tokens, pos, length);
+    type_ = std::make_shared<TypeNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != ";") {
       if (tokens[pos].lexeme != "=") {
         throw Error("try parsing Constant Item Node but no =");
       }
       ++pos;
-      expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
+      expr_ = std::make_shared<ExpressionNode>(tokens, pos, length);
       CheckLength(pos, length);
       if (tokens[pos].lexeme != ";") {
         throw Error("try parsing Constant Item Node but no ;");
@@ -39,12 +46,12 @@ AssociatedItemNode::AssociatedItemNode(const std::vector<Token> &tokens, uint32_
     CheckLength(pos, length);
     if (tokens[pos].lexeme == "const") {
       if (pos + 1 < length && tokens[pos + 1].lexeme == "fn") {
-        function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
+        function_ = std::make_shared<FunctionNode>(tokens, pos, length);
       } else {
-        constant_item_ = node_pool.Make<ConstantItemNode>(tokens, pos, length);
+        constant_item_ = std::make_shared<ConstantItemNode>(tokens, pos, length);
       }
     } else if (tokens[pos].lexeme == "fn") {
-      function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
+      function_ = std::make_shared<FunctionNode>(tokens, pos, length);
     } else {
       throw Error("try parsing Associated Item Node but first token isn't const or fn");
     }
@@ -60,21 +67,21 @@ ItemNode::ItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32
       throw Error("try parsing Item Node but first token isn't identifier or keyword");
     }
     if (tokens[pos].lexeme == "fn") {
-      function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
+      function_ = std::make_shared<FunctionNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "struct") {
-      struct_ = node_pool.Make<StructNode>(tokens, pos, length);
+      struct_ = std::make_shared<StructNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "enum") {
-      enumeration_ = node_pool.Make<EnumerationNode>(tokens, pos, length);
+      enumeration_ = std::make_shared<EnumerationNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "const") {
       if (pos + 1 < length && tokens[pos + 1].lexeme == "fn") {
-        function_ = node_pool.Make<FunctionNode>(tokens, pos, length);
+        function_ = std::make_shared<FunctionNode>(tokens, pos, length);
       } else {
-        constant_item_ = node_pool.Make<ConstantItemNode>(tokens, pos, length);
+        constant_item_ = std::make_shared<ConstantItemNode>(tokens, pos, length);
       }
     } else if (tokens[pos].lexeme == "trait") {
-      trait_ = node_pool.Make<TraitNode>(tokens, pos, length);
+      trait_ = std::make_shared<TraitNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "impl") {
-      implementation_ = node_pool.Make<ImplementationNode>(tokens, pos, length);
+      implementation_ = std::make_shared<ImplementationNode>(tokens, pos, length);
     } else {
       throw Error("try parsing Item Node but the first identifier or keyword is unexpected");
     }

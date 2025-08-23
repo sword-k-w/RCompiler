@@ -3,11 +3,12 @@
 #include "lexer/lexer.h"
 #include "parser/parser.hpp"
 #include "parser/node/crate.h"
+#include "parser/node/expression.h"
 
 #include "visitor/printer/printer.h"
 
 template<class T>
-T *TestCode(const std::string &s) {
+std::shared_ptr<T> TestCode(const std::string &s) {
   Lexer a(s);
   auto tokens = a.Run();
   Parser b(tokens);
@@ -26,32 +27,32 @@ T *TestCode(const std::string &s) {
 }
 
 TEST(ParserTest, ExpressionBasicTest1) {
-  TestCode<ExpressionNode>("1");
+  TestCode<ExpressionNode>("1+{");
 }
 
-// TEST(ParserTest, ExpressionBasicTest2) {
-//   TestCode<ExpressionNode>("1+2");
-// }
-//
-// TEST(ParserTest, ExpressionBasicTest3) {
-//   TestCode<ExpressionNode>("a.b.c");
-// }
-//
-// TEST(ParserTest, ExpressionBasicTest4) {
-//   TestCode<ExpressionNode>("(a+b)*d[4]");
-// }
-//
-// TEST(ParserTest, ExpressionBasicTest5) {
-//   TestCode<ExpressionNode>("*a+&mut b");
-// }
-//
-// TEST(ParserTest, ExpressionBasicTest6) {
-//   TestCode<ExpressionNode>("a.b()+c()*e(f,g)");
-// }
+TEST(ParserTest, ExpressionBasicTest2) {
+  TestCode<ExpressionNode>("1+2");
+}
+
+TEST(ParserTest, ExpressionBasicTest3) {
+  TestCode<ExpressionNode>("a.b.c");
+}
+
+TEST(ParserTest, ExpressionBasicTest4) {
+  TestCode<ExpressionNode>("(a+b)*d[4]");
+}
+
+TEST(ParserTest, ExpressionBasicTest5) {
+  TestCode<ExpressionNode>("*a+&mut b");
+}
+
+TEST(ParserTest, ExpressionBasicTest6) {
+  TestCode<ExpressionNode>("a.b()+c()*e(f,g)");
+}
 
 void TestTestcase(const std::string &s, bool print) {
   std::string input = LoadFromFile(s);
-  CrateNode *root = TestCode<CrateNode>(input);
+  auto root = TestCode<CrateNode>(input);
   if (print && root != nullptr) {
     Printer printer(std::cerr);
     printer.Prepare();

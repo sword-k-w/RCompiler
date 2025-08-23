@@ -4,6 +4,7 @@
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
 #include <cstdint>
+#include <memory>
 
 class PathIdentSegmentNode : public ASTNode {
   friend class Printer;
@@ -11,8 +12,8 @@ public:
   PathIdentSegmentNode() = delete;
   PathIdentSegmentNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
-  IdentifierNode *identifier_ = nullptr;
-  SelfLowerNode *self_lower_ = nullptr;
-  SelfUpperNode *self_upper_ = nullptr;
+  std::shared_ptr<IdentifierNode> identifier_;
+  std::shared_ptr<SelfLowerNode> self_lower_;
+  std::shared_ptr<SelfUpperNode> self_upper_;
 };
 

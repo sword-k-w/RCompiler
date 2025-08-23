@@ -4,6 +4,7 @@
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
 #include <cstdint>
+#include <memory>
 
 class ConstantItemNode : public ASTNode {
   friend class Printer;
@@ -11,9 +12,9 @@ public:
   ConstantItemNode() = delete;
   ConstantItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  IdentifierNode *identifier_ = nullptr;
-  TypeNode *type_ = nullptr;
-  ExpressionNode *expr_ = nullptr;
+  std::shared_ptr<IdentifierNode> identifier_;
+  std::shared_ptr<TypeNode> type_;
+  std::shared_ptr<ExpressionNode> expr_;
 };
 
 class AssociatedItemNode : public ASTNode {
@@ -22,8 +23,8 @@ public:
   AssociatedItemNode() = delete;
   AssociatedItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  ConstantItemNode *constant_item_ = nullptr;
-  FunctionNode *function_ = nullptr;
+  std::shared_ptr<ConstantItemNode> constant_item_;
+  std::shared_ptr<FunctionNode> function_;
 };
 
 class ItemNode : public ASTNode {
@@ -33,10 +34,10 @@ public:
   ItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 
 private:
-  FunctionNode *function_ = nullptr;
-  StructNode *struct_ = nullptr;
-  EnumerationNode *enumeration_ = nullptr;
-  ConstantItemNode *constant_item_ = nullptr;
-  TraitNode *trait_ = nullptr;
-  ImplementationNode *implementation_ = nullptr;
+  std::shared_ptr<FunctionNode> function_;
+  std::shared_ptr<StructNode> struct_;
+  std::shared_ptr<EnumerationNode> enumeration_;
+  std::shared_ptr<ConstantItemNode> constant_item_;
+  std::shared_ptr<TraitNode> trait_;
+  std::shared_ptr<ImplementationNode> implementation_;
 };

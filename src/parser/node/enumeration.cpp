@@ -1,10 +1,10 @@
 #include "parser/node/enumeration.h"
+#include "parser/node/terminal.h"
 #include "common/error.h"
-#include "parser/node_pool.h"
 
 EnumVariantsNode::EnumVariantsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Enum Variants") {
   try {
-    enum_variant_s_.push_back(node_pool.Make<EnumVariantNode>(tokens, pos, length));
+    enum_variant_s_.push_back(std::make_shared<EnumVariantNode>(tokens, pos, length));
     while (pos < length && tokens[pos].lexeme != "}") {
       if (tokens[pos].lexeme != ",") {
         throw Error("try parsing Enum Variants Node but not comma");
@@ -15,7 +15,7 @@ EnumVariantsNode::EnumVariantsNode(const std::vector<Token> &tokens, uint32_t &p
       if (tokens[pos].lexeme == "}") {
         break;
       }
-      enum_variant_s_.push_back(node_pool.Make<EnumVariantNode>(tokens, pos, length));
+      enum_variant_s_.push_back(std::make_shared<EnumVariantNode>(tokens, pos, length));
     }
     if (pos >= length) {
       throw Error("try parsing Enum Variants Node but no }");
@@ -32,13 +32,13 @@ EnumerationNode::EnumerationNode(const std::vector<Token> &tokens, uint32_t &pos
       throw Error("try parsing Enumeration Node but the first token is not enum");
     }
     ++pos;
-    identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
+    identifier_ = std::make_shared<IdentifierNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "{") {
       throw Error("try parsing Enumeration Node but no {");
     }
     ++pos;
-    enum_variants_ = node_pool.Make<EnumVariantsNode>(tokens, pos, length);
+    enum_variants_ = std::make_shared<EnumVariantsNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "}") {
       throw Error("try parsing Enumeration Node but no }");

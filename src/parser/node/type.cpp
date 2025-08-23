@@ -1,6 +1,8 @@
 #include "parser/node/type.h"
 #include "common/error.h"
-#include "parser/node_pool.h"
+#include "parser/node/expression.h"
+#include "parser/node/path.h"
+#include "parser/node/terminal.h"
 
 ReferenceTypeNode::ReferenceTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Reference Type") {
   try {
@@ -14,7 +16,7 @@ ReferenceTypeNode::ReferenceTypeNode(const std::vector<Token> &tokens, uint32_t 
       mut_ = true;
       ++pos;
     }
-    type_no_bounds_ = node_pool.Make<TypeNoBoundsNode>(tokens, pos, length);
+    type_no_bounds_ = std::make_shared<TypeNoBoundsNode>(tokens, pos, length);
   } catch (Error &err) {
     throw err;
   }
@@ -27,13 +29,13 @@ ArrayTypeNode::ArrayTypeNode(const std::vector<Token> &tokens, uint32_t &pos, co
       throw Error("try parsing Array Type Node but no [");
     }
     ++pos;
-    type_ = node_pool.Make<TypeNode>(tokens, pos, length);
+    type_ = std::make_shared<TypeNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != ";") {
       throw Error("try parsing Array Type Node but no ;");
     }
     ++pos;
-    expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
+    expr_ = std::make_shared<ExpressionNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "]") {
       throw Error("try parsing Array Type Node but no ]");
@@ -48,13 +50,13 @@ TypeNoBoundsNode::TypeNoBoundsNode(const std::vector<Token> &tokens, uint32_t &p
   try {
     CheckLength(pos, length);
     if (tokens[pos].lexeme == "&") {
-      reference_type_ = node_pool.Make<ReferenceTypeNode>(tokens, pos, length);
+      reference_type_ = std::make_shared<ReferenceTypeNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "[") {
-      array_type_ = node_pool.Make<ArrayTypeNode>(tokens, pos, length);
+      array_type_ = std::make_shared<ArrayTypeNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "(") {
-      unit_type_ = node_pool.Make<UnitTypeNode>(tokens, pos, length);
+      unit_type_ = std::make_shared<UnitTypeNode>(tokens, pos, length);
     } else {
-      type_path_ = node_pool.Make<TypePathNode>(tokens, pos, length);
+      type_path_ = std::make_shared<TypePathNode>(tokens, pos, length);
     }
   } catch (Error &err) {
     throw err;

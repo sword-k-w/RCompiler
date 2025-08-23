@@ -4,6 +4,7 @@
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
 #include <cstdint>
+#include <memory>
 
 class TraitNode : public ASTNode {
   friend class Printer;
@@ -11,6 +12,6 @@ public:
   TraitNode() = delete;
   TraitNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  IdentifierNode *identifier_ = nullptr;
-  std::vector<AssociatedItemNode *> asscociated_items_;
+  std::shared_ptr<IdentifierNode> identifier_;
+  std::vector<std::shared_ptr<AssociatedItemNode>> asscociated_items_;
 };

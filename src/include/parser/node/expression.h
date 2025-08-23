@@ -6,7 +6,7 @@
 #include <string>
 #include <cstdint>
 #include <map>
-#include <set>
+#include <memory>
 
 class LiteralExpressionNode : public ASTNode {
   friend class Printer;
@@ -14,14 +14,14 @@ public:
   LiteralExpressionNode() = delete;
   LiteralExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  CharLiteralNode *char_literal_ = nullptr;
-  StringLiteralNode *string_literal_ = nullptr;
-  RawStringLiteralNode *raw_string_literal_ = nullptr;
-  CStringLiteralNode *c_string_literal_ = nullptr;
-  RawCStringLiteralNode *raw_c_string_literal_ = nullptr;
-  IntegerLiteralNode *integer_literal_ = nullptr;
-  TrueNode *true_ = nullptr;
-  FalseNode *false_ = nullptr;
+  std::shared_ptr<CharLiteralNode> char_literal_;
+  std::shared_ptr<StringLiteralNode> string_literal_;
+  std::shared_ptr<RawStringLiteralNode> raw_string_literal_;
+  std::shared_ptr<CStringLiteralNode> c_string_literal_;
+  std::shared_ptr<RawCStringLiteralNode> raw_c_string_literal_;
+  std::shared_ptr<IntegerLiteralNode> integer_literal_;
+  std::shared_ptr<TrueNode> true_;
+  std::shared_ptr<FalseNode> false_;
 };
 
 class ArrayElementsNode : public ASTNode {
@@ -30,7 +30,7 @@ public:
   ArrayElementsNode() = delete;
   ArrayElementsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  std::vector<ExpressionNode *> exprs_;
+  std::vector<std::shared_ptr<ExpressionNode>> exprs_;
   uint32_t comma_cnt_ = 0;
   bool semicolon_ = false;
 };
@@ -41,7 +41,7 @@ public:
   ArrayExpressionNode() = delete;
   ArrayExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  ArrayElementsNode *array_elements_ = nullptr;
+  std::shared_ptr<ArrayElementsNode> array_elements_;
 };
 
 class PathInExpressionNode : public ASTNode {
@@ -50,7 +50,7 @@ public:
   PathInExpressionNode() = delete;
   PathInExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  std::vector<PathExprSegmentNode *> path_expr_segments_;
+  std::vector<std::shared_ptr<PathExprSegmentNode>> path_expr_segments_;
 };
 
 class StructExprFieldNode : public ASTNode {
@@ -59,8 +59,8 @@ public:
   StructExprFieldNode() = delete;
   StructExprFieldNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  IdentifierNode *identifier_ = nullptr;
-  ExpressionNode *expr_ = nullptr;
+  std::shared_ptr<IdentifierNode> identifier_;
+  std::shared_ptr<ExpressionNode> expr_;
 };
 
 class StructExprFieldsNode : public ASTNode {
@@ -69,7 +69,7 @@ public:
   StructExprFieldsNode() = delete;
   StructExprFieldsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  std::vector<StructExprFieldNode *> struct_expr_field_s_;
+  std::vector<std::shared_ptr<StructExprFieldNode>> struct_expr_field_s_;
   uint32_t comma_cnt_ = 0;
 };
 
@@ -79,8 +79,8 @@ public:
   StructExpressionNode() = delete;
   StructExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  PathInExpressionNode *path_in_expr_ = nullptr;
-  StructExprFieldsNode *struct_expr_fields_ = nullptr;
+  std::shared_ptr<PathInExpressionNode> path_in_expr_;
+  std::shared_ptr<StructExprFieldsNode> struct_expr_fields_;
 };
 
 class ExpressionWithoutBlockNode : public ASTNode {
@@ -89,7 +89,7 @@ public:
   ExpressionWithoutBlockNode() = delete;
   ExpressionWithoutBlockNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  ExpressionNode *expr_ = nullptr;
+  std::shared_ptr<ExpressionNode> expr_;
 };
 
 class BlockExpressionNode : public ASTNode {
@@ -98,7 +98,7 @@ public:
   BlockExpressionNode() = delete;
   BlockExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  StatementsNode *statements_ = nullptr;
+  std::shared_ptr<StatementsNode> statements_;
 };
 
 class ConstBlockExpressionNode : public ASTNode {
@@ -107,7 +107,7 @@ public:
   ConstBlockExpressionNode() = delete;
   ConstBlockExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  BlockExpressionNode *block_expr_ = nullptr;
+  std::shared_ptr<BlockExpressionNode> block_expr_;
 };
 
 class InfiniteLoopExpressionNode : public ASTNode {
@@ -116,7 +116,7 @@ public:
   InfiniteLoopExpressionNode() = delete;
   InfiniteLoopExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  BlockExpressionNode *block_expr_ = nullptr;
+  std::shared_ptr<BlockExpressionNode> block_expr_;
 };
 
 class ConditionsNode : public ASTNode {
@@ -125,7 +125,7 @@ public:
   ConditionsNode() = delete;
   ConditionsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  ExpressionNode *expr_ = nullptr;
+  std::shared_ptr<ExpressionNode> expr_;
 };
 
 class PredicateLoopExpressionNode : public ASTNode {
@@ -134,8 +134,8 @@ public:
   PredicateLoopExpressionNode() = delete;
   PredicateLoopExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  ConditionsNode *conditions_ = nullptr;
-  BlockExpressionNode *block_expr_ = nullptr;
+  std::shared_ptr<ConditionsNode> conditions_;
+  std::shared_ptr<BlockExpressionNode> block_expr_;
 };
 
 class LoopExpressionNode : public ASTNode {
@@ -144,8 +144,8 @@ public:
   LoopExpressionNode() = delete;
   LoopExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  InfiniteLoopExpressionNode *infinite_loop_expr_ = nullptr;
-  PredicateLoopExpressionNode *predicate_loop_expr_ = nullptr;
+  std::shared_ptr<InfiniteLoopExpressionNode> infinite_loop_expr_;
+  std::shared_ptr<PredicateLoopExpressionNode> predicate_loop_expr_;
 };
 
 class IfExpressionNode : public ASTNode {
@@ -154,10 +154,10 @@ public:
   IfExpressionNode() = delete;
   IfExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  ConditionsNode *conditions_ = nullptr;
-  BlockExpressionNode *block_expr1_ = nullptr;
-  BlockExpressionNode *block_expr2_ = nullptr;
-  IfExpressionNode *if_expr_ = nullptr;
+  std::shared_ptr<ConditionsNode> conditions_;
+  std::shared_ptr<BlockExpressionNode> block_expr1_;
+  std::shared_ptr<BlockExpressionNode> block_expr2_;
+  std::shared_ptr<IfExpressionNode> if_expr_;
 };
 
 class ExpressionWithBlockNode : public ASTNode {
@@ -166,10 +166,10 @@ public:
   ExpressionWithBlockNode() = delete;
   ExpressionWithBlockNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  BlockExpressionNode *block_expr_ = nullptr;
-  ConstBlockExpressionNode *const_block_expr_ = nullptr;
-  LoopExpressionNode *loop_expr_ = nullptr;
-  IfExpressionNode *if_expr_ = nullptr;
+  std::shared_ptr<BlockExpressionNode> block_expr_;
+  std::shared_ptr<ConstBlockExpressionNode> const_block_expr_;
+  std::shared_ptr<LoopExpressionNode> loop_expr_;
+  std::shared_ptr<IfExpressionNode> if_expr_;
 };
 
 class CallParamsNode : public ASTNode {
@@ -178,7 +178,7 @@ public:
   CallParamsNode() = delete;
   CallParamsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  std::vector<ExpressionNode *> exprs_;
+  std::vector<std::shared_ptr<ExpressionNode>> exprs_;
   uint32_t comma_cnt_ = 0;
 };
 
@@ -202,19 +202,19 @@ private:
   ExpressionType type_;
   std::string op_;
   bool mut_ = false;
-  ExpressionNode *expr1_ = nullptr;
-  ExpressionNode *expr2_ = nullptr;
-  TypeNoBoundsNode *type_no_bounds_ = nullptr;
-  CallParamsNode *call_params_ = nullptr;
-  PathExprSegmentNode *path_expr_segment_ = nullptr;
-  IdentifierNode *identifier_ = nullptr;
-  LiteralExpressionNode *literal_expr_ = nullptr;
-  PathExpressionNode *path_expr_ = nullptr;
-  ArrayExpressionNode *array_expr_ = nullptr;
-  StructExpressionNode *struct_expr_ = nullptr;
-  ContinueExpressionNode *continue_expr_ = nullptr;
-  UnderscoreExpressionNode *underscore_expr_ = nullptr;
-  ExpressionWithBlockNode *expr_with_block_ = nullptr;
+  std::shared_ptr<ExpressionNode> expr1_;
+  std::shared_ptr<ExpressionNode> expr2_;
+  std::shared_ptr<TypeNoBoundsNode> type_no_bounds_;
+  std::shared_ptr<CallParamsNode> call_params_;
+  std::shared_ptr<PathExprSegmentNode> path_expr_segment_;
+  std::shared_ptr<IdentifierNode> identifier_;
+  std::shared_ptr<LiteralExpressionNode> literal_expr_;
+  std::shared_ptr<PathExpressionNode> path_expr_;
+  std::shared_ptr<ArrayExpressionNode> array_expr_;
+  std::shared_ptr<StructExpressionNode> struct_expr_;
+  std::shared_ptr<ContinueExpressionNode> continue_expr_;
+  std::shared_ptr<UnderscoreExpressionNode> underscore_expr_;
+  std::shared_ptr<ExpressionWithBlockNode> expr_with_block_;
 };
 
 // true means binary, false means unary

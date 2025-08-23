@@ -4,6 +4,7 @@
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
 #include <cstdint>
+#include <memory>
 
 class ReferenceTypeNode : public ASTNode {
   friend class Printer;
@@ -12,7 +13,7 @@ public:
   ReferenceTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
   bool mut_ = false;
-  TypeNoBoundsNode *type_no_bounds_ = nullptr;
+  std::shared_ptr<TypeNoBoundsNode> type_no_bounds_;
 };
 
 class ArrayTypeNode : public ASTNode {
@@ -21,8 +22,8 @@ public:
   ArrayTypeNode() = delete;
   ArrayTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
-  TypeNode *type_ = nullptr;
-  ExpressionNode *expr_ = nullptr;
+  std::shared_ptr<TypeNode> type_;
+  std::shared_ptr<ExpressionNode> expr_;
 };
 
 class TypeNoBoundsNode : public ASTNode {
@@ -31,8 +32,8 @@ public:
   TypeNoBoundsNode() = delete;
   TypeNoBoundsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  TypePathNode *type_path_ = nullptr;
-  ReferenceTypeNode *reference_type_ = nullptr;
-  ArrayTypeNode *array_type_ = nullptr;
-  UnitTypeNode *unit_type_ = nullptr;
+  std::shared_ptr<TypePathNode> type_path_;
+  std::shared_ptr<ReferenceTypeNode> reference_type_;
+  std::shared_ptr<ArrayTypeNode> array_type_;
+  std::shared_ptr<UnitTypeNode> unit_type_;
 };

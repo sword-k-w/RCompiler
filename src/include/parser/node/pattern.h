@@ -4,6 +4,7 @@
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
 #include <cstdint>
+#include <memory>
 
 class LiteralPatternNode : public ASTNode {
   friend class Printer;
@@ -12,7 +13,7 @@ public:
   LiteralPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
   bool hyphen_ = false;
-  LiteralExpressionNode *literal_expr_ = nullptr;
+  std::shared_ptr<LiteralExpressionNode> literal_expr_;
 };
 
 class IdentifierPatternNode : public ASTNode {
@@ -23,8 +24,8 @@ public:
 private:
   bool ref_ = false;
   bool mut_ = false;
-  IdentifierNode *identifier_ = nullptr;
-  PatternNoTopAltNode *pattern_no_top_alt_ = nullptr;
+  std::shared_ptr<IdentifierNode> identifier_;
+  std::shared_ptr<PatternNoTopAltNode> pattern_no_top_alt_;
 };
 
 class ReferencePatternNode : public ASTNode {
@@ -35,7 +36,7 @@ public:
 private:
   bool single_ = false;
   bool mut_ = false;
-  PatternWithoutRangeNode *pattern_without_range_ = nullptr;
+  std::shared_ptr<PatternWithoutRangeNode> pattern_without_range_;
 };
 
 class TupleStructItemsNode : public ASTNode {
@@ -44,7 +45,7 @@ public:
   TupleStructItemsNode() = delete;
   TupleStructItemsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  std::vector<PatternNode *> patterns_;
+  std::vector<std::shared_ptr<PatternNode>> patterns_;
   uint32_t comma_cnt_ = 0;
 };
 
@@ -54,8 +55,8 @@ public:
   TupleStructPatternNode() = delete;
   TupleStructPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  PathInExpressionNode *path_in_expr_ = nullptr;
-  TupleStructItemsNode *tuple_struct_items_ = nullptr;
+  std::shared_ptr<PathInExpressionNode> path_in_expr_;
+  std::shared_ptr<TupleStructItemsNode> tuple_struct_items_;
 };
 
 class PatternWithoutRangeNode : public ASTNode {
@@ -64,10 +65,10 @@ public:
   PatternWithoutRangeNode() = delete;
   PatternWithoutRangeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  LiteralPatternNode *literal_pattern_ = nullptr;
-  IdentifierPatternNode *identifier_pattern_ = nullptr;
-  WildcardPatternNode *wildcard_pattern_ = nullptr;
-  ReferencePatternNode *reference_pattern_ = nullptr;
-  TupleStructPatternNode *tuple_struct_pattern_ = nullptr;
-  PathPatternNode *path_pattern_ = nullptr;
+  std::shared_ptr<LiteralPatternNode> literal_pattern_;
+  std::shared_ptr<IdentifierPatternNode> identifier_pattern_;
+  std::shared_ptr<WildcardPatternNode> wildcard_pattern_;
+  std::shared_ptr<ReferencePatternNode> reference_pattern_;
+  std::shared_ptr<TupleStructPatternNode> tuple_struct_pattern_;
+  std::shared_ptr<PathPatternNode> path_pattern_;
 };

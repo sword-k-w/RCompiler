@@ -1,6 +1,5 @@
 #include "parser/node/terminal.h"
 #include "common/error.h"
-#include "parser/node_pool.h"
 
 IdentifierNode::IdentifierNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Identifier") {
   try {
@@ -8,7 +7,7 @@ IdentifierNode::IdentifierNode(const std::vector<Token> &tokens, uint32_t &pos, 
     if (tokens[pos].type != kIDENTIFIER_OR_KEYWORD || IsKeyword(tokens[pos].lexeme)) {
       throw Error("expect identifier");
     }
-    val_ = tokens[pos].lexeme;
+    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -21,7 +20,7 @@ CharLiteralNode::CharLiteralNode(const std::vector<Token> &tokens, uint32_t &pos
     if (tokens[pos].type != kCHAR_LITERAL) {
       throw Error("expect char literal");
     }
-    val_ = tokens[pos].lexeme;
+    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -34,7 +33,7 @@ StringLiteralNode::StringLiteralNode(const std::vector<Token> &tokens, uint32_t 
     if (tokens[pos].type != kSTRING_LITERAL) {
       throw Error("expect string literal");
     }
-    val_ = tokens[pos].lexeme;
+    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -47,7 +46,7 @@ RawStringLiteralNode::RawStringLiteralNode(const std::vector<Token> &tokens, uin
     if (tokens[pos].type != kRAW_STRING_LITERAL) {
       throw Error("expect raw string literal");
     }
-    val_ = tokens[pos].lexeme;
+    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -60,7 +59,7 @@ CStringLiteralNode::CStringLiteralNode(const std::vector<Token> &tokens, uint32_
     if (tokens[pos].type != kC_STRING_LITERAL) {
       throw Error("expect c string literal");
     }
-    val_ = tokens[pos].lexeme;
+    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -73,7 +72,7 @@ RawCStringLiteralNode::RawCStringLiteralNode(const std::vector<Token> &tokens, u
     if (tokens[pos].type != kRAW_C_STRING_LITERAL) {
       throw Error("expect raw c string literal");
     }
-    val_ = tokens[pos].lexeme;
+    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -86,7 +85,7 @@ IntegerLiteralNode::IntegerLiteralNode(const std::vector<Token> &tokens, uint32_
     if (tokens[pos].type != kINTEGER_LITERAL) {
       throw Error("expect integer literal");
     }
-    val_ = tokens[pos].lexeme;
+    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -123,6 +122,7 @@ SuperNode::SuperNode(const std::vector<Token> &tokens, uint32_t &pos, const uint
     if (tokens[pos].lexeme != "super") {
       throw Error("expect super");
     }
+    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -135,6 +135,7 @@ SelfLowerNode::SelfLowerNode(const std::vector<Token> &tokens, uint32_t &pos, co
     if (tokens[pos].lexeme != "self") {
       throw Error("expect self");
     }
+    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -147,6 +148,7 @@ SelfUpperNode::SelfUpperNode(const std::vector<Token> &tokens, uint32_t &pos, co
     if (tokens[pos].lexeme != "Self") {
       throw Error("expect Self");
     }
+    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -159,6 +161,7 @@ UnderscoreExpressionNode::UnderscoreExpressionNode(const std::vector<Token> &tok
     if (tokens[pos].lexeme != "_") {
       throw Error("expect _");
     }
+    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -171,6 +174,7 @@ ContinueExpressionNode::ContinueExpressionNode(const std::vector<Token> &tokens,
     if (tokens[pos].lexeme != "continue") {
       throw Error("expect continue");
     }
+    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
   } catch (Error &err) {
     throw err;
@@ -185,6 +189,7 @@ UnitTypeNode::UnitTypeNode(const std::vector<Token> &tokens, uint32_t &pos, cons
     }
     ++pos;
     ++pos;
+    val_ = std::make_shared<std::string>("()");
   } catch (Error &err) {
     throw err;
   }

@@ -4,6 +4,7 @@
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
 #include <cstdint>
+#include <memory>
 
 class IdentifierNode : public ASTNode {
   friend class Printer;
@@ -11,7 +12,7 @@ public:
   IdentifierNode() = delete;
   IdentifierNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  std::string val_;
+  std::shared_ptr<std::string> val_;
 };
 
 class CharLiteralNode : public ASTNode {
@@ -20,7 +21,7 @@ public:
   CharLiteralNode() = delete;
   CharLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  std::string val_;
+  std::shared_ptr<std::string> val_;
 };
 
 class StringLiteralNode : public ASTNode {
@@ -29,7 +30,7 @@ public:
   StringLiteralNode() = delete;
   StringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  std::string val_;
+  std::shared_ptr<std::string> val_;
 };
 
 class RawStringLiteralNode : public ASTNode {
@@ -38,7 +39,7 @@ public:
   RawStringLiteralNode() = delete;
   RawStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  std::string val_;
+  std::shared_ptr<std::string> val_;
 };
 
 class CStringLiteralNode : public ASTNode {
@@ -47,7 +48,7 @@ public:
   CStringLiteralNode() = delete;
   CStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  std::string val_;
+  std::shared_ptr<std::string> val_;
 };
 
 class RawCStringLiteralNode : public ASTNode {
@@ -56,7 +57,7 @@ public:
   RawCStringLiteralNode() = delete;
   RawCStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  std::string val_;
+  std::shared_ptr<std::string> val_;
 };
 
 class IntegerLiteralNode : public ASTNode {
@@ -65,7 +66,7 @@ public:
   IntegerLiteralNode() = delete;
   IntegerLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
 private:
-  std::string val_;
+  std::shared_ptr<std::string> val_;
 };
 
 class TrueNode : public ASTNode {
@@ -92,7 +93,7 @@ public:
   SuperNode() = delete;
   SuperNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
-  const std::string_view val_ = "super";
+  std::shared_ptr<std::string> val_;
 };
 
 class SelfLowerNode : public ASTNode {
@@ -101,7 +102,7 @@ public:
   SelfLowerNode() = delete;
   SelfLowerNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
-  const std::string_view val_ = "self";
+  std::shared_ptr<std::string> val_;
 };
 
 class SelfUpperNode : public ASTNode {
@@ -110,7 +111,7 @@ public:
   SelfUpperNode() = delete;
   SelfUpperNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
-  const std::string_view val_ = "Self";
+  std::shared_ptr<std::string> val_;
 };
 
 class UnderscoreExpressionNode : public ASTNode {
@@ -119,7 +120,7 @@ public:
   UnderscoreExpressionNode() = delete;
   UnderscoreExpressionNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
-  const std::string_view val_ = "_";
+  std::shared_ptr<std::string> val_;
 };
 
 class ContinueExpressionNode : public ASTNode {
@@ -128,7 +129,7 @@ public:
   ContinueExpressionNode() = delete;
   ContinueExpressionNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
-  const std::string val_ = "continue";
+  std::shared_ptr<std::string> val_;
 };
 
 class UnitTypeNode : public ASTNode {
@@ -137,5 +138,5 @@ public:
   UnitTypeNode() = delete;
   UnitTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
 private:
-  const std::string val_ = "()";
+  std::shared_ptr<std::string> val_;
 };

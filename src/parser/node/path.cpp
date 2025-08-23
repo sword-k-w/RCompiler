@@ -1,6 +1,6 @@
 #include "parser/node/path.h"
 #include "common/error.h"
-#include "parser/node_pool.h"
+#include "parser/node/terminal.h"
 
 PathIdentSegmentNode::PathIdentSegmentNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Path Indent Segment") {
   try {
@@ -10,14 +10,14 @@ PathIdentSegmentNode::PathIdentSegmentNode(const std::vector<Token> &tokens, uin
     }
     if (IsKeyword(tokens[pos].lexeme)) {
       if (tokens[pos].lexeme == "self") {
-        self_lower_ = node_pool.Make<SelfLowerNode>(tokens, pos, length);
+        self_lower_ = std::make_shared<SelfLowerNode>(tokens, pos, length);
       } else if (tokens[pos].lexeme == "Self") {
-        self_upper_ = node_pool.Make<SelfUpperNode>(tokens, pos, length);
+        self_upper_ = std::make_shared<SelfUpperNode>(tokens, pos, length);
       } else {
         throw Error("try parsing Path Indent Segment Node but unexpected keyword");
       }
     } else {
-      identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
+      identifier_ = std::make_shared<IdentifierNode>(tokens, pos, length);
     }
   } catch (Error &err) {
     throw err;

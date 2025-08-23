@@ -1,26 +1,29 @@
 #include "parser/node/expression.h"
+#include "parser/node/terminal.h"
+#include "parser/node/path.h"
+#include "parser/node/statement.h"
+#include "parser/node/type.h"
 #include "common/error.h"
-#include "parser/node_pool.h"
 
 LiteralExpressionNode::LiteralExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Litearal Expression") {
   try {
     CheckLength(pos, length);
     if (tokens[pos].type == kCHAR_LITERAL) {
-      char_literal_ = node_pool.Make<CharLiteralNode>(tokens, pos, length);
+      char_literal_ = std::make_shared<CharLiteralNode>(tokens, pos, length);
     } else if (tokens[pos].type == kSTRING_LITERAL) {
-      string_literal_ = node_pool.Make<StringLiteralNode>(tokens, pos, length);
+      string_literal_ = std::make_shared<StringLiteralNode>(tokens, pos, length);
     } else if (tokens[pos].type == kRAW_STRING_LITERAL) {
-      raw_string_literal_ = node_pool.Make<RawStringLiteralNode>(tokens, pos, length);
+      raw_string_literal_ = std::make_shared<RawStringLiteralNode>(tokens, pos, length);
     } else if (tokens[pos].type == kC_STRING_LITERAL) {
-      c_string_literal_ = node_pool.Make<CStringLiteralNode>(tokens, pos, length);
+      c_string_literal_ = std::make_shared<CStringLiteralNode>(tokens, pos, length);
     } else if (tokens[pos].type == kRAW_C_STRING_LITERAL) {
-      raw_c_string_literal_ = node_pool.Make<RawCStringLiteralNode>(tokens, pos, length);
+      raw_c_string_literal_ = std::make_shared<RawCStringLiteralNode>(tokens, pos, length);
     } else if (tokens[pos].type == kINTEGER_LITERAL) {
-      integer_literal_ = node_pool.Make<IntegerLiteralNode>(tokens, pos, length);
+      integer_literal_ = std::make_shared<IntegerLiteralNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "true") {
-      true_ = node_pool.Make<TrueNode>(tokens, pos, length);
+      true_ = std::make_shared<TrueNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "false") {
-      false_ = node_pool.Make<FalseNode>(tokens, pos, length);
+      false_ = std::make_shared<FalseNode>(tokens, pos, length);
     } else {
       throw Error("try parsing Literal Expression Node but unexpected token");
     }
@@ -31,12 +34,12 @@ LiteralExpressionNode::LiteralExpressionNode(const std::vector<Token> &tokens, u
 
 ArrayElementsNode::ArrayElementsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Array Elements") {
   try {
-    exprs_.push_back(node_pool.Make<ExpressionNode>(tokens, pos, length));
+    exprs_.push_back(std::make_shared<ExpressionNode>(tokens, pos, length));
     CheckLength(pos, length);
     if (tokens[pos].lexeme == ";") {
       semicolon_ = true;
       ++pos;
-      exprs_.push_back(node_pool.Make<ExpressionNode>(tokens, pos, length));
+      exprs_.push_back(std::make_shared<ExpressionNode>(tokens, pos, length));
     } else {
       while (pos < length && tokens[pos].lexeme != "]") {
         if (tokens[pos].lexeme != ",") {
@@ -48,7 +51,7 @@ ArrayElementsNode::ArrayElementsNode(const std::vector<Token> &tokens, uint32_t 
         if (tokens[pos].lexeme == "]") {
           break;
         }
-        exprs_.push_back(node_pool.Make<ExpressionNode>(tokens, pos, length));
+        exprs_.push_back(std::make_shared<ExpressionNode>(tokens, pos, length));
       }
     }
   } catch (Error &err) {
@@ -65,7 +68,7 @@ ArrayExpressionNode::ArrayExpressionNode(const std::vector<Token> &tokens, uint3
     ++pos;
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "]") {
-      array_elements_ = node_pool.Make<ArrayElementsNode>(tokens, pos, length);
+      array_elements_ = std::make_shared<ArrayElementsNode>(tokens, pos, length);
       CheckLength(pos, length);
       if (tokens[pos].lexeme != "]") {
         throw Error("try parsing Array Expression Node but no ]");
@@ -79,10 +82,10 @@ ArrayExpressionNode::ArrayExpressionNode(const std::vector<Token> &tokens, uint3
 
 PathInExpressionNode::PathInExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Path In Expression"){
   try {
-    path_expr_segments_.push_back(node_pool.Make<PathExprSegmentNode>(tokens, pos, length));
+    path_expr_segments_.push_back(std::make_shared<PathExprSegmentNode>(tokens, pos, length));
     while (pos < length && tokens[pos].lexeme == "::") {
       ++pos;
-      path_expr_segments_.push_back(node_pool.Make<PathExprSegmentNode>(tokens, pos, length));
+      path_expr_segments_.push_back(std::make_shared<PathExprSegmentNode>(tokens, pos, length));
     }
   } catch (Error &err) {
     throw err;
@@ -91,11 +94,11 @@ PathInExpressionNode::PathInExpressionNode(const std::vector<Token> &tokens, uin
 
 StructExprFieldNode::StructExprFieldNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Struct Expr Field") {
   try {
-    identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
+    identifier_ = std::make_shared<IdentifierNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme == ":") {
       ++pos;
-      expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
+      expr_ = std::make_shared<ExpressionNode>(tokens, pos, length);
     }
   } catch (Error &err) {
     throw err;
@@ -104,7 +107,7 @@ StructExprFieldNode::StructExprFieldNode(const std::vector<Token> &tokens, uint3
 
 StructExprFieldsNode::StructExprFieldsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Struct Expr Fields") {
   try {
-    struct_expr_field_s_.push_back(node_pool.Make<StructExprFieldNode>(tokens, pos, length));
+    struct_expr_field_s_.push_back(std::make_shared<StructExprFieldNode>(tokens, pos, length));
     while (pos < length && tokens[pos].lexeme != "}") {
       if (tokens[pos].lexeme != ",") {
         throw Error("try parsing Struct Expr Fields Node but not ,");
@@ -114,7 +117,7 @@ StructExprFieldsNode::StructExprFieldsNode(const std::vector<Token> &tokens, uin
       if (tokens[pos].lexeme == "}") {
         break;
       }
-      struct_expr_field_s_.push_back(node_pool.Make<StructExprFieldNode>(tokens, pos, length));
+      struct_expr_field_s_.push_back(std::make_shared<StructExprFieldNode>(tokens, pos, length));
     }
   } catch (Error &err) {
     throw err;
@@ -123,7 +126,7 @@ StructExprFieldsNode::StructExprFieldsNode(const std::vector<Token> &tokens, uin
 
 StructExpressionNode::StructExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Struct Expression") {
   try {
-    path_in_expr_ = node_pool.Make<PathInExpressionNode>(tokens, pos, length);
+    path_in_expr_ = std::make_shared<PathInExpressionNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "{") {
       throw Error("try parsing Struct Expression Node but no {");
@@ -131,7 +134,7 @@ StructExpressionNode::StructExpressionNode(const std::vector<Token> &tokens, uin
     ++pos;
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "}") {
-      struct_expr_fields_ = node_pool.Make<StructExprFieldsNode>(tokens, pos, length);
+      struct_expr_fields_ = std::make_shared<StructExprFieldsNode>(tokens, pos, length);
       CheckLength(pos, length);
       if (tokens[pos].lexeme != "}") {
         throw Error("try parsing Struct Expression Node but no }");
@@ -146,7 +149,7 @@ StructExpressionNode::StructExpressionNode(const std::vector<Token> &tokens, uin
 ExpressionWithoutBlockNode::ExpressionWithoutBlockNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Expression Without Block") {
   try {
     CheckLength(pos, length);
-    expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
+    expr_ = std::make_shared<ExpressionNode>(tokens, pos, length);
     if (expr_->Type() == kExprWithBlock) {
       throw Error("try parsing Expression Without Block Node but with block");
     }
@@ -164,7 +167,7 @@ BlockExpressionNode::BlockExpressionNode(const std::vector<Token> &tokens, uint3
     ++pos;
     CheckLength(pos, length);
     if (tokens[pos].lexeme != "}") {
-      statements_ = node_pool.Make<StatementsNode>(tokens, pos, length);
+      statements_ = std::make_shared<StatementsNode>(tokens, pos, length);
       CheckLength(pos, length);
       if (tokens[pos].lexeme != "}") {
         throw Error("try parsing Block Expression Node but no }");
@@ -183,7 +186,7 @@ ConstBlockExpressionNode::ConstBlockExpressionNode(const std::vector<Token> &tok
       throw Error("try parsing Const Block Expression Node but no const");
     }
     ++pos;
-    block_expr_ = node_pool.Make<BlockExpressionNode>(tokens, pos, length);
+    block_expr_ = std::make_shared<BlockExpressionNode>(tokens, pos, length);
   } catch (Error &err) {
     throw err;
   }
@@ -196,7 +199,7 @@ ConditionsNode::ConditionsNode(const std::vector<Token> &tokens, uint32_t &pos, 
       throw Error("try parsing Conditions Node but no (");
     }
     ++pos;
-    expr_ = node_pool.Make<ExpressionNode>(tokens, pos, length);
+    expr_ = std::make_shared<ExpressionNode>(tokens, pos, length);
     if (expr_->Type() == kStructExpr) {
       throw Error("try parsing Conditions Node but no struct expr");
     }
@@ -216,7 +219,7 @@ InfiniteLoopExpressionNode::InfiniteLoopExpressionNode(const std::vector<Token> 
       throw Error("try parsing Loop Expression Node but no loop");
     }
     ++pos;
-    block_expr_ = node_pool.Make<BlockExpressionNode>(tokens, pos, length);
+    block_expr_ = std::make_shared<BlockExpressionNode>(tokens, pos, length);
   } catch (Error &err) {
     throw err;
   }
@@ -229,8 +232,8 @@ PredicateLoopExpressionNode::PredicateLoopExpressionNode(const std::vector<Token
       throw Error("try parsing Predicate Loop Expression Node but no while");
     }
     ++pos;
-    conditions_ = node_pool.Make<ConditionsNode>(tokens, pos, length);
-    block_expr_ = node_pool.Make<BlockExpressionNode>(tokens, pos, length);
+    conditions_ = std::make_shared<ConditionsNode>(tokens, pos, length);
+    block_expr_ = std::make_shared<BlockExpressionNode>(tokens, pos, length);
   } catch (Error &err) {
     throw err;
   }
@@ -240,9 +243,9 @@ LoopExpressionNode::LoopExpressionNode(const std::vector<Token> &tokens, uint32_
   try {
     CheckLength(pos, length);
     if (tokens[pos].lexeme == "loop") {
-      infinite_loop_expr_ = node_pool.Make<InfiniteLoopExpressionNode>(tokens, pos, length);
+      infinite_loop_expr_ = std::make_shared<InfiniteLoopExpressionNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "while") {
-      predicate_loop_expr_ = node_pool.Make<PredicateLoopExpressionNode>(tokens, pos, length);
+      predicate_loop_expr_ = std::make_shared<PredicateLoopExpressionNode>(tokens, pos, length);
     } else {
       throw Error("try parsing Loop Expression Node but unexpected token");
     }
@@ -258,16 +261,16 @@ IfExpressionNode::IfExpressionNode(const std::vector<Token> &tokens, uint32_t &p
       throw Error("try parsing If Expression Node but no if");
     }
     ++pos;
-    conditions_ = node_pool.Make<ConditionsNode>(tokens, pos, length);
-    block_expr1_ = node_pool.Make<BlockExpressionNode>(tokens, pos, length);
+    conditions_ = std::make_shared<ConditionsNode>(tokens, pos, length);
+    block_expr1_ = std::make_shared<BlockExpressionNode>(tokens, pos, length);
     CheckLength(pos, length);
     if (tokens[pos].lexeme == "else") {
       ++pos;
       CheckLength(pos, length);
       if (tokens[pos].lexeme == "{") {
-        block_expr2_ = node_pool.Make<BlockExpressionNode>(tokens, pos, length);
+        block_expr2_ = std::make_shared<BlockExpressionNode>(tokens, pos, length);
       } else if (tokens[pos].lexeme == "if") {
-        if_expr_ = node_pool.Make<IfExpressionNode>(tokens, pos, length);
+        if_expr_ = std::make_shared<IfExpressionNode>(tokens, pos, length);
       } else {
         throw Error("try parsing If Expression Node but unexpected token after else");
       }
@@ -281,13 +284,13 @@ ExpressionWithBlockNode::ExpressionWithBlockNode(const std::vector<Token> &token
   try {
     CheckLength(pos, length);
     if (tokens[pos].lexeme == "{") {
-      block_expr_ = node_pool.Make<BlockExpressionNode>(tokens, pos, length);
+      block_expr_ = std::make_shared<BlockExpressionNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "const") {
-      const_block_expr_ = node_pool.Make<ConstBlockExpressionNode>(tokens, pos, length);
+      const_block_expr_ = std::make_shared<ConstBlockExpressionNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "loop" || tokens[pos].lexeme == "while") {
-      loop_expr_ = node_pool.Make<LoopExpressionNode>(tokens, pos, length);
+      loop_expr_ = std::make_shared<LoopExpressionNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "if") {
-      if_expr_ = node_pool.Make<IfExpressionNode>(tokens, pos, length);
+      if_expr_ = std::make_shared<IfExpressionNode>(tokens, pos, length);
     } else {
       throw Error("try parsing Expression With Block Node but unexpected token");
     }
@@ -298,7 +301,7 @@ ExpressionWithBlockNode::ExpressionWithBlockNode(const std::vector<Token> &token
 
 CallParamsNode::CallParamsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Call Params") {
   try {
-    exprs_.push_back(node_pool.Make<ExpressionNode>(tokens, pos, length));
+    exprs_.push_back(std::make_shared<ExpressionNode>(tokens, pos, length));
     while (pos < length && tokens[pos].lexeme != ")") {
       if (tokens[pos].lexeme != ",") {
         throw Error("try parsing Call Params Node but not ,");
@@ -309,7 +312,7 @@ CallParamsNode::CallParamsNode(const std::vector<Token> &tokens, uint32_t &pos, 
       if (tokens[pos].lexeme == ")") {
         break;
       }
-      exprs_.push_back(node_pool.Make<ExpressionNode>(tokens, pos, length));
+      exprs_.push_back(std::make_shared<ExpressionNode>(tokens, pos, length));
     }
   } catch (Error &err) {
     throw err;
@@ -327,34 +330,34 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
         mut_ = true;
         ++pos;
       }
-      expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{"borrow", false}].second);
+      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{"borrow", false}].second);
     } else if (tokens[pos].lexeme == "*") {
       type_ = kDereferenceExpr;
       ++pos;
-      expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
     } else if (tokens[pos].lexeme == "-" || tokens[pos].lexeme == "!") {
       type_ = kNegationExpr;
       op_ = tokens[pos].lexeme;
       ++pos;
-      expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
     } else if (tokens[pos].lexeme == "return") {
       type_ = kReturnExpr;
       ++pos;
       if (pos < length && tokens[pos].lexeme == ";") {
         return;
       }
-      expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
     } else if (tokens[pos].lexeme == "break") {
       type_ = kBreakExpr;
       ++pos;
       if (pos < length && tokens[pos].lexeme == ";") {
         return;
       }
-      expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
     } else if (tokens[pos].lexeme == "(") {
       type_ = kGroupedExpr;
       ++pos;
-      expr1_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
       CheckLength(pos, length);
       if (tokens[pos].lexeme != ")") {
         throw Error("try parsing Grouped Expression but no )");
@@ -363,32 +366,32 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
     } else if (tokens[pos].lexeme == "{" || tokens[pos].lexeme == "const" || tokens[pos].lexeme == "loop"
       || tokens[pos].lexeme == "while" || tokens[pos].lexeme == "if" || tokens[pos].lexeme == "match") {
       type_ = kExprWithBlock;
-      expr_with_block_ = node_pool.Make<ExpressionWithBlockNode>(tokens, pos, length);
+      expr_with_block_ = std::make_shared<ExpressionWithBlockNode>(tokens, pos, length);
     } else if (tokens[pos].type == kCHAR_LITERAL || tokens[pos].type == kSTRING_LITERAL || tokens[pos].type == kRAW_STRING_LITERAL ||
       tokens[pos].type == kC_STRING_LITERAL || tokens[pos].type == kRAW_C_STRING_LITERAL || tokens[pos].type == kINTEGER_LITERAL ||
       tokens[pos].lexeme == "true" || tokens[pos].lexeme == "false") {
       type_ = kLiteralExpr;
-      literal_expr_ = node_pool.Make<LiteralExpressionNode>(tokens, pos, length);
+      literal_expr_ = std::make_shared<LiteralExpressionNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "[") {
       type_ = kArrayExpr;
-      array_expr_ = node_pool.Make<ArrayExpressionNode>(tokens, pos, length);
+      array_expr_ = std::make_shared<ArrayExpressionNode>(tokens, pos, length);
     } else if (tokens[pos].type == kIDENTIFIER_OR_KEYWORD && (!IsKeyword(tokens[pos].lexeme) || tokens[pos].lexeme == "self" || tokens[pos].lexeme == "Self")) {
       uint32_t tmp = pos;
       try {
         type_ = kStructExpr;
-        struct_expr_ = node_pool.Make<StructExpressionNode>(tokens, pos, length);
+        struct_expr_ = std::make_shared<StructExpressionNode>(tokens, pos, length);
       } catch (...) {
         struct_expr_ = nullptr;
         pos = tmp;
         type_ = kPathExpr;
-        path_expr_ = node_pool.Make<PathExpressionNode>(tokens, pos, length);
+        path_expr_ = std::make_shared<PathExpressionNode>(tokens, pos, length);
       }
     } else if (tokens[pos].lexeme == "continue") {
       type_ = kContinueExpr;
-      continue_expr_ = node_pool.Make<ContinueExpressionNode>(tokens, pos, length);
+      continue_expr_ = std::make_shared<ContinueExpressionNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "_") {
       type_ = kUnderscoreExpr;
-      underscore_expr_ = node_pool.Make<UnderscoreExpressionNode>(tokens, pos, length);
+      underscore_expr_ = std::make_shared<UnderscoreExpressionNode>(tokens, pos, length);
     } else {
       throw Error("try parsing Expression Node but unexpected token");
     }
@@ -409,28 +412,28 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
         break;
       }
       ++pos;
-      expr1_ = node_pool.Make<ExpressionNode>(*this);
+      expr1_ = std::make_shared<ExpressionNode>(*this);
       type_ = it->second;
       op_ = op.lexeme;
       if (op.lexeme == "(") {
         if (tokens[pos].lexeme != ")") {
-          call_params_ = node_pool.Make<CallParamsNode>(tokens, pos, length);
+          call_params_ = std::make_shared<CallParamsNode>(tokens, pos, length);
         }
       } else if (op.lexeme == ".") {
         if (pos + 1 < length && tokens[pos + 1].lexeme == "(") {
           type_ = kMethodCallExpr;
-          path_expr_segment_ = node_pool.Make<PathExprSegmentNode>(tokens, pos, length);
+          path_expr_segment_ = std::make_shared<PathExprSegmentNode>(tokens, pos, length);
           ++pos;
           if (pos < length && tokens[pos].lexeme != ")") {
-            call_params_ = node_pool.Make<CallParamsNode>(tokens, pos, length);
+            call_params_ = std::make_shared<CallParamsNode>(tokens, pos, length);
           }
         } else {
-          identifier_ = node_pool.Make<IdentifierNode>(tokens, pos, length);
+          identifier_ = std::make_shared<IdentifierNode>(tokens, pos, length);
         }
       } else if (op.lexeme == "as") {
-        type_no_bounds_ = node_pool.Make<TypeNoBoundsNode>(tokens, pos, length);
+        type_no_bounds_ = std::make_shared<TypeNoBoundsNode>(tokens, pos, length);
       } else {
-        expr2_ = node_pool.Make<ExpressionNode>(tokens, pos, length, binding_power[{op.lexeme, true}].second);
+        expr2_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{op.lexeme, true}].second);
       }
       if (type_ == kMethodCallExpr) {
         CheckLength(pos, length);

@@ -1,8 +1,9 @@
 #pragma once
 
-#include "parser/class_declaration.h"
 #include <string>
 #include <cstdint>
+#include <iostream>
+#include <memory>
 
 class ASTNode {
 public:
@@ -11,5 +12,5 @@ public:
   void CheckLength(const uint32_t &, const uint32_t &) const;
   // virtual void accept(Visitor *) = 0;
 private:
-  const std::string name_;
+  const std::shared_ptr<std::string> name_;
 };
