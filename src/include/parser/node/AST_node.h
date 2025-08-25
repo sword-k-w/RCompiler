@@ -4,13 +4,16 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
+#include "semantic/scope/scope.h"
+#include "visitor/base/visitor_base.h"
 
 class ASTNode {
 public:
   ASTNode() = delete;
   explicit ASTNode(const std::string_view &);
   void CheckLength(const uint32_t &, const uint32_t &) const;
-  // virtual void accept(Visitor *) = 0;
+  virtual void Accept(VisitorBase *) = 0;
 private:
-  const std::shared_ptr<std::string> name_;
+  std::shared_ptr<std::string> name_;
+  std::shared_ptr<Scope> scope_;
 };

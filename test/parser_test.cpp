@@ -56,7 +56,7 @@ void TestTestcase(const std::string &s, bool print) {
   if (print && root != nullptr) {
     Printer printer(std::cerr);
     printer.Prepare();
-    printer.Visit(root);
+    printer.Visit(root.get());
   }
 }
 

@@ -10,6 +10,7 @@ class StructFieldNode : public ASTNode {
 public:
   StructFieldNode() = delete;
   StructFieldNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<IdentifierNode> identifier_;
   std::shared_ptr<TypeNode> type_;
@@ -20,6 +21,7 @@ class StructFieldsNode : public ASTNode {
 public:
   StructFieldsNode() = delete;
   StructFieldsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::vector<std::shared_ptr<StructFieldNode>> struct_field_s_;
   uint32_t comma_cnt_ = 0;
@@ -30,6 +32,7 @@ class StructNode : public ASTNode {
 public:
   StructNode() = delete;
   StructNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<IdentifierNode> identifier_;
   std::shared_ptr<StructFieldsNode> struct_fields_;

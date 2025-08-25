@@ -11,6 +11,7 @@ class CrateNode : public ASTNode {
 public:
   CrateNode() = delete;
   CrateNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::vector<std::shared_ptr<ItemNode>> items_;
 };

@@ -11,6 +11,7 @@ class IdentifierNode : public ASTNode {
 public:
   IdentifierNode() = delete;
   IdentifierNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };
@@ -20,6 +21,7 @@ class CharLiteralNode : public ASTNode {
 public:
   CharLiteralNode() = delete;
   CharLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };
@@ -29,6 +31,7 @@ class StringLiteralNode : public ASTNode {
 public:
   StringLiteralNode() = delete;
   StringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };
@@ -38,6 +41,7 @@ class RawStringLiteralNode : public ASTNode {
 public:
   RawStringLiteralNode() = delete;
   RawStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };
@@ -47,6 +51,7 @@ class CStringLiteralNode : public ASTNode {
 public:
   CStringLiteralNode() = delete;
   CStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };
@@ -56,6 +61,7 @@ class RawCStringLiteralNode : public ASTNode {
 public:
   RawCStringLiteralNode() = delete;
   RawCStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };
@@ -65,6 +71,7 @@ class IntegerLiteralNode : public ASTNode {
 public:
   IntegerLiteralNode() = delete;
   IntegerLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };
@@ -74,6 +81,7 @@ class TrueNode : public ASTNode {
 public:
   TrueNode() = delete;
   TrueNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   const bool val_ = true;
 };
@@ -83,6 +91,7 @@ class FalseNode : public ASTNode {
 public:
   FalseNode() = delete;
   FalseNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   const bool val_ = false;
 };
@@ -91,7 +100,8 @@ class SuperNode : public ASTNode {
   friend class Printer;
 public:
   SuperNode() = delete;
-  SuperNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+  SuperNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };
@@ -100,7 +110,8 @@ class SelfLowerNode : public ASTNode {
   friend class Printer;
 public:
   SelfLowerNode() = delete;
-  SelfLowerNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+  SelfLowerNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };
@@ -109,7 +120,8 @@ class SelfUpperNode : public ASTNode {
   friend class Printer;
 public:
   SelfUpperNode() = delete;
-  SelfUpperNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+  SelfUpperNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };
@@ -118,7 +130,8 @@ class UnderscoreExpressionNode : public ASTNode {
   friend class Printer;
 public:
   UnderscoreExpressionNode() = delete;
-  UnderscoreExpressionNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+  UnderscoreExpressionNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };
@@ -127,7 +140,8 @@ class ContinueExpressionNode : public ASTNode {
   friend class Printer;
 public:
   ContinueExpressionNode() = delete;
-  ContinueExpressionNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+  ContinueExpressionNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };
@@ -136,7 +150,8 @@ class UnitTypeNode : public ASTNode {
   friend class Printer;
 public:
   UnitTypeNode() = delete;
-  UnitTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+  UnitTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<std::string> val_;
 };

@@ -11,6 +11,7 @@ class LiteralPatternNode : public ASTNode {
 public:
   LiteralPatternNode() = delete;
   LiteralPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   bool hyphen_ = false;
   std::shared_ptr<LiteralExpressionNode> literal_expr_;
@@ -21,6 +22,7 @@ class IdentifierPatternNode : public ASTNode {
 public:
   IdentifierPatternNode() = delete;
   IdentifierPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   bool ref_ = false;
   bool mut_ = false;
@@ -33,6 +35,7 @@ class ReferencePatternNode : public ASTNode {
 public:
   ReferencePatternNode() = delete;
   ReferencePatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   bool single_ = false;
   bool mut_ = false;
@@ -44,6 +47,7 @@ class TupleStructItemsNode : public ASTNode {
 public:
   TupleStructItemsNode() = delete;
   TupleStructItemsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::vector<std::shared_ptr<PatternNode>> patterns_;
   uint32_t comma_cnt_ = 0;
@@ -54,6 +58,7 @@ class TupleStructPatternNode : public ASTNode {
 public:
   TupleStructPatternNode() = delete;
   TupleStructPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<PathInExpressionNode> path_in_expr_;
   std::shared_ptr<TupleStructItemsNode> tuple_struct_items_;
@@ -64,6 +69,7 @@ class PatternWithoutRangeNode : public ASTNode {
 public:
   PatternWithoutRangeNode() = delete;
   PatternWithoutRangeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<LiteralPatternNode> literal_pattern_;
   std::shared_ptr<IdentifierPatternNode> identifier_pattern_;

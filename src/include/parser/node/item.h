@@ -11,6 +11,7 @@ class ConstantItemNode : public ASTNode {
 public:
   ConstantItemNode() = delete;
   ConstantItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<IdentifierNode> identifier_;
   std::shared_ptr<TypeNode> type_;
@@ -22,6 +23,7 @@ class AssociatedItemNode : public ASTNode {
 public:
   AssociatedItemNode() = delete;
   AssociatedItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<ConstantItemNode> constant_item_;
   std::shared_ptr<FunctionNode> function_;
@@ -32,6 +34,7 @@ class ItemNode : public ASTNode {
 public:
   ItemNode() = delete;
   ItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 
 private:
   std::shared_ptr<FunctionNode> function_;

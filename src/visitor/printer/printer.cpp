@@ -21,7 +21,7 @@ void Printer::Prepare() {
   is_lasts_.emplace(true);
 }
 
-void Printer::Visit(std::shared_ptr<CrateNode> node) {
+void Printer::Visit(CrateNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Crate\n";
@@ -30,14 +30,14 @@ void Printer::Visit(std::shared_ptr<CrateNode> node) {
   for (uint32_t i = 0; i < node->items_.size(); ++i) {
     prefixes_.emplace(next);
     is_lasts_.emplace(i + 1 == node->items_.size());
-    Visit(node->items_[i]);
+    Visit(node->items_[i].get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<EnumVariantsNode> node) {
+void Printer::Visit(EnumVariantsNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Enum Variants\n";
@@ -46,7 +46,7 @@ void Printer::Visit(std::shared_ptr<EnumVariantsNode> node) {
   for (uint32_t i = 0; i < node->enum_variant_s_.size(); ++i) {
     prefixes_.emplace(next);
     is_lasts_.emplace(i + 1 == node->enum_variant_s_.size() && node->comma_cnt_ < node->enum_variant_s_.size());
-    Visit(node->enum_variant_s_[i]);
+    Visit(node->enum_variant_s_[i].get());
     os_ << next;
     if (i + 1 == node->enum_variant_s_.size() && node->comma_cnt_ == node->enum_variant_s_.size()) {
       os_ << "└──,\n";
@@ -59,7 +59,7 @@ void Printer::Visit(std::shared_ptr<EnumVariantsNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<EnumerationNode> node) {
+void Printer::Visit(EnumerationNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Enumeration\n";
@@ -68,12 +68,12 @@ void Printer::Visit(std::shared_ptr<EnumerationNode> node) {
   os_ << next << "├──enum\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->identifier_);
+  Visit(node->identifier_.get());
   os_ << next << "├──{\n";
   if (node->enum_variants_) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->enum_variants_);
+    Visit(node->enum_variants_.get());
   }
   os_ << next << "└──}\n";
 
@@ -81,7 +81,7 @@ void Printer::Visit(std::shared_ptr<EnumerationNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<LiteralExpressionNode> node) {
+void Printer::Visit(LiteralExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Literal Expression\n";
@@ -90,42 +90,42 @@ void Printer::Visit(std::shared_ptr<LiteralExpressionNode> node) {
   if (node->char_literal_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->char_literal_);
+    Visit(node->char_literal_.get());
   } else if (node->string_literal_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->string_literal_);
+    Visit(node->string_literal_.get());
   } else if (node->raw_string_literal_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->raw_string_literal_);
+    Visit(node->raw_string_literal_.get());
   } else if (node->c_string_literal_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->c_string_literal_);
+    Visit(node->c_string_literal_.get());
   } else if (node->raw_c_string_literal_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->raw_c_string_literal_);
+    Visit(node->raw_c_string_literal_.get());
   } else if (node->integer_literal_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->integer_literal_);
+    Visit(node->integer_literal_.get());
   } else if (node->true_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->true_);
+    Visit(node->true_.get());
   } else {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->false_);
+    Visit(node->false_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ArrayElementsNode> node) {
+void Printer::Visit(ArrayElementsNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Array Elements\n";
@@ -135,16 +135,16 @@ void Printer::Visit(std::shared_ptr<ArrayElementsNode> node) {
   if (node->semicolon_) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->exprs_[0]);
+    Visit(node->exprs_[0].get());
     os_ << next << "├──;\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->exprs_[1]);
+    Visit(node->exprs_[1].get());
   } else {
     for (uint32_t i = 0; i < node->exprs_.size(); ++i) {
       prefixes_.emplace(next);
       is_lasts_.emplace(i + 1 == node->exprs_.size() && node->comma_cnt_ < node->exprs_.size());
-      Visit(node->exprs_[i]);
+      Visit(node->exprs_[i].get());
       if (i + 1 <= node->comma_cnt_) {
         os_ << next;
         if (i + 1 == node->exprs_.size() && node->comma_cnt_ == node->exprs_.size()) {
@@ -160,7 +160,7 @@ void Printer::Visit(std::shared_ptr<ArrayElementsNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ArrayExpressionNode> node) {
+void Printer::Visit(ArrayExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Array Expression\n";
@@ -170,7 +170,7 @@ void Printer::Visit(std::shared_ptr<ArrayExpressionNode> node) {
   if (node->array_elements_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->array_elements_);
+    Visit(node->array_elements_.get());
   }
   os_ << next << "└──]\n";
 
@@ -178,7 +178,7 @@ void Printer::Visit(std::shared_ptr<ArrayExpressionNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<PathInExpressionNode> node) {
+void Printer::Visit(PathInExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Path In Expression\n";
@@ -187,19 +187,19 @@ void Printer::Visit(std::shared_ptr<PathInExpressionNode> node) {
 
   prefixes_.emplace(next);
   is_lasts_.emplace(node->path_expr_segments_.size() == 1);
-  Visit(node->path_expr_segments_[0]);
+  Visit(node->path_expr_segments_[0].get());
   for (uint32_t i = 1; i < node->path_expr_segments_.size(); ++i) {
     os_ << next << "├──::\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(i + 1 == node->path_expr_segments_.size());
-    Visit(node->path_expr_segments_[i]);
+    Visit(node->path_expr_segments_[i].get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<StructExprFieldNode> node) {
+void Printer::Visit(StructExprFieldNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Path In Expression\n";
@@ -207,19 +207,19 @@ void Printer::Visit(std::shared_ptr<StructExprFieldNode> node) {
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   prefixes_.emplace(next);
   is_lasts_.emplace(node->expr_ == nullptr);
-  Visit(node->identifier_);
+  Visit(node->identifier_.get());
   if (node->expr_ != nullptr) {
     os_ << next << "├──:\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->expr_);
+    Visit(node->expr_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<StructExprFieldsNode> node) {
+void Printer::Visit(StructExprFieldsNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Struct Expr Fields\n";
@@ -229,7 +229,7 @@ void Printer::Visit(std::shared_ptr<StructExprFieldsNode> node) {
   for (uint32_t i = 0; i < node->struct_expr_field_s_.size(); ++i) {
     prefixes_.emplace(next);
     is_lasts_.emplace(i + 1 == node->struct_expr_field_s_.size() && node->comma_cnt_ < node->struct_expr_field_s_.size());
-    Visit(node->struct_expr_field_s_[i]);
+    Visit(node->struct_expr_field_s_[i].get());
     if (i + 1 <= node->comma_cnt_) {
       os_ << next;
       if (i + 1 == node->struct_expr_field_s_.size() && node->comma_cnt_ == node->struct_expr_field_s_.size()) {
@@ -244,7 +244,7 @@ void Printer::Visit(std::shared_ptr<StructExprFieldsNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<StructExpressionNode> node) {
+void Printer::Visit(StructExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Struct Expression\n";
@@ -252,12 +252,12 @@ void Printer::Visit(std::shared_ptr<StructExpressionNode> node) {
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->path_in_expr_);
+  Visit(node->path_in_expr_.get());
   os_ << next << "├──{\n";
   if (node->struct_expr_fields_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->struct_expr_fields_);
+    Visit(node->struct_expr_fields_.get());
   }
   os_ << next << "└──}\n";
 
@@ -265,7 +265,7 @@ void Printer::Visit(std::shared_ptr<StructExpressionNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ExpressionWithoutBlockNode> node) {
+void Printer::Visit(ExpressionWithoutBlockNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Expression Without Block\n";
@@ -273,13 +273,13 @@ void Printer::Visit(std::shared_ptr<ExpressionWithoutBlockNode> node) {
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  Visit(node->expr_);
+  Visit(node->expr_.get());
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<BlockExpressionNode> node) {
+void Printer::Visit(BlockExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Block Expression\n";
@@ -290,7 +290,7 @@ void Printer::Visit(std::shared_ptr<BlockExpressionNode> node) {
   if (node->statements_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->statements_);
+    Visit(node->statements_.get());
   }
   os_ << next << "└──}\n";
 
@@ -298,7 +298,7 @@ void Printer::Visit(std::shared_ptr<BlockExpressionNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ConstBlockExpressionNode> node) {
+void Printer::Visit(ConstBlockExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Const Block Expression\n";
@@ -308,13 +308,13 @@ void Printer::Visit(std::shared_ptr<ConstBlockExpressionNode> node) {
   os_ << next << "├──const\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  Visit(node->block_expr_);
+  Visit(node->block_expr_.get());
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<InfiniteLoopExpressionNode> node) {
+void Printer::Visit(InfiniteLoopExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Infinite Loop Expression\n";
@@ -324,13 +324,13 @@ void Printer::Visit(std::shared_ptr<InfiniteLoopExpressionNode> node) {
   os_ << next << "├──loop\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  Visit(node->block_expr_);
+  Visit(node->block_expr_.get());
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ConditionsNode> node) {
+void Printer::Visit(ConditionsNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Conditions\n";
@@ -340,14 +340,14 @@ void Printer::Visit(std::shared_ptr<ConditionsNode> node) {
   os_ << next << "├──(\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->expr_);
+  Visit(node->expr_.get());
   os_ << next << "└──)\n";
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<PredicateLoopExpressionNode> node) {
+void Printer::Visit(PredicateLoopExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Predicate Loop Expression\n";
@@ -357,16 +357,16 @@ void Printer::Visit(std::shared_ptr<PredicateLoopExpressionNode> node) {
   os_ << next << "├──while\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->conditions_);
+  Visit(node->conditions_.get());
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  Visit(node->block_expr_);
+  Visit(node->block_expr_.get());
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<LoopExpressionNode> node) {
+void Printer::Visit(LoopExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Loop Expression\n";
@@ -376,18 +376,18 @@ void Printer::Visit(std::shared_ptr<LoopExpressionNode> node) {
   if (node->infinite_loop_expr_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->infinite_loop_expr_);
+    Visit(node->infinite_loop_expr_.get());
   } else {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->predicate_loop_expr_);
+    Visit(node->predicate_loop_expr_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<IfExpressionNode> node) {
+void Printer::Visit(IfExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "If Expression\n";
@@ -397,27 +397,27 @@ void Printer::Visit(std::shared_ptr<IfExpressionNode> node) {
   os_ << next << "├──if\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->conditions_);
+  Visit(node->conditions_.get());
   prefixes_.emplace(next);
   is_lasts_.emplace(node->block_expr2_ == nullptr && node->if_expr_ == nullptr);
-  Visit(node->block_expr1_);
+  Visit(node->block_expr1_.get());
   if (node->block_expr2_ != nullptr) {
     os_ << next << "├──else\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->block_expr2_);
+    Visit(node->block_expr2_.get());
   } else if (node->if_expr_ != nullptr) {
     os_ << next << "├──else\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->if_expr_);
+    Visit(node->if_expr_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ExpressionWithBlockNode> node) {
+void Printer::Visit(ExpressionWithBlockNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Expression With Block\n";
@@ -426,20 +426,20 @@ void Printer::Visit(std::shared_ptr<ExpressionWithBlockNode> node) {
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
   if (node->block_expr_ != nullptr) {
-    Visit(node->block_expr_);
+    Visit(node->block_expr_.get());
   } else if (node->const_block_expr_ != nullptr) {
-    Visit(node->const_block_expr_);
+    Visit(node->const_block_expr_.get());
   } else if (node->loop_expr_ != nullptr) {
-    Visit(node->loop_expr_);
+    Visit(node->loop_expr_.get());
   } else {
-    Visit(node->if_expr_);
+    Visit(node->if_expr_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<CallParamsNode> node) {
+void Printer::Visit(CallParamsNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Call Params\n";
@@ -449,7 +449,7 @@ void Printer::Visit(std::shared_ptr<CallParamsNode> node) {
   for (uint32_t i = 0; i < node->exprs_.size(); ++i) {
     prefixes_.emplace(next);
     is_lasts_.emplace(i + 1 == node->exprs_.size() && node->comma_cnt_ < node->exprs_.size());
-    Visit(node->exprs_[i]);
+    Visit(node->exprs_[i].get());
     if (i + 1 <= node->comma_cnt_) {
       os_ << next;
       if (i + 1 == node->exprs_.size() && node->comma_cnt_ == node->exprs_.size()) {
@@ -464,7 +464,7 @@ void Printer::Visit(std::shared_ptr<CallParamsNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ExpressionNode> node) {
+void Printer::Visit(ExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Expression (";
@@ -476,27 +476,27 @@ void Printer::Visit(std::shared_ptr<ExpressionNode> node) {
   if (node->type_ == kLiteralExpr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->literal_expr_);
+    Visit(node->literal_expr_.get());
   } else if (node->type_ == kPathExpr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->path_expr_);
+    Visit(node->path_expr_.get());
   } else if (node->type_ == kArrayExpr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->array_expr_);
+    Visit(node->array_expr_.get());
   } else if (node->type_ == kStructExpr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->struct_expr_);
+    Visit(node->struct_expr_.get());
   } else if (node->type_ == kContinueExpr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->continue_expr_);
+    Visit(node->continue_expr_.get());
   } else if (node->type_ == kUnderscoreExpr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->underscore_expr_);
+    Visit(node->underscore_expr_.get());
   } else if (node->type_ == kBorrowExpr) {
     os_ << next << "├──" << node->op_ << '\n';
     if (node->mut_) {
@@ -504,89 +504,89 @@ void Printer::Visit(std::shared_ptr<ExpressionNode> node) {
     }
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->expr1_);
+    Visit(node->expr1_.get());
   } else if (node->type_ == kDereferenceExpr) {
     os_ << next << "├──*\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->expr1_);
+    Visit(node->expr1_.get());
   } else if (node->type_ == kNegationExpr) {
     os_ << next << "├──" << node->op_ << '\n';
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->expr1_);
+    Visit(node->expr1_.get());
   } else if (node->type_ == kArithmeticOrLogicExpr || node->type_ == kComparisonExpr || node->type_ == kLazyBooleanExpr
     || node->type_ == kAssignmentExpr || node->type_ == kCompoundAssignmentExpr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->expr1_);
+    Visit(node->expr1_.get());
     os_ << next << "├──" << node->op_ << '\n';
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->expr2_);
+    Visit(node->expr2_.get());
   } else if (node->type_ == kTypeCastExpr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->expr1_);
+    Visit(node->expr1_.get());
     os_ << next << "├──as" << '\n';
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->type_no_bounds_);
+    Visit(node->type_no_bounds_.get());
   } else if (node->type_ == kGroupedExpr) {
     os_ << next << "├──(\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->expr1_);
+    Visit(node->expr1_.get());
     os_ << next << "└──)\n";
   } else if (node->type_ == kIndexExpr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->expr1_);
+    Visit(node->expr1_.get());
     os_ << next << "├──[\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->expr2_);
+    Visit(node->expr2_.get());
     os_ << next << "└──]\n";
   } else if (node->type_ == kCallExpr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->expr1_);
+    Visit(node->expr1_.get());
     os_ << next << "├──(\n";
     if (node->call_params_ != nullptr) {
       prefixes_.emplace(next);
       is_lasts_.emplace(false);
-      Visit(node->call_params_);
+      Visit(node->call_params_.get());
     }
     os_ << next << "└──)\n";
   } else if (node->type_ == kMethodCallExpr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->expr1_);
+    Visit(node->expr1_.get());
     os_ << next << "├──.\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->path_expr_segment_);
+    Visit(node->path_expr_segment_.get());
     os_ << next << "├──(\n";
     if (node->call_params_ != nullptr) {
       prefixes_.emplace(next);
       is_lasts_.emplace(false);
-      Visit(node->call_params_);
+      Visit(node->call_params_.get());
     }
     os_ << next << "└──)\n";
   } else if (node->type_ == kFieldExpr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->expr1_);
+    Visit(node->expr1_.get());
     os_ << next << "├──." << '\n';
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->identifier_);
+    Visit(node->identifier_.get());
   } else if (node->type_ == kBreakExpr) {
     if (node->expr1_ != nullptr) {
       os_ << next << "├──break" << '\n';
       prefixes_.emplace(next);
       is_lasts_.emplace(true);
-      Visit(node->expr1_);
+      Visit(node->expr1_.get());
     } else {
       os_ << next << "└──break" << '\n';
     }
@@ -595,21 +595,21 @@ void Printer::Visit(std::shared_ptr<ExpressionNode> node) {
       os_ << next << "├──return" << '\n';
       prefixes_.emplace(next);
       is_lasts_.emplace(true);
-      Visit(node->expr1_);
+      Visit(node->expr1_.get());
     } else {
       os_ << next << "└──return" << '\n';
     }
   } else {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->expr_with_block_);
+    Visit(node->expr_with_block_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ShorthandSelfNode> node) {
+void Printer::Visit(ShorthandSelfNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Shorthand Self\n";
@@ -627,7 +627,7 @@ void Printer::Visit(std::shared_ptr<ShorthandSelfNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<TypedSelfNode> node) {
+void Printer::Visit(TypedSelfNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Typed Self\n";
@@ -640,13 +640,13 @@ void Printer::Visit(std::shared_ptr<TypedSelfNode> node) {
   os_ << next << "├──:\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  Visit(node->type_);
+  Visit(node->type_.get());
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<SelfParamNode> node) {
+void Printer::Visit(SelfParamNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Self Param\n";
@@ -655,16 +655,16 @@ void Printer::Visit(std::shared_ptr<SelfParamNode> node) {
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
   if (node->shorthand_self_) {
-    Visit(node->shorthand_self_);
+    Visit(node->shorthand_self_.get());
   } else {
-    Visit(node->typed_self_);
+    Visit(node->typed_self_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<FunctionParamNode> node) {
+void Printer::Visit(FunctionParamNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Function Param\n";
@@ -672,17 +672,17 @@ void Printer::Visit(std::shared_ptr<FunctionParamNode> node) {
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->pattern_no_top_alt_);
+  Visit(node->pattern_no_top_alt_.get());
   os_ << next << "├──:\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  Visit(node->type_);
+  Visit(node->type_.get());
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<FunctionParametersNode> node) {
+void Printer::Visit(FunctionParametersNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Function Parameters\n";
@@ -691,7 +691,7 @@ void Printer::Visit(std::shared_ptr<FunctionParametersNode> node) {
   if (node->function_params_.empty()) {
     prefixes_.emplace(next);
     is_lasts_.emplace(node->comma_cnt_ == 0);
-    Visit(node->self_param_);
+    Visit(node->self_param_.get());
     if (node->comma_cnt_) {
       os_ << next << "└──,\n";
     }
@@ -699,13 +699,13 @@ void Printer::Visit(std::shared_ptr<FunctionParametersNode> node) {
     if (node->self_param_ != nullptr) {
       prefixes_.emplace(next);
       is_lasts_.emplace(false);
-      Visit(node->self_param_);
+      Visit(node->self_param_.get());
       os_ << next << "├──,\n";
     }
     for (uint32_t i = 0; i < node->function_params_.size(); ++i) {
       prefixes_.emplace(next);
       is_lasts_.emplace(i + 1 == node->function_params_.size() && node->comma_cnt_ < node->function_params_.size() + 1);
-      Visit(node->function_params_[i]);
+      Visit(node->function_params_[i].get());
       if (i + 1 < node->comma_cnt_) {
         os_ << next;
         if (i + 1 == node->function_params_.size() && node->comma_cnt_ == node->function_params_.size() + 1) {
@@ -721,7 +721,7 @@ void Printer::Visit(std::shared_ptr<FunctionParametersNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<FunctionReturnTypeNode> node) {
+void Printer::Visit(FunctionReturnTypeNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Path Ident Segment Expression\n";
@@ -730,13 +730,13 @@ void Printer::Visit(std::shared_ptr<FunctionReturnTypeNode> node) {
   os_ << next << "├──->\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  Visit(node->type_);
+  Visit(node->type_.get());
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<FunctionNode> node) {
+void Printer::Visit(FunctionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Function\n";
@@ -748,32 +748,32 @@ void Printer::Visit(std::shared_ptr<FunctionNode> node) {
   os_ << next << "├──fn\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->identifier_);
+  Visit(node->identifier_.get());
   os_ << next << "├──(\n";
   if (node->function_parameters_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->function_parameters_);
+    Visit(node->function_parameters_.get());
   }
   os_ << next << "├──)\n";
   if (node->function_return_type_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->function_return_type_);
+    Visit(node->function_return_type_.get());
   }
   if (node->semicolon_) {
     os_ << next << "└──;\n";
   } else {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->block_expr_);
+    Visit(node->block_expr_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ImplementationNode> node) {
+void Printer::Visit(ImplementationNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Implementation\n";
@@ -783,24 +783,24 @@ void Printer::Visit(std::shared_ptr<ImplementationNode> node) {
   if (node->identifier_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->identifier_);
+    Visit(node->identifier_.get());
     os_ << next << "├──for\n";
   }
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->type_);
+  Visit(node->type_.get());
   os_ << next << "├──{\n";
   for (auto &associated_item : node->associated_items_) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(associated_item);
+    Visit(associated_item.get());
   }
   os_ << next << "└──}\n";
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ConstantItemNode> node) {
+void Printer::Visit(ConstantItemNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Constant Item\n";
@@ -809,16 +809,16 @@ void Printer::Visit(std::shared_ptr<ConstantItemNode> node) {
   os_ << next << "├──const\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->identifier_);
+  Visit(node->identifier_.get());
   os_ << next << "├──:\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->type_);
+  Visit(node->type_.get());
   if (node->expr_ != nullptr) {
     os_ << next << "├──=\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->expr_);
+    Visit(node->expr_.get());
   }
   os_ << next << "└──;\n";
 
@@ -826,7 +826,7 @@ void Printer::Visit(std::shared_ptr<ConstantItemNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<AssociatedItemNode> node) {
+void Printer::Visit(AssociatedItemNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Associated Item\n";
@@ -835,16 +835,16 @@ void Printer::Visit(std::shared_ptr<AssociatedItemNode> node) {
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
   if (node->constant_item_ != nullptr) {
-    Visit(node->constant_item_);
+    Visit(node->constant_item_.get());
   } else {
-    Visit(node->function_);
+    Visit(node->function_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ItemNode> node) {
+void Printer::Visit(ItemNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Item\n";
@@ -853,24 +853,24 @@ void Printer::Visit(std::shared_ptr<ItemNode> node) {
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
   if (node->function_ != nullptr) {
-    Visit(node->function_);
+    Visit(node->function_.get());
   } else if (node->struct_ != nullptr) {
-    Visit(node->struct_);
+    Visit(node->struct_.get());
   } else if (node->enumeration_ != nullptr) {
-    Visit(node->enumeration_);
+    Visit(node->enumeration_.get());
   } else if (node->constant_item_ != nullptr) {
-    Visit(node->constant_item_);
+    Visit(node->constant_item_.get());
   } else if (node->trait_ != nullptr) {
-    Visit(node->trait_);
+    Visit(node->trait_.get());
   } else {
-    Visit(node->implementation_);
+    Visit(node->implementation_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<PathIdentSegmentNode> node) {
+void Printer::Visit(PathIdentSegmentNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Path Ident Segment Expression\n";
@@ -879,18 +879,18 @@ void Printer::Visit(std::shared_ptr<PathIdentSegmentNode> node) {
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
   if (node->identifier_ != nullptr) {
-    Visit(node->identifier_);
+    Visit(node->identifier_.get());
   } else if (node->self_lower_ != nullptr) {
-    Visit(node->self_lower_);
+    Visit(node->self_lower_.get());
   } else {
-    Visit(node->self_upper_);
+    Visit(node->self_upper_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<LiteralPatternNode> node) {
+void Printer::Visit(LiteralPatternNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Literal Pattern\n";
@@ -901,13 +901,13 @@ void Printer::Visit(std::shared_ptr<LiteralPatternNode> node) {
   }
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  Visit(node->literal_expr_);
+  Visit(node->literal_expr_.get());
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<IdentifierPatternNode> node) {
+void Printer::Visit(IdentifierPatternNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Identifier Pattern\n";
@@ -921,19 +921,19 @@ void Printer::Visit(std::shared_ptr<IdentifierPatternNode> node) {
   }
   prefixes_.emplace(next);
   is_lasts_.emplace(node->pattern_no_top_alt_ == nullptr);
-  Visit(node->identifier_);
+  Visit(node->identifier_.get());
   if (node->pattern_no_top_alt_ != nullptr) {
     os_ << next << "├──@\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->pattern_no_top_alt_);
+    Visit(node->pattern_no_top_alt_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ReferencePatternNode> node) {
+void Printer::Visit(ReferencePatternNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Reference Pattern\n";
@@ -949,13 +949,13 @@ void Printer::Visit(std::shared_ptr<ReferencePatternNode> node) {
   }
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  Visit(node->pattern_without_range_);
+  Visit(node->pattern_without_range_.get());
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<TupleStructItemsNode> node) {
+void Printer::Visit(TupleStructItemsNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Tuple Struct Items\n";
@@ -964,7 +964,7 @@ void Printer::Visit(std::shared_ptr<TupleStructItemsNode> node) {
   for (uint32_t i = 0; i < node->patterns_.size(); ++i) {
     prefixes_.emplace(next);
     is_lasts_.emplace(i + 1 == node->patterns_.size() && node->comma_cnt_ < node->patterns_.size());
-    Visit(node->patterns_[i]);
+    Visit(node->patterns_[i].get());
     if (node->comma_cnt_) {
       os_ << next;
       if (i + 1 == node->patterns_.size() && node->comma_cnt_ == node->patterns_.size()) {
@@ -979,7 +979,7 @@ void Printer::Visit(std::shared_ptr<TupleStructItemsNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<TupleStructPatternNode> node) {
+void Printer::Visit(TupleStructPatternNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Tuple Struct Pattern\n";
@@ -987,12 +987,12 @@ void Printer::Visit(std::shared_ptr<TupleStructPatternNode> node) {
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->path_in_expr_);
+  Visit(node->path_in_expr_.get());
   os_ << next << "├──(\n";
   if (node->tuple_struct_items_ != nullptr) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->tuple_struct_items_);
+    Visit(node->tuple_struct_items_.get());
   }
   os_ << next << "└──)\n";
 
@@ -1000,7 +1000,7 @@ void Printer::Visit(std::shared_ptr<TupleStructPatternNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<PatternWithoutRangeNode> node) {
+void Printer::Visit(PatternWithoutRangeNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Pattern Without Range\n";
@@ -1009,24 +1009,24 @@ void Printer::Visit(std::shared_ptr<PatternWithoutRangeNode> node) {
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
   if (node->literal_pattern_ != nullptr) {
-    Visit(node->literal_pattern_);
+    Visit(node->literal_pattern_.get());
   } else if (node->identifier_pattern_ != nullptr) {
-    Visit(node->identifier_pattern_);
+    Visit(node->identifier_pattern_.get());
   } else if (node->wildcard_pattern_ != nullptr) {
-    Visit(node->wildcard_pattern_);
+    Visit(node->wildcard_pattern_.get());
   } else if (node->reference_pattern_ != nullptr) {
-    Visit(node->reference_pattern_);
+    Visit(node->reference_pattern_.get());
   } else if (node->tuple_struct_pattern_ != nullptr) {
-    Visit(node->tuple_struct_pattern_);
+    Visit(node->tuple_struct_pattern_.get());
   } else {
-    Visit(node->path_pattern_);
+    Visit(node->path_pattern_.get());
   }
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<LetStatementNode> node) {
+void Printer::Visit(LetStatementNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Let Statement\n";
@@ -1035,18 +1035,18 @@ void Printer::Visit(std::shared_ptr<LetStatementNode> node) {
   os_ << next << "├──let\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->pattern_no_top_alt_);
+  Visit(node->pattern_no_top_alt_.get());
   if (node->type_ != nullptr) {
     os_ << next << "├──:\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->type_);
+    Visit(node->type_.get());
   }
   if (node->expr_ != nullptr) {
     os_ << next << "├──=\n";
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(node->expr_);
+    Visit(node->expr_.get());
   }
   os_ << next << "└──;\n";
 
@@ -1054,7 +1054,7 @@ void Printer::Visit(std::shared_ptr<LetStatementNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ExpressionStatementNode> node) {
+void Printer::Visit(ExpressionStatementNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Expression Statement\n";
@@ -1062,7 +1062,7 @@ void Printer::Visit(std::shared_ptr<ExpressionStatementNode> node) {
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   prefixes_.emplace(next);
   is_lasts_.emplace(!node->semicolon_);
-  Visit(node->expr_);
+  Visit(node->expr_.get());
   if (node->semicolon_) {
     os_ << next << "└──;\n";
   }
@@ -1071,7 +1071,7 @@ void Printer::Visit(std::shared_ptr<ExpressionStatementNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<StatementNode> node) {
+void Printer::Visit(StatementNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Statement\n";
@@ -1083,11 +1083,11 @@ void Printer::Visit(std::shared_ptr<StatementNode> node) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
     if (node->item_ != nullptr) {
-      Visit(node->item_);
+      Visit(node->item_.get());
     } else if (node->let_statement_ != nullptr) {
-      Visit(node->let_statement_);
+      Visit(node->let_statement_.get());
     } else {
-      Visit(node->expr_statement_);
+      Visit(node->expr_statement_.get());
     }
   }
 
@@ -1095,7 +1095,7 @@ void Printer::Visit(std::shared_ptr<StatementNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<StatementsNode> node) {
+void Printer::Visit(StatementsNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Statements\n";
@@ -1105,16 +1105,16 @@ void Printer::Visit(std::shared_ptr<StatementsNode> node) {
     for (auto &statement : node->statement_s_) {
       prefixes_.emplace(next);
       is_lasts_.emplace(false);
-      Visit(statement);
+      Visit(statement.get());
     }
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
-    Visit(node->expr_without_block_);
+    Visit(node->expr_without_block_.get());
   } else {
     for (uint32_t i = 0; i < node->statement_s_.size(); ++i) {
       prefixes_.emplace(next);
       is_lasts_.emplace(i + 1 == node->statement_s_.size());
-      Visit(node->statement_s_[i]);
+      Visit(node->statement_s_[i].get());
     }
   }
 
@@ -1122,7 +1122,7 @@ void Printer::Visit(std::shared_ptr<StatementsNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<StructFieldNode> node) {
+void Printer::Visit(StructFieldNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Struct Field\n";
@@ -1130,17 +1130,17 @@ void Printer::Visit(std::shared_ptr<StructFieldNode> node) {
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->identifier_);
+  Visit(node->identifier_.get());
   os_ << next << "├──:\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  Visit(node->type_);
+  Visit(node->type_.get());
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<StructFieldsNode> node) {
+void Printer::Visit(StructFieldsNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Struct Fields\n";
@@ -1150,7 +1150,7 @@ void Printer::Visit(std::shared_ptr<StructFieldsNode> node) {
   for (uint32_t i = 0; i < node->struct_field_s_.size(); ++i) {
     prefixes_.emplace(next);
     is_lasts_.emplace(i + 1 == node->struct_field_s_.size() && node->comma_cnt_ < node->struct_field_s_.size());
-    Visit(node->struct_field_s_[i]);
+    Visit(node->struct_field_s_[i].get());
     if (i + 1 <= node->comma_cnt_) {
       os_ << next;
       if (i + 1 == node->struct_field_s_.size() && node->comma_cnt_ == node->struct_field_s_.size()) {
@@ -1165,7 +1165,7 @@ void Printer::Visit(std::shared_ptr<StructFieldsNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<StructNode> node) {
+void Printer::Visit(StructNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Struct\n";
@@ -1174,7 +1174,7 @@ void Printer::Visit(std::shared_ptr<StructNode> node) {
   os_ << next << "├──struct\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->identifier_);
+  Visit(node->identifier_.get());
   if (node->semicolon_) {
     os_ << next << "└──;\n";
   } else {
@@ -1182,7 +1182,7 @@ void Printer::Visit(std::shared_ptr<StructNode> node) {
     if (node->struct_fields_) {
       prefixes_.emplace(next);
       is_lasts_.emplace(false);
-      Visit(node->struct_fields_);
+      Visit(node->struct_fields_.get());
     }
     os_ << next << "└──}\n";
   }
@@ -1191,7 +1191,7 @@ void Printer::Visit(std::shared_ptr<StructNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<IdentifierNode> node) {
+void Printer::Visit(IdentifierNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Identifier\n";
@@ -1203,7 +1203,7 @@ void Printer::Visit(std::shared_ptr<IdentifierNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<CharLiteralNode> node) {
+void Printer::Visit(CharLiteralNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Char Literal\n";
@@ -1215,7 +1215,7 @@ void Printer::Visit(std::shared_ptr<CharLiteralNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<StringLiteralNode> node) {
+void Printer::Visit(StringLiteralNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "String Literal\n";
@@ -1227,7 +1227,7 @@ void Printer::Visit(std::shared_ptr<StringLiteralNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<RawStringLiteralNode> node) {
+void Printer::Visit(RawStringLiteralNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Raw String Literal\n";
@@ -1239,7 +1239,7 @@ void Printer::Visit(std::shared_ptr<RawStringLiteralNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<CStringLiteralNode> node) {
+void Printer::Visit(CStringLiteralNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "C String Literal\n";
@@ -1251,7 +1251,7 @@ void Printer::Visit(std::shared_ptr<CStringLiteralNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<RawCStringLiteralNode> node) {
+void Printer::Visit(RawCStringLiteralNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Raw C String Literal\n";
@@ -1263,7 +1263,7 @@ void Printer::Visit(std::shared_ptr<RawCStringLiteralNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<IntegerLiteralNode> node) {
+void Printer::Visit(IntegerLiteralNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Integer Literal\n";
@@ -1275,7 +1275,7 @@ void Printer::Visit(std::shared_ptr<IntegerLiteralNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<TrueNode> node) {
+void Printer::Visit(TrueNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "True\n";
@@ -1287,7 +1287,7 @@ void Printer::Visit(std::shared_ptr<TrueNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<FalseNode> node) {
+void Printer::Visit(FalseNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "False\n";
@@ -1299,7 +1299,7 @@ void Printer::Visit(std::shared_ptr<FalseNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<SuperNode> node) {
+void Printer::Visit(SuperNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Super\n";
@@ -1311,7 +1311,7 @@ void Printer::Visit(std::shared_ptr<SuperNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<SelfLowerNode> node) {
+void Printer::Visit(SelfLowerNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Self Lower\n";
@@ -1323,7 +1323,7 @@ void Printer::Visit(std::shared_ptr<SelfLowerNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<SelfUpperNode> node) {
+void Printer::Visit(SelfUpperNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Self Upper\n";
@@ -1335,7 +1335,7 @@ void Printer::Visit(std::shared_ptr<SelfUpperNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<UnderscoreExpressionNode> node) {
+void Printer::Visit(UnderscoreExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Underscore Expression\n";
@@ -1347,7 +1347,7 @@ void Printer::Visit(std::shared_ptr<UnderscoreExpressionNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ContinueExpressionNode> node) {
+void Printer::Visit(ContinueExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Continue Expression\n";
@@ -1359,7 +1359,7 @@ void Printer::Visit(std::shared_ptr<ContinueExpressionNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<TraitNode> node) {
+void Printer::Visit(TraitNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Trait\n";
@@ -1369,12 +1369,12 @@ void Printer::Visit(std::shared_ptr<TraitNode> node) {
   os_ << next << "├──trait\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->identifier_);
+  Visit(node->identifier_.get());
   os_ << next << "├──{\n";
   for (auto &associated_item : node->asscociated_items_) {
     prefixes_.emplace(next);
     is_lasts_.emplace(false);
-    Visit(associated_item);
+    Visit(associated_item.get());
   }
   os_ << next << "└──}\n";
 
@@ -1382,7 +1382,7 @@ void Printer::Visit(std::shared_ptr<TraitNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ReferenceTypeNode> node) {
+void Printer::Visit(ReferenceTypeNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Reference Type\n";
@@ -1394,13 +1394,13 @@ void Printer::Visit(std::shared_ptr<ReferenceTypeNode> node) {
   }
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  Visit(node->type_no_bounds_);
+  Visit(node->type_no_bounds_.get());
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<ArrayTypeNode> node) {
+void Printer::Visit(ArrayTypeNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Array Type\n";
@@ -1409,18 +1409,18 @@ void Printer::Visit(std::shared_ptr<ArrayTypeNode> node) {
   os_ << next << "├──[\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->type_);
+  Visit(node->type_.get());
   os_ << next << "├──;\n";
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
-  Visit(node->expr_);
+  Visit(node->expr_.get());
   os_ << next << "└──]\n";
 
   prefixes_.pop();
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<UnitTypeNode> node) {
+void Printer::Visit(UnitTypeNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Unit Type\n";
@@ -1433,7 +1433,7 @@ void Printer::Visit(std::shared_ptr<UnitTypeNode> node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(std::shared_ptr<TypeNoBoundsNode> node) {
+void Printer::Visit(TypeNoBoundsNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Type No Bounds\n";
@@ -1442,13 +1442,13 @@ void Printer::Visit(std::shared_ptr<TypeNoBoundsNode> node) {
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
   if (node->type_path_ != nullptr) {
-    Visit(node->type_path_);
+    Visit(node->type_path_.get());
   } else if (node->reference_type_ != nullptr) {
-    Visit(node->reference_type_);
+    Visit(node->reference_type_.get());
   } else if (node->array_type_ != nullptr) {
-    Visit(node->array_type_);
+    Visit(node->array_type_.get());
   } else {
-    Visit(node->unit_type_);
+    Visit(node->unit_type_.get());
   }
 
   prefixes_.pop();

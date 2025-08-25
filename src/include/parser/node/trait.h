@@ -11,6 +11,7 @@ class TraitNode : public ASTNode {
 public:
   TraitNode() = delete;
   TraitNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<IdentifierNode> identifier_;
   std::vector<std::shared_ptr<AssociatedItemNode>> asscociated_items_;

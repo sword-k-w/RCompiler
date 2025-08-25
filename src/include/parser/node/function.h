@@ -10,6 +10,7 @@ class ShorthandSelfNode : public ASTNode {
 public:
   ShorthandSelfNode() = delete;
   ShorthandSelfNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   bool quote_ = false;
   bool mut_ = false;
@@ -21,6 +22,7 @@ class TypedSelfNode : public ASTNode {
 public:
   TypedSelfNode() = delete;
   TypedSelfNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   bool mut_ = false;
   std::shared_ptr<SelfLowerNode> self_lower_;
@@ -32,6 +34,7 @@ class SelfParamNode : public ASTNode {
 public:
   SelfParamNode() = delete;
   SelfParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<ShorthandSelfNode> shorthand_self_;
   std::shared_ptr<TypedSelfNode> typed_self_;
@@ -43,6 +46,7 @@ class FunctionParamNode : public ASTNode {
 public:
   FunctionParamNode() = delete;
   FunctionParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<PatternNoTopAltNode> pattern_no_top_alt_;
   std::shared_ptr<TypeNode> type_;
@@ -53,6 +57,7 @@ class FunctionParametersNode : public ASTNode {
 public:
   FunctionParametersNode() = delete;
   FunctionParametersNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<SelfParamNode> self_param_;
   uint32_t comma_cnt_ = 0;
@@ -64,6 +69,7 @@ class FunctionReturnTypeNode : public ASTNode {
 public:
   FunctionReturnTypeNode() = delete;
   FunctionReturnTypeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<TypeNode> type_;
 };
@@ -73,6 +79,7 @@ class FunctionNode : public ASTNode {
 public:
   FunctionNode() = delete;
   FunctionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   bool const_ = false;
   std::shared_ptr<IdentifierNode> identifier_;

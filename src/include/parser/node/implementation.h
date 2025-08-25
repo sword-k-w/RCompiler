@@ -11,6 +11,7 @@ class ImplementationNode : public ASTNode {
 public:
   ImplementationNode();
   ImplementationNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<TypeNode> type_;
   std::shared_ptr<IdentifierNode> identifier_;

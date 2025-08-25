@@ -10,7 +10,8 @@ class PathIdentSegmentNode : public ASTNode {
   friend class Printer;
 public:
   PathIdentSegmentNode() = delete;
-  PathIdentSegmentNode(const std::vector<Token>&, uint32_t&, const uint32_t&);
+  PathIdentSegmentNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<IdentifierNode> identifier_;
   std::shared_ptr<SelfLowerNode> self_lower_;

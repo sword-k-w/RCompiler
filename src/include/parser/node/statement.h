@@ -10,6 +10,7 @@ class LetStatementNode : public ASTNode {
 public:
   LetStatementNode() = delete;
   LetStatementNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<PatternNoTopAltNode> pattern_no_top_alt_;
   std::shared_ptr<TypeNode> type_;
@@ -21,6 +22,7 @@ class ExpressionStatementNode : public ASTNode {
 public:
   ExpressionStatementNode() = delete;
   ExpressionStatementNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<ExpressionNode> expr_;
   bool semicolon_ = false;
@@ -31,6 +33,7 @@ class StatementNode : public ASTNode {
 public:
   StatementNode() = delete;
   StatementNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   bool semicolon_ = false;
   std::shared_ptr<ItemNode> item_;
@@ -43,6 +46,7 @@ class StatementsNode : public ASTNode {
 public:
   StatementsNode() = delete;
   StatementsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
+  void Accept(VisitorBase *) override;
 private:
   std::vector<std::shared_ptr<StatementNode>> statement_s_;
   std::shared_ptr<ExpressionWithoutBlockNode> expr_without_block_;

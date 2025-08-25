@@ -1,6 +1,8 @@
 #ifndef SCOPE_H
 #define SCOPE_H
 
-#include "common/memory_pool.hpp"
+class Scope {
+
+};
 
 #endif //SCOPE_H
