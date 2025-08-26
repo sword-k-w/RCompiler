@@ -14,5 +14,6 @@ public:
   void CheckLength(const uint32_t &, const uint32_t &) const;
   virtual void Accept(VisitorBase *) = 0;
 private:
+  std::shared_ptr<std::string> name_;
   std::shared_ptr<Scope> scope_;
 };

@@ -1,10 +1,11 @@
 #include "visitor/checker/first_checker.h"
 
-#include <parser/node/crate.h>
+#include "parser/node/crate.h"
+#include "parser/node/item.h"
 
 void FirstChecker::Visit(CrateNode *node) {
   for (auto &item : node->items_) {
-
+    item->Accept(this);
   }
 }
 
