@@ -36,8 +36,8 @@ ConstantItemNode::ConstantItemNode(const std::vector<Token> &tokens, uint32_t &p
       }
     }
     ++pos;
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -55,8 +55,8 @@ AssociatedItemNode::AssociatedItemNode(const std::vector<Token> &tokens, uint32_
     } else {
       throw Error("try parsing Associated Item Node but first token isn't const or fn");
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -85,7 +85,7 @@ ItemNode::ItemNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32
     } else {
       throw Error("try parsing Item Node but the first identifier or keyword is unexpected");
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }

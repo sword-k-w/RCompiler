@@ -27,8 +27,8 @@ LiteralExpressionNode::LiteralExpressionNode(const std::vector<Token> &tokens, u
     } else {
       throw Error("try parsing Literal Expression Node but unexpected token");
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -54,8 +54,8 @@ ArrayElementsNode::ArrayElementsNode(const std::vector<Token> &tokens, uint32_t 
         exprs_.push_back(std::make_shared<ExpressionNode>(tokens, pos, length));
       }
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -75,8 +75,8 @@ ArrayExpressionNode::ArrayExpressionNode(const std::vector<Token> &tokens, uint3
       }
     }
     ++pos;
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -87,8 +87,8 @@ PathInExpressionNode::PathInExpressionNode(const std::vector<Token> &tokens, uin
       ++pos;
       path_expr_segments_.push_back(std::make_shared<PathExprSegmentNode>(tokens, pos, length));
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -100,8 +100,8 @@ StructExprFieldNode::StructExprFieldNode(const std::vector<Token> &tokens, uint3
       ++pos;
       expr_ = std::make_shared<ExpressionNode>(tokens, pos, length);
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -119,8 +119,8 @@ StructExprFieldsNode::StructExprFieldsNode(const std::vector<Token> &tokens, uin
       }
       struct_expr_field_s_.push_back(std::make_shared<StructExprFieldNode>(tokens, pos, length));
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -141,8 +141,8 @@ StructExpressionNode::StructExpressionNode(const std::vector<Token> &tokens, uin
       }
     }
     ++pos;
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -153,8 +153,8 @@ ExpressionWithoutBlockNode::ExpressionWithoutBlockNode(const std::vector<Token> 
     if (expr_->Type() == kExprWithBlock) {
       throw Error("try parsing Expression Without Block Node but with block");
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -174,8 +174,8 @@ BlockExpressionNode::BlockExpressionNode(const std::vector<Token> &tokens, uint3
       }
     }
     ++pos;
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -187,8 +187,8 @@ ConstBlockExpressionNode::ConstBlockExpressionNode(const std::vector<Token> &tok
     }
     ++pos;
     block_expr_ = std::make_shared<BlockExpressionNode>(tokens, pos, length);
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -207,8 +207,8 @@ ConditionsNode::ConditionsNode(const std::vector<Token> &tokens, uint32_t &pos, 
       throw Error("try parsing Conditions Node but no )");
     }
     ++pos;
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -220,8 +220,8 @@ InfiniteLoopExpressionNode::InfiniteLoopExpressionNode(const std::vector<Token> 
     }
     ++pos;
     block_expr_ = std::make_shared<BlockExpressionNode>(tokens, pos, length);
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -234,8 +234,8 @@ PredicateLoopExpressionNode::PredicateLoopExpressionNode(const std::vector<Token
     ++pos;
     conditions_ = std::make_shared<ConditionsNode>(tokens, pos, length);
     block_expr_ = std::make_shared<BlockExpressionNode>(tokens, pos, length);
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -249,8 +249,8 @@ LoopExpressionNode::LoopExpressionNode(const std::vector<Token> &tokens, uint32_
     } else {
       throw Error("try parsing Loop Expression Node but unexpected token");
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -275,8 +275,8 @@ IfExpressionNode::IfExpressionNode(const std::vector<Token> &tokens, uint32_t &p
         throw Error("try parsing If Expression Node but unexpected token after else");
       }
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -294,8 +294,8 @@ ExpressionWithBlockNode::ExpressionWithBlockNode(const std::vector<Token> &token
     } else {
       throw Error("try parsing Expression With Block Node but unexpected token");
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -314,8 +314,8 @@ CallParamsNode::CallParamsNode(const std::vector<Token> &tokens, uint32_t &pos, 
       }
       exprs_.push_back(std::make_shared<ExpressionNode>(tokens, pos, length));
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -455,8 +455,8 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
         ++pos;
       }
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 

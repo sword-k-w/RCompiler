@@ -19,8 +19,8 @@ ShorthandSelfNode::ShorthandSelfNode(const std::vector<Token> &tokens, uint32_t 
       CheckLength(pos, length);
     }
     self_lower_ = std::make_shared<SelfLowerNode>(tokens, pos, length);
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -39,8 +39,8 @@ TypedSelfNode::TypedSelfNode(const std::vector<Token> &tokens, uint32_t &pos, co
     }
     ++pos;
     type_ = std::make_shared<TypeNode>(tokens, pos, length);
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -54,8 +54,8 @@ SelfParamNode::SelfParamNode(const std::vector<Token> &tokens, uint32_t &pos, co
       pos = tmp;
       typed_self_ = std::make_shared<TypedSelfNode>(tokens, pos, length);
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -68,8 +68,8 @@ FunctionParamNode::FunctionParamNode(const std::vector<Token> &tokens, uint32_t 
     }
     ++pos;
     type_ = std::make_shared<TypeNode>(tokens, pos, length);
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -107,8 +107,8 @@ FunctionParametersNode::FunctionParametersNode(const std::vector<Token> &tokens,
       }
       function_params_.push_back(std::make_shared<FunctionParamNode>(tokens, pos, length));
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -120,8 +120,8 @@ FunctionReturnTypeNode::FunctionReturnTypeNode(const std::vector<Token> &tokens,
     }
     ++pos;
     type_ = std::make_shared<TypeNode>(tokens, pos, length);
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -162,7 +162,7 @@ FunctionNode::FunctionNode(const std::vector<Token> &tokens, uint32_t &pos, cons
     } else {
       block_expr_ = std::make_shared<BlockExpressionNode>(tokens, pos, length);
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }

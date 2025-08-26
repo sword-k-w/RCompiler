@@ -2,10 +2,18 @@
 
 #include "parser/node/crate.h"
 #include "parser/node/item.h"
+#include "common/error.h"
 
 void FirstChecker::Visit(CrateNode *node) {
-  for (auto &item : node->items_) {
-    item->Accept(this);
+  try {
+    for (auto &item : node->items_) {
+      item->Accept(this);
+      if (item->struct_ != nullptr || item->enumeration_ != nullptr || item->trait_ != nullptr) {
+
+      }
+    }
+  } catch (Error &) {
+    throw;
   }
 }
 

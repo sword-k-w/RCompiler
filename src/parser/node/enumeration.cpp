@@ -20,8 +20,8 @@ EnumVariantsNode::EnumVariantsNode(const std::vector<Token> &tokens, uint32_t &p
     if (pos >= length) {
       throw Error("try parsing Enum Variants Node but no }");
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -44,7 +44,7 @@ EnumerationNode::EnumerationNode(const std::vector<Token> &tokens, uint32_t &pos
       throw Error("try parsing Enumeration Node but no }");
     }
     ++pos;
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }

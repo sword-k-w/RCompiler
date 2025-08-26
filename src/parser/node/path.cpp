@@ -19,7 +19,7 @@ PathIdentSegmentNode::PathIdentSegmentNode(const std::vector<Token> &tokens, uin
     } else {
       identifier_ = std::make_shared<IdentifierNode>(tokens, pos, length);
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }

@@ -7,7 +7,7 @@ CrateNode::CrateNode(const std::vector<Token> &tokens, uint32_t &pos, const uint
     while (pos < length) {
       items_.push_back(std::make_shared<ItemNode>(tokens, pos, length));
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }

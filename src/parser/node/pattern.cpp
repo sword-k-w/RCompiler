@@ -11,8 +11,8 @@ LiteralPatternNode::LiteralPatternNode(const std::vector<Token> &tokens, uint32_
       ++pos;
     }
     literal_expr_ = std::make_shared<LiteralExpressionNode>(tokens, pos, length);
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -36,8 +36,8 @@ IdentifierPatternNode::IdentifierPatternNode(const std::vector<Token> &tokens, u
       CheckLength(pos, length);
       pattern_no_top_alt_ = std::make_shared<PatternNoTopAltNode>(tokens, pos, length);
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -55,8 +55,8 @@ ReferencePatternNode::ReferencePatternNode(const std::vector<Token> &tokens, uin
       mut_ = true;
     }
     pattern_without_range_ = std::make_shared<PatternWithoutRangeNode>(tokens, pos, length);
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -74,8 +74,8 @@ TupleStructItemsNode::TupleStructItemsNode(const std::vector<Token> &tokens, uin
       }
       patterns_.push_back(std::make_shared<PatternNode>(tokens, pos, length));
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -96,8 +96,8 @@ TupleStructPatternNode::TupleStructPatternNode(const std::vector<Token> &tokens,
       }
     }
     ++pos;
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -130,7 +130,7 @@ PatternWithoutRangeNode::PatternWithoutRangeNode(const std::vector<Token> &token
         }
       }
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }

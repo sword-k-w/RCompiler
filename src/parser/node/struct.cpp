@@ -12,8 +12,8 @@ StructFieldNode::StructFieldNode(const std::vector<Token> &tokens, uint32_t &pos
     }
     ++pos;
     type_ = std::make_shared<TypeNode>(tokens, pos, length);
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -35,8 +35,8 @@ StructFieldsNode::StructFieldsNode(const std::vector<Token> &tokens, uint32_t &p
     if (pos >= length) {
       throw Error("try parsing Struct Fields Node but no }");
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
 
@@ -67,7 +67,7 @@ StructNode::StructNode(const std::vector<Token> &tokens, uint32_t &pos, const ui
       }
       ++pos;
     }
-  } catch (Error &err) {
-    throw err;
+  } catch (Error &) {
+    throw;
   }
 }
