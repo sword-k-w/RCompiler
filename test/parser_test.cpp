@@ -27,7 +27,7 @@ std::shared_ptr<T> TestCode(const std::string &s) {
 }
 
 TEST(ParserTest, ExpressionBasicTest1) {
-  TestCode<ExpressionNode>("1+{");
+  TestCode<ExpressionNode>("1+2");
 }
 
 TEST(ParserTest, ExpressionBasicTest2) {

@@ -60,3 +60,10 @@ leaf expression:
 * ContinueExpression
 * UnderscoreExpression
 * ExpressionWithBlock
+
+## Semantic
+
+### First Round
+
+* build scope tree
+* collect the name of items.

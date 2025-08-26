@@ -8,6 +8,7 @@
 
 class ConstantItemNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   ConstantItemNode() = delete;
   ConstantItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -20,6 +21,7 @@ private:
 
 class AssociatedItemNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   AssociatedItemNode() = delete;
   AssociatedItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -31,6 +33,7 @@ private:
 
 class ItemNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   ItemNode() = delete;
   ItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

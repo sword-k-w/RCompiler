@@ -1,6 +1,4 @@
-#ifndef VISITOR_BASE_H
-#define VISITOR_BASE_H
-
+#pragma once
 
 #include "parser/class_declaration.h"
 #include <memory>
@@ -73,5 +71,3 @@ public:
   virtual void Visit(UnitTypeNode *) = 0;
   virtual void Visit(TypeNoBoundsNode *) = 0;
 };
-
-#endif //VISITOR_BASE_H

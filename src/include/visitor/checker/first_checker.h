@@ -1,14 +1,11 @@
 #pragma once
 
+#include "visitor/checker/first_checker.h"
 #include "visitor/base/visitor_base.h"
-#include <stack>
-#include <iostream>
 
-class Printer : public VisitorBase {
+class FirstChecker : public VisitorBase {
 public:
-  Printer() = delete;
-  explicit Printer(std::ostream &);
-  void Prepare();
+  FirstChecker();
   void Visit(CrateNode *) override;
   void Visit(EnumVariantsNode *) override;
   void Visit(EnumerationNode *) override;
@@ -74,8 +71,4 @@ public:
   void Visit(ArrayTypeNode *) override;
   void Visit(UnitTypeNode *) override;
   void Visit(TypeNoBoundsNode *) override;
-private:
-  std::ostream &os_;
-  std::stack<std::string> prefixes_;
-  std::stack<bool> is_lasts_;
 };

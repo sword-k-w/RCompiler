@@ -8,6 +8,7 @@
 
 class LiteralPatternNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   LiteralPatternNode() = delete;
   LiteralPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -19,6 +20,7 @@ private:
 
 class IdentifierPatternNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   IdentifierPatternNode() = delete;
   IdentifierPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -32,6 +34,7 @@ private:
 
 class ReferencePatternNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   ReferencePatternNode() = delete;
   ReferencePatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -44,6 +47,7 @@ private:
 
 class TupleStructItemsNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   TupleStructItemsNode() = delete;
   TupleStructItemsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -55,6 +59,7 @@ private:
 
 class TupleStructPatternNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   TupleStructPatternNode() = delete;
   TupleStructPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -66,6 +71,7 @@ private:
 
 class PatternWithoutRangeNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   PatternWithoutRangeNode() = delete;
   PatternWithoutRangeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

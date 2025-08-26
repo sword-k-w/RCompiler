@@ -7,6 +7,7 @@
 
 class ShorthandSelfNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   ShorthandSelfNode() = delete;
   ShorthandSelfNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -19,6 +20,7 @@ private:
 
 class TypedSelfNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   TypedSelfNode() = delete;
   TypedSelfNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -31,6 +33,7 @@ private:
 
 class SelfParamNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   SelfParamNode() = delete;
   SelfParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -43,6 +46,7 @@ private:
 
 class FunctionParamNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   FunctionParamNode() = delete;
   FunctionParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -54,6 +58,7 @@ private:
 
 class FunctionParametersNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   FunctionParametersNode() = delete;
   FunctionParametersNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -66,6 +71,7 @@ private:
 
 class FunctionReturnTypeNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   FunctionReturnTypeNode() = delete;
   FunctionReturnTypeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -76,6 +82,7 @@ private:
 
 class FunctionNode : public ASTNode {
   friend class Printer;
+  friend class FirstChecker;
 public:
   FunctionNode() = delete;
   FunctionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
