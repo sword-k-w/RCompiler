@@ -3,6 +3,7 @@
 #include "parser/class_declaration.h"
 #include "lexer/lexer.h"
 #include "parser/node/AST_node.h"
+#include "semantic/type/type.h"
 #include <cstdint>
 #include <memory>
 
@@ -14,6 +15,7 @@ public:
   ReferenceTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
+  std::shared_ptr<Type> type_info_;
   bool mut_ = false;
   std::shared_ptr<TypeNoBoundsNode> type_no_bounds_;
 };
@@ -26,6 +28,7 @@ public:
   ArrayTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
+  std::shared_ptr<Type> type_info_;
   std::shared_ptr<TypeNode> type_;
   std::shared_ptr<ExpressionNode> expr_;
 };
@@ -38,6 +41,7 @@ public:
   TypeNoBoundsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
+  std::shared_ptr<Type> type_info_;
   std::shared_ptr<TypePathNode> type_path_;
   std::shared_ptr<ReferenceTypeNode> reference_type_;
   std::shared_ptr<ArrayTypeNode> array_type_;

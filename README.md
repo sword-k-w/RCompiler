@@ -66,4 +66,4 @@ leaf expression:
 ### First Round
 
 * build scope tree
-* collect the name of items.
+* collect the name of items. (using 0/1 BFS to ensure names in same scope are added successively)

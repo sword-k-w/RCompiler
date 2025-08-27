@@ -25,7 +25,7 @@ struct EnumTypeInfo {
 
 struct Type {
   TypeType type_;
-  std::string name_;
+  std::shared_ptr<std::string> name_;
   std::shared_ptr<ArrayTypeInfo> array_type_info_;
   std::shared_ptr<StructTypeInfo> struct_type_info_;
   std::shared_ptr<EnumTypeInfo> enum_type_info_;

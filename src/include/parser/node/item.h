@@ -38,7 +38,6 @@ public:
   ItemNode() = delete;
   ItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
   void Accept(VisitorBase *) override;
-
 private:
   std::shared_ptr<FunctionNode> function_;
   std::shared_ptr<StructNode> struct_;
@@ -46,4 +45,6 @@ private:
   std::shared_ptr<ConstantItemNode> constant_item_;
   std::shared_ptr<TraitNode> trait_;
   std::shared_ptr<ImplementationNode> implementation_;
+
+  std::shared_ptr<std::string> identifier_;
 };

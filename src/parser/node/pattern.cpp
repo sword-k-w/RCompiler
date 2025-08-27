@@ -60,47 +60,6 @@ ReferencePatternNode::ReferencePatternNode(const std::vector<Token> &tokens, uin
   }
 }
 
-TupleStructItemsNode::TupleStructItemsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Tuple Struct Itmes") {
-  try {
-    patterns_.push_back(std::make_shared<PatternNode>(tokens, pos, length));
-    while (pos < length && tokens[pos].lexeme != ")") {
-      if (tokens[pos].lexeme != ",") {
-        throw Error("try parsing Tuple Struct Items Node but not ,");
-      }
-      ++comma_cnt_;
-      ++pos;
-      if (tokens[pos].lexeme == ")") {
-        break;
-      }
-      patterns_.push_back(std::make_shared<PatternNode>(tokens, pos, length));
-    }
-  } catch (Error &) {
-    throw;
-  }
-}
-
-TupleStructPatternNode::TupleStructPatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Tuple Struct Pattern") {
-  try {
-    path_in_expr_ = std::make_shared<PathInExpressionNode>(tokens, pos, length);
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "(") {
-      throw Error("try parsing Tuple Struct Pattern Node but no (");
-    }
-    ++pos;
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != ")") {
-      tuple_struct_items_ = std::make_shared<TupleStructItemsNode>(tokens, pos, length);
-      CheckLength(pos, length);
-      if (tokens[pos].lexeme != ")") {
-        throw Error("try parsing Tuple Struct Pattern Node but no }");
-      }
-    }
-    ++pos;
-  } catch (Error &) {
-    throw;
-  }
-}
-
 PatternWithoutRangeNode::PatternWithoutRangeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Pattern Without Range") {
   try {
     CheckLength(pos, length);
@@ -120,13 +79,7 @@ PatternWithoutRangeNode::PatternWithoutRangeNode(const std::vector<Token> &token
         } catch (...) {
           path_pattern_ = nullptr;
           pos = tmp;
-          try {
-            tuple_struct_pattern_ = std::make_shared<TupleStructPatternNode>(tokens, pos, length);
-          } catch (...) {
-            tuple_struct_pattern_ = nullptr;
-            pos = tmp;
-            identifier_pattern_ = std::make_shared<IdentifierPatternNode>(tokens, pos, length);
-          }
+          identifier_pattern_ = std::make_shared<IdentifierPatternNode>(tokens, pos, length);
         }
       }
     }

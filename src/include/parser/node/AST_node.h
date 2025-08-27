@@ -9,11 +9,13 @@
 #include "semantic/symbol/symbol.h"
 
 class ASTNode {
+  friend class FirstChecker;
 public:
   ASTNode() = delete;
   explicit ASTNode(const std::string_view &);
   void CheckLength(const uint32_t &, const uint32_t &) const;
   virtual void Accept(VisitorBase *) = 0;
+  virtual ~ASTNode() = default;
 protected:
   std::shared_ptr<Scope> scope_;
   SymbolInfo symbol_info_;

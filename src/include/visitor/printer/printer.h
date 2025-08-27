@@ -45,8 +45,6 @@ public:
   void Visit(LiteralPatternNode *) override;
   void Visit(IdentifierPatternNode *) override;
   void Visit(ReferencePatternNode *) override;
-  void Visit(TupleStructItemsNode *) override;
-  void Visit(TupleStructPatternNode *) override;
   void Visit(PatternWithoutRangeNode *) override;
   void Visit(LetStatementNode *) override;
   void Visit(ExpressionStatementNode *) override;

@@ -2,6 +2,8 @@
 
 #include "visitor/checker/first_checker.h"
 #include "visitor/base/visitor_base.h"
+#include <deque>
+#include <parser/node/AST_node.h>
 
 class FirstChecker : public VisitorBase {
 public:
@@ -42,8 +44,6 @@ public:
   void Visit(LiteralPatternNode *) override;
   void Visit(IdentifierPatternNode *) override;
   void Visit(ReferencePatternNode *) override;
-  void Visit(TupleStructItemsNode *) override;
-  void Visit(TupleStructPatternNode *) override;
   void Visit(PatternWithoutRangeNode *) override;
   void Visit(LetStatementNode *) override;
   void Visit(ExpressionStatementNode *) override;
@@ -71,4 +71,9 @@ public:
   void Visit(ArrayTypeNode *) override;
   void Visit(UnitTypeNode *) override;
   void Visit(TypeNoBoundsNode *) override;
+  void Run(CrateNode *);
+private:
+  std::deque<ASTNode *> node_queue_;
+  void NewScope(ASTNode *, ASTNode *);
+  void OldScope(ASTNode *father, ASTNode *son);
 };

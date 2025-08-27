@@ -45,30 +45,6 @@ private:
   std::shared_ptr<PatternWithoutRangeNode> pattern_without_range_;
 };
 
-class TupleStructItemsNode : public ASTNode {
-  friend class Printer;
-  friend class FirstChecker;
-public:
-  TupleStructItemsNode() = delete;
-  TupleStructItemsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-  void Accept(VisitorBase *) override;
-private:
-  std::vector<std::shared_ptr<PatternNode>> patterns_;
-  uint32_t comma_cnt_ = 0;
-};
-
-class TupleStructPatternNode : public ASTNode {
-  friend class Printer;
-  friend class FirstChecker;
-public:
-  TupleStructPatternNode() = delete;
-  TupleStructPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-  void Accept(VisitorBase *) override;
-private:
-  std::shared_ptr<PathInExpressionNode> path_in_expr_;
-  std::shared_ptr<TupleStructItemsNode> tuple_struct_items_;
-};
-
 class PatternWithoutRangeNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
@@ -81,6 +57,5 @@ private:
   std::shared_ptr<IdentifierPatternNode> identifier_pattern_;
   std::shared_ptr<WildcardPatternNode> wildcard_pattern_;
   std::shared_ptr<ReferencePatternNode> reference_pattern_;
-  std::shared_ptr<TupleStructPatternNode> tuple_struct_pattern_;
   std::shared_ptr<PathPatternNode> path_pattern_;
 };

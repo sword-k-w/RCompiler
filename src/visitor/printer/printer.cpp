@@ -955,51 +955,6 @@ void Printer::Visit(ReferencePatternNode *node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(TupleStructItemsNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Tuple Struct Items\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-  for (uint32_t i = 0; i < node->patterns_.size(); ++i) {
-    prefixes_.emplace(next);
-    is_lasts_.emplace(i + 1 == node->patterns_.size() && node->comma_cnt_ < node->patterns_.size());
-    node->patterns_[i]->Accept(this);
-    if (node->comma_cnt_) {
-      os_ << next;
-      if (i + 1 == node->patterns_.size() && node->comma_cnt_ == node->patterns_.size()) {
-        os_ << "└──,\n";
-      } else {
-        os_ << "├──,\n";
-      }
-    }
-  }
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
-void Printer::Visit(TupleStructPatternNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Tuple Struct Pattern\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-  prefixes_.emplace(next);
-  is_lasts_.emplace(false);
-  node->path_in_expr_->Accept(this);
-  os_ << next << "├──(\n";
-  if (node->tuple_struct_items_ != nullptr) {
-    prefixes_.emplace(next);
-    is_lasts_.emplace(false);
-    node->tuple_struct_items_->Accept(this);
-  }
-  os_ << next << "└──)\n";
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
 void Printer::Visit(PatternWithoutRangeNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
@@ -1016,8 +971,6 @@ void Printer::Visit(PatternWithoutRangeNode *node) {
     node->wildcard_pattern_->Accept(this);
   } else if (node->reference_pattern_ != nullptr) {
     node->reference_pattern_->Accept(this);
-  } else if (node->tuple_struct_pattern_ != nullptr) {
-    node->tuple_struct_pattern_->Accept(this);
   } else {
     node->path_pattern_->Accept(this);
   }

@@ -168,5 +168,6 @@ public:
   UnitTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
+  std::shared_ptr<Type> type_info_;
   std::shared_ptr<std::string> val_;
 };

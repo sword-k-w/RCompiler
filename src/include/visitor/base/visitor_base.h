@@ -41,8 +41,6 @@ public:
   virtual void Visit(LiteralPatternNode *) = 0;
   virtual void Visit(IdentifierPatternNode *) = 0;
   virtual void Visit(ReferencePatternNode *) = 0;
-  virtual void Visit(TupleStructItemsNode *) = 0;
-  virtual void Visit(TupleStructPatternNode *) = 0;
   virtual void Visit(PatternWithoutRangeNode *) = 0;
   virtual void Visit(LetStatementNode *) = 0;
   virtual void Visit(ExpressionStatementNode *) = 0;

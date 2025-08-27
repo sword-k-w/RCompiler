@@ -38,8 +38,6 @@ class PathIdentSegmentNode;
 class LiteralPatternNode;
 class IdentifierPatternNode;
 class ReferencePatternNode;
-class TupleStructItemsNode;
-class TupleStructPatternNode;
 class PatternWithoutRangeNode;
 class LetStatementNode;
 class ExpressionStatementNode;

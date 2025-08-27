@@ -35,6 +35,7 @@ add_executable(parser_test
         ${COMMON_SRCS}
         ${LEXER_SRCS}
         ${VISITOR_SRCS}
+        ${SEMANTIC_SRCS}
 )
 
 add_executable(semantic_test
