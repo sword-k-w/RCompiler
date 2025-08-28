@@ -71,4 +71,6 @@ constexpr std::string_view kRESERVERD_KEYWORDS[14] = {
 };
 
 bool IsKeyword(const std::string_view &);
+
+constexpr std::string_view kBuiltinType[6] = {"i32", "u32", "isize", "usize", "char", "str"};
 #endif //CONFIG_H
