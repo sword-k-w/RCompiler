@@ -10,12 +10,12 @@
 class ReferenceTypeNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   ReferenceTypeNode() = delete;
   ReferenceTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
-  std::shared_ptr<Type> type_info_;
   bool mut_ = false;
   std::shared_ptr<TypeNoBoundsNode> type_no_bounds_;
 };
@@ -23,12 +23,12 @@ private:
 class ArrayTypeNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   ArrayTypeNode() = delete;
   ArrayTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
-  std::shared_ptr<Type> type_info_;
   std::shared_ptr<TypeNode> type_;
   std::shared_ptr<ExpressionNode> expr_;
 };
@@ -36,12 +36,12 @@ private:
 class TypeNoBoundsNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   TypeNoBoundsNode() = delete;
   TypeNoBoundsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
-  std::shared_ptr<Type> type_info_;
   std::shared_ptr<TypePathNode> type_path_;
   std::shared_ptr<ReferenceTypeNode> reference_type_;
   std::shared_ptr<ArrayTypeNode> array_type_;

@@ -298,22 +298,6 @@ void Printer::Visit(BlockExpressionNode *node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(ConstBlockExpressionNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Const Block Expression\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-
-  os_ << next << "├──const\n";
-  prefixes_.emplace(next);
-  is_lasts_.emplace(true);
-  node->block_expr_->Accept(this);
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
 void Printer::Visit(InfiniteLoopExpressionNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
@@ -427,8 +411,6 @@ void Printer::Visit(ExpressionWithBlockNode *node) {
   is_lasts_.emplace(true);
   if (node->block_expr_ != nullptr) {
     node->block_expr_->Accept(this);
-  } else if (node->const_block_expr_ != nullptr) {
-    node->const_block_expr_->Accept(this);
   } else if (node->loop_expr_ != nullptr) {
     node->loop_expr_->Accept(this);
   } else {

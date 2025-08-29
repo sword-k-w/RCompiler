@@ -10,6 +10,7 @@
 
 class ASTNode {
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   ASTNode() = delete;
   explicit ASTNode(const std::string_view &);
@@ -19,6 +20,8 @@ public:
 protected:
   std::shared_ptr<Scope> scope_;
   SymbolInfo symbol_info_;
+  bool calculated_ = false;
+  bool calculating_ = false;
 private:
   std::shared_ptr<std::string> name_;
 };

@@ -119,17 +119,6 @@ private:
   std::shared_ptr<StatementsNode> statements_;
 };
 
-class ConstBlockExpressionNode : public ASTNode {
-  friend class Printer;
-  friend class FirstChecker;
-public:
-  ConstBlockExpressionNode() = delete;
-  ConstBlockExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-  void Accept(VisitorBase *) override;
-private:
-  std::shared_ptr<BlockExpressionNode> block_expr_;
-};
-
 class InfiniteLoopExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
@@ -193,13 +182,13 @@ private:
 class ExpressionWithBlockNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   ExpressionWithBlockNode() = delete;
   ExpressionWithBlockNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<BlockExpressionNode> block_expr_;
-  std::shared_ptr<ConstBlockExpressionNode> const_block_expr_;
   std::shared_ptr<LoopExpressionNode> loop_expr_;
   std::shared_ptr<IfExpressionNode> if_expr_;
 };

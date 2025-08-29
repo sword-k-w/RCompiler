@@ -179,19 +179,6 @@ BlockExpressionNode::BlockExpressionNode(const std::vector<Token> &tokens, uint3
   }
 }
 
-ConstBlockExpressionNode::ConstBlockExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Const Block Expression") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "const") {
-      throw Error("try parsing Const Block Expression Node but no const");
-    }
-    ++pos;
-    block_expr_ = std::make_shared<BlockExpressionNode>(tokens, pos, length);
-  } catch (Error &) {
-    throw;
-  }
-}
-
 ConditionsNode::ConditionsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Conditions") {
   try {
     CheckLength(pos, length);
@@ -285,8 +272,6 @@ ExpressionWithBlockNode::ExpressionWithBlockNode(const std::vector<Token> &token
     CheckLength(pos, length);
     if (tokens[pos].lexeme == "{") {
       block_expr_ = std::make_shared<BlockExpressionNode>(tokens, pos, length);
-    } else if (tokens[pos].lexeme == "const") {
-      const_block_expr_ = std::make_shared<ConstBlockExpressionNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "loop" || tokens[pos].lexeme == "while") {
       loop_expr_ = std::make_shared<LoopExpressionNode>(tokens, pos, length);
     } else if (tokens[pos].lexeme == "if") {

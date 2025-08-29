@@ -1,13 +1,12 @@
 #pragma once
 
-#include "visitor/checker/first_checker.h"
 #include "visitor/base/visitor_base.h"
 #include <deque>
 #include <parser/node/AST_node.h>
 
 class FirstChecker : public VisitorBase {
 public:
-  FirstChecker();
+  FirstChecker() = default;
   void Visit(CrateNode *) override;
   void Visit(EnumVariantsNode *) override;
   void Visit(EnumerationNode *) override;
@@ -20,7 +19,6 @@ public:
   void Visit(StructExpressionNode *) override;
   void Visit(ExpressionWithoutBlockNode *) override;
   void Visit(BlockExpressionNode *) override;
-  void Visit(ConstBlockExpressionNode *) override;
   void Visit(InfiniteLoopExpressionNode *) override;
   void Visit(ConditionsNode *) override;
   void Visit(PredicateLoopExpressionNode *) override;

@@ -14,7 +14,6 @@ class StructExprFieldsNode;
 class StructExpressionNode;
 class ExpressionWithoutBlockNode;
 class BlockExpressionNode;
-class ConstBlockExpressionNode;
 class InfiniteLoopExpressionNode;
 class ConditionsNode;
 class PredicateLoopExpressionNode;

@@ -8,6 +8,7 @@
 class ShorthandSelfNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   ShorthandSelfNode() = delete;
   ShorthandSelfNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -21,6 +22,7 @@ private:
 class TypedSelfNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   TypedSelfNode() = delete;
   TypedSelfNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -34,6 +36,7 @@ private:
 class SelfParamNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   SelfParamNode() = delete;
   SelfParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -47,6 +50,7 @@ private:
 class FunctionParamNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   FunctionParamNode() = delete;
   FunctionParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -59,6 +63,7 @@ private:
 class FunctionParametersNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   FunctionParametersNode() = delete;
   FunctionParametersNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -72,6 +77,7 @@ private:
 class FunctionReturnTypeNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   FunctionReturnTypeNode() = delete;
   FunctionReturnTypeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -83,6 +89,7 @@ private:
 class FunctionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   FunctionNode() = delete;
   FunctionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -94,4 +101,6 @@ private:
   std::shared_ptr<FunctionReturnTypeNode> function_return_type_;
   bool semicolon_ = false;
   std::shared_ptr<BlockExpressionNode> block_expr_;
+
+  bool in_trait_ = false;
 };

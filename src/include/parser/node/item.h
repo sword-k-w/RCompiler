@@ -9,6 +9,7 @@
 class ConstantItemNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   ConstantItemNode() = delete;
   ConstantItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -17,11 +18,14 @@ private:
   std::shared_ptr<IdentifierNode> identifier_;
   std::shared_ptr<TypeNode> type_;
   std::shared_ptr<ExpressionNode> expr_;
+
+  bool in_trait_ = false;
 };
 
 class AssociatedItemNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   AssociatedItemNode() = delete;
   AssociatedItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -29,11 +33,14 @@ public:
 private:
   std::shared_ptr<ConstantItemNode> constant_item_;
   std::shared_ptr<FunctionNode> function_;
+
+  bool in_trait_ = false;
 };
 
 class ItemNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
 public:
   ItemNode() = delete;
   ItemNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -45,6 +52,4 @@ private:
   std::shared_ptr<ConstantItemNode> constant_item_;
   std::shared_ptr<TraitNode> trait_;
   std::shared_ptr<ImplementationNode> implementation_;
-
-  std::shared_ptr<std::string> identifier_;
 };

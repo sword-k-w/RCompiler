@@ -17,7 +17,6 @@ public:
   virtual void Visit(StructExpressionNode *) = 0;
   virtual void Visit(ExpressionWithoutBlockNode *) = 0;
   virtual void Visit(BlockExpressionNode *) = 0;
-  virtual void Visit(ConstBlockExpressionNode *) = 0;
   virtual void Visit(InfiniteLoopExpressionNode *) = 0;
   virtual void Visit(ConditionsNode *) = 0;
   virtual void Visit(PredicateLoopExpressionNode *) = 0;

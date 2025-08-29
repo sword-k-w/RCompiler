@@ -97,13 +97,6 @@ void BlockExpressionNode::Accept(VisitorBase * ptr) {
     throw;
   }
 }
-void ConstBlockExpressionNode::Accept(VisitorBase * ptr) {
-  try {
-    ptr->Visit(this);  
-  } catch (Error &) {
-    throw;
-  }
-}
 void InfiniteLoopExpressionNode::Accept(VisitorBase * ptr) {
   try {
     ptr->Visit(this);  

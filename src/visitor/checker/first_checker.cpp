@@ -153,14 +153,6 @@ void FirstChecker::Visit(BlockExpressionNode *node) {
   }
 }
 
-void FirstChecker::Visit(ConstBlockExpressionNode *node) {
-  try {
-    OldScope(node, node->block_expr_.get());
-  } catch (Error &) {
-    throw;
-  }
-}
-
 void FirstChecker::Visit(InfiniteLoopExpressionNode *node) {
   try {
     OldScope(node, node->block_expr_.get());
@@ -216,8 +208,6 @@ void FirstChecker::Visit(ExpressionWithBlockNode *node) {
   try {
     if (node->block_expr_ != nullptr) {
       OldScope(node, node->block_expr_.get());
-    } else if (node->const_block_expr_ != nullptr) {
-      OldScope(node, node->const_block_expr_.get());
     } else if (node->loop_expr_ != nullptr) {
       OldScope(node, node->loop_expr_.get());
     } else {
@@ -388,8 +378,10 @@ void FirstChecker::Visit(ConstantItemNode *node) {
 void FirstChecker::Visit(AssociatedItemNode *node) {
   try {
     if (node->constant_item_ != nullptr) {
+      node->constant_item_->in_trait_ = true;
       OldScope(node, node->constant_item_.get());
     } else {
+      node->constant_item_->in_trait_ = true;
       OldScope(node, node->function_.get());
     }
   } catch (Error &) {
@@ -587,6 +579,7 @@ void FirstChecker::Visit(TraitNode *node) {
     node->scope_->AddTypeName(*node->identifier_->val_, node->symbol_info_);
     OldScope(node, node->identifier_.get());
     for (auto &associated_item : node->asscociated_items_) {
+      associated_item->in_trait_ = true;
       OldScope(node, associated_item.get());
     }
   } catch (Error &) {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "semantic/type/type.h"
-#include "parser/node/AST_node.h"
+#include "parser/class_declaration.h"
 
 enum SymbolType {
   kFunction, kType, kTrait, kConst, kVariable

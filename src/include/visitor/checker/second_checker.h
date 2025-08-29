@@ -1,14 +1,12 @@
 #pragma once
 
 #include "visitor/base/visitor_base.h"
-#include <stack>
-#include <iostream>
+#include <deque>
+#include <parser/node/AST_node.h>
 
-class Printer : public VisitorBase {
+class SecondChecker : public VisitorBase {
 public:
-  Printer() = delete;
-  explicit Printer(std::ostream &);
-  void Prepare();
+  SecondChecker() = default;
   void Visit(CrateNode *) override;
   void Visit(EnumVariantsNode *) override;
   void Visit(EnumerationNode *) override;
@@ -71,8 +69,4 @@ public:
   void Visit(ArrayTypeNode *) override;
   void Visit(UnitTypeNode *) override;
   void Visit(TypeNoBoundsNode *) override;
-private:
-  std::ostream &os_;
-  std::stack<std::string> prefixes_;
-  std::stack<bool> is_lasts_;
 };
