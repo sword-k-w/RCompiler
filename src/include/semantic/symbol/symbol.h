@@ -9,6 +9,6 @@ enum SymbolType {
 
 struct SymbolInfo {
   SymbolType symbol_type_;
-  std::shared_ptr<Type> type_;
+  std::shared_ptr<TypeValue> type_value_;
   ASTNode *source_;
 };

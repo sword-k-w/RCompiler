@@ -42,7 +42,7 @@ void FirstChecker::Visit(EnumerationNode *node) {
     node->scope_->AddTypeName(*node->identifier_->val_, node->symbol_info_);
     OldScope(node, node->identifier_.get());
     if (node->enum_variants_ != nullptr) {
-      NewScope(node, node->enum_variants_.get());
+      NewScope(node, node->enum_variants_.get(), *node->identifier_->val_);
     }
   } catch (Error &) {
     throw;
@@ -128,7 +128,7 @@ void FirstChecker::Visit(StructExpressionNode *node) {
   try {
     OldScope(node, node->path_in_expr_.get());
     if (node->struct_expr_fields_ != nullptr) {
-      NewScope(node, node->struct_expr_fields_.get());
+      OldScope(node, node->struct_expr_fields_.get());
     }
   } catch (Error &) {
     throw;
@@ -146,7 +146,7 @@ void FirstChecker::Visit(ExpressionWithoutBlockNode *node) {
 void FirstChecker::Visit(BlockExpressionNode *node) {
   try {
     if (node->statements_ != nullptr) {
-      NewScope(node, node->statements_.get());
+      NewScope(node, node->statements_.get(), "");
     }
   } catch (Error &) {
     throw;
@@ -339,7 +339,7 @@ void FirstChecker::Visit(FunctionNode *node) {
       OldScope(node, node->function_return_type_.get());
     }
     if (node->block_expr_ != nullptr) {
-      NewScope(node, node->block_expr_.get());
+      NewScope(node, node->block_expr_.get(), *node->identifier_->val_);
     }
   } catch (Error &) {
     throw;
@@ -537,7 +537,7 @@ void FirstChecker::Visit(StructNode *node) {
     node->scope_->AddTypeName(*node->identifier_->val_, node->symbol_info_);
     OldScope(node, node->identifier_.get());
     if (node->struct_fields_ != nullptr) {
-      NewScope(node, node->struct_fields_.get());
+      NewScope(node, node->struct_fields_.get(), *node->identifier_->val_);
     }
   } catch (Error &) {
     throw;
@@ -624,7 +624,7 @@ void FirstChecker::Visit(TypeNoBoundsNode *node) {
 
 void FirstChecker::Run(CrateNode *node) {
   try {
-    node->scope_ = std::make_shared<Scope>(nullptr);
+    node->scope_ = std::make_shared<Scope>(nullptr, "");
     node_queue_.emplace_front(node);
     while (!node_queue_.empty()) {
       ASTNode *tmp = node_queue_.front();
@@ -636,8 +636,8 @@ void FirstChecker::Run(CrateNode *node) {
   }
 }
 
-void FirstChecker::NewScope(ASTNode *father, ASTNode *son) {
-  son->scope_ = std::make_shared<Scope>(father->scope_);
+void FirstChecker::NewScope(ASTNode *father, ASTNode *son, const std::string &name) {
+  son->scope_ = std::make_shared<Scope>(father->scope_, *father->scope_->name_ + "::" + name);
   node_queue_.emplace_back(son);
 }
 

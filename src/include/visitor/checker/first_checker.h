@@ -72,6 +72,6 @@ public:
   void Run(CrateNode *);
 private:
   std::deque<ASTNode *> node_queue_;
-  void NewScope(ASTNode *, ASTNode *);
+  void NewScope(ASTNode *, ASTNode *, const std::string &);
   void OldScope(ASTNode *father, ASTNode *son);
 };

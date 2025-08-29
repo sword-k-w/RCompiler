@@ -20,8 +20,7 @@ public:
 protected:
   std::shared_ptr<Scope> scope_;
   SymbolInfo symbol_info_;
-  bool calculated_ = false;
-  bool calculating_ = false;
+  bool need_calculate_ = false;
 private:
   std::shared_ptr<std::string> name_;
 };

@@ -6,9 +6,10 @@
 class Scope {
 public:
   Scope() = delete;
-  explicit Scope(std::shared_ptr<Scope>);
+  Scope(std::shared_ptr<Scope>, const std::string &);
   void AddTypeName(const std::string &, const SymbolInfo &);
   void AddValueName(const std::string &, const SymbolInfo &);
+  std::shared_ptr<std::string> name_;
 private:
   std::shared_ptr<Scope> parent_;
   std::map<std::string, SymbolInfo> type_namespace_;

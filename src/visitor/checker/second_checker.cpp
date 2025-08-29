@@ -58,8 +58,35 @@ void SecondChecker::Visit(FunctionParametersNode *node) {}
 void SecondChecker::Visit(FunctionReturnTypeNode *node) {}
 void SecondChecker::Visit(FunctionNode *node) {}
 void SecondChecker::Visit(ImplementationNode *node) {}
-void SecondChecker::Visit(ConstantItemNode *node) {}
-void SecondChecker::Visit(AssociatedItemNode *node) {}
+
+void SecondChecker::Visit(ConstantItemNode *node) {
+  try {
+    node->type_->Accept(this);
+    if (node->expr_ == nullptr) {
+      if (!node->in_trait_) {
+        throw Error("SecondChecker : a const item with no expr but not in trait");
+      }
+    } else {
+      node->expr_->need_calculate_ = true;
+      node->expr_->Accept(this);
+    }
+
+  } catch (Error &) {
+    throw;
+  }
+}
+
+void SecondChecker::Visit(AssociatedItemNode *node) {
+  try {
+    if (node->function_ != nullptr) {
+      node->function_->Accept(this);
+    } else {
+      node->constant_item_->Accept(this);
+    }
+  } catch (Error &) {
+    throw;
+  }
+}
 
 void SecondChecker::Visit(ItemNode *node) {
   try {

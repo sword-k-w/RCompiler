@@ -2,7 +2,8 @@
 #include "common/error.h"
 #include "common/config.h"
 
-Scope::Scope(std::shared_ptr<Scope> parent) : parent_(std::move(parent)) {}
+Scope::Scope(std::shared_ptr<Scope> parent, const std::string &name)
+  : parent_(std::move(parent)), name_(std::make_shared<std::string>(name)) {}
 
 void Scope::AddTypeName(const std::string &name, const SymbolInfo &symbol_info) {
   if (type_namespace_.find(name) != type_namespace_.end()) {
