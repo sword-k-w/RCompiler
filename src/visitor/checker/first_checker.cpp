@@ -37,9 +37,8 @@ void FirstChecker::Visit(EnumVariantsNode *node) {
 
 void FirstChecker::Visit(EnumerationNode *node) {
   try {
-    node->symbol_info_.symbol_type_ = kType;
-    node->symbol_info_.source_ = node;
-    node->scope_->AddTypeName(*node->identifier_->val_, node->symbol_info_);
+    node->symbol_type_ = kType;
+    node->scope_->AddTypeName(*node->identifier_->val_, node);
     OldScope(node, node->identifier_.get());
     if (node->enum_variants_ != nullptr) {
       NewScope(node, node->enum_variants_.get(), *node->identifier_->val_);
@@ -95,8 +94,9 @@ void FirstChecker::Visit(ArrayExpressionNode *node) {
 
 void FirstChecker::Visit(PathInExpressionNode *node) {
   try {
-    for (auto &path_expr_segment : node->path_expr_segments_) {
-      OldScope(node, path_expr_segment.get());
+    OldScope(node, node->path_expr_segment1_.get());
+    if (node->path_expr_segment2_ != nullptr) {
+      OldScope(node, node->path_expr_segment2_.get());
     }
   } catch (Error &) {
     throw;
@@ -328,9 +328,8 @@ void FirstChecker::Visit(FunctionReturnTypeNode *node) {
 
 void FirstChecker::Visit(FunctionNode *node) {
   try {
-    node->symbol_info_.symbol_type_ = kFunction;
-    node->symbol_info_.source_ = node;
-    node->scope_->AddValueName(*node->identifier_->val_, node->symbol_info_);
+    node->symbol_type_ = kFunction;
+    node->scope_->AddValueName(*node->identifier_->val_, node);
     OldScope(node, node->identifier_.get());
     if (node->function_parameters_ != nullptr) {
       OldScope(node, node->function_parameters_.get());
@@ -362,9 +361,8 @@ void FirstChecker::Visit(ImplementationNode *node) {
 
 void FirstChecker::Visit(ConstantItemNode *node) {
   try {
-    node->symbol_info_.symbol_type_ = kConst;
-    node->symbol_info_.source_ = node;
-    node->scope_->AddValueName(*node->identifier_->val_, node->symbol_info_);
+    node->symbol_type_ = kConst;
+    node->scope_->AddValueName(*node->identifier_->val_, node);
     OldScope(node, node->identifier_.get());
     OldScope(node, node->expr_.get());
     if (node->expr_ != nullptr) {
@@ -430,9 +428,6 @@ void FirstChecker::Visit(LiteralPatternNode *node) {
 void FirstChecker::Visit(IdentifierPatternNode *node) {
   try {
     OldScope(node, node->identifier_.get());
-    if (node->pattern_no_top_alt_ != nullptr) {
-      OldScope(node, node->pattern_no_top_alt_.get());
-    }
   } catch (Error &) {
     throw;
   }
@@ -532,9 +527,8 @@ void FirstChecker::Visit(StructFieldsNode *node) {
 
 void FirstChecker::Visit(StructNode *node) {
   try {
-    node->symbol_info_.symbol_type_ = kType;
-    node->symbol_info_.source_ = node;
-    node->scope_->AddTypeName(*node->identifier_->val_, node->symbol_info_);
+    node->symbol_type_ = kType;
+    node->scope_->AddTypeName(*node->identifier_->val_, node);
     OldScope(node, node->identifier_.get());
     if (node->struct_fields_ != nullptr) {
       NewScope(node, node->struct_fields_.get(), *node->identifier_->val_);
@@ -574,9 +568,8 @@ void FirstChecker::Visit(ContinueExpressionNode *node) {}
 
 void FirstChecker::Visit(TraitNode *node) {
   try {
-    node->symbol_info_.symbol_type_ = kTrait;
-    node->symbol_info_.source_ = node;
-    node->scope_->AddTypeName(*node->identifier_->val_, node->symbol_info_);
+    node->symbol_type_ = kTrait;
+    node->scope_->AddTypeName(*node->identifier_->val_, node);
     OldScope(node, node->identifier_.get());
     for (auto &associated_item : node->asscociated_items_) {
       associated_item->in_trait_ = true;

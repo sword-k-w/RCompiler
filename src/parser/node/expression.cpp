@@ -82,10 +82,10 @@ ArrayExpressionNode::ArrayExpressionNode(const std::vector<Token> &tokens, uint3
 
 PathInExpressionNode::PathInExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Path In Expression"){
   try {
-    path_expr_segments_.push_back(std::make_shared<PathExprSegmentNode>(tokens, pos, length));
-    while (pos < length && tokens[pos].lexeme == "::") {
+    path_expr_segment1_ = std::make_shared<PathExprSegmentNode>(tokens, pos, length);
+    if (pos < length && tokens[pos].lexeme == "::") {
       ++pos;
-      path_expr_segments_.push_back(std::make_shared<PathExprSegmentNode>(tokens, pos, length));
+      path_expr_segment2_ = std::make_shared<PathExprSegmentNode>(tokens, pos, length);
     }
   } catch (Error &) {
     throw;

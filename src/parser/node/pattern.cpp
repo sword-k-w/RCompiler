@@ -30,12 +30,6 @@ IdentifierPatternNode::IdentifierPatternNode(const std::vector<Token> &tokens, u
       CheckLength(pos, length);
     }
     identifier_ = std::make_shared<IdentifierNode>(tokens, pos, length);
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme == "@") {
-      ++pos;
-      CheckLength(pos, length);
-      pattern_no_top_alt_ = std::make_shared<PatternNoTopAltNode>(tokens, pos, length);
-    }
   } catch (Error &) {
     throw;
   }

@@ -19,8 +19,10 @@ public:
   virtual ~ASTNode() = default;
 protected:
   std::shared_ptr<Scope> scope_;
-  SymbolInfo symbol_info_;
+  SymbolType symbol_type_;
+  std::shared_ptr<TypeValue> type_value_;
   bool need_calculate_ = false;
+  std::shared_ptr<std::string> expect_type_;
 private:
   std::shared_ptr<std::string> name_;
 };

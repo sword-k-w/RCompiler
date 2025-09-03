@@ -31,7 +31,6 @@ private:
   bool ref_ = false;
   bool mut_ = false;
   std::shared_ptr<IdentifierNode> identifier_;
-  std::shared_ptr<PatternNoTopAltNode> pattern_no_top_alt_;
 };
 
 class ReferencePatternNode : public ASTNode {

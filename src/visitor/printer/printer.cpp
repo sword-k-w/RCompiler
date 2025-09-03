@@ -186,15 +186,14 @@ void Printer::Visit(PathInExpressionNode *node) {
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
 
   prefixes_.emplace(next);
-  is_lasts_.emplace(node->path_expr_segments_.size() == 1);
-  node->path_expr_segments_[0]->Accept(this);
-  for (uint32_t i = 1; i < node->path_expr_segments_.size(); ++i) {
+  is_lasts_.emplace(node->path_expr_segment1_ == nullptr);
+  node->path_expr_segment1_->Accept(this);
+  if (node->path_expr_segment2_ != nullptr) {
     os_ << next << "├──::\n";
     prefixes_.emplace(next);
-    is_lasts_.emplace(i + 1 == node->path_expr_segments_.size());
-    node->path_expr_segments_[i]->Accept(this);
+    is_lasts_.emplace(true);
+    node->path_expr_segment2_->Accept(this);
   }
-
   prefixes_.pop();
   is_lasts_.pop();
 }
@@ -902,14 +901,8 @@ void Printer::Visit(IdentifierPatternNode *node) {
     os_ << next << "├──mut\n";
   }
   prefixes_.emplace(next);
-  is_lasts_.emplace(node->pattern_no_top_alt_ == nullptr);
+  is_lasts_.emplace(true);
   node->identifier_->Accept(this);
-  if (node->pattern_no_top_alt_ != nullptr) {
-    os_ << next << "├──@\n";
-    prefixes_.emplace(next);
-    is_lasts_.emplace(true);
-    node->pattern_no_top_alt_->Accept(this);
-  }
 
   prefixes_.pop();
   is_lasts_.pop();
