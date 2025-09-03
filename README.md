@@ -70,4 +70,8 @@ leaf expression:
 
 ### Second Round
 
+* bind impl to struct
+
+### Third Round
+
 * analyse type and calculate the value of const.

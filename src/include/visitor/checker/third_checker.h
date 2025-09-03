@@ -4,9 +4,9 @@
 #include <deque>
 #include <parser/node/AST_node.h>
 
-class SecondChecker : public VisitorBase {
+class ThirdChecker : public VisitorBase {
 public:
-  SecondChecker() = default;
+  ThirdChecker() = default;
   void Visit(CrateNode *) override;
   void Visit(EnumVariantsNode *) override;
   void Visit(EnumerationNode *) override;

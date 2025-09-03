@@ -6,7 +6,7 @@
 
 #include "visitor/printer/printer.h"
 #include "visitor/checker/first_checker.h"
-#include "visitor/checker/second_checker.h"
+#include "visitor/checker/third_checker.h"
 #include "semantic/scope/scope.h"
 
 void TestCode(const std::string &s, bool expect_result) {
@@ -17,8 +17,8 @@ void TestCode(const std::string &s, bool expect_result) {
     auto root = b.Run<CrateNode>();
     FirstChecker fc;
     fc.Run(root.get());
-    SecondChecker sc;
-    root->Accept(&sc);
+    ThirdChecker tc;
+    root->Accept(&tc);
   } catch (Error &err) {
     std::cerr << err.Info() << '\n';
     EXPECT_EQ(expect_result, false);

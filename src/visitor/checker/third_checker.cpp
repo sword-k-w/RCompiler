@@ -1,4 +1,4 @@
-#include "visitor/checker/second_checker.h"
+#include "visitor/checker/third_checker.h"
 
 #include "parser/node/enumeration.h"
 #include "parser/node/expression.h"
@@ -16,7 +16,7 @@
 #include "common/error.h"
 #include <set>
 
-void SecondChecker::Visit(CrateNode *node) {
+void ThirdChecker::Visit(CrateNode *node) {
   try {
     for (auto &item : node->items_) {
       GoDown(node, item.get());
@@ -26,7 +26,7 @@ void SecondChecker::Visit(CrateNode *node) {
   }
 }
 
-void SecondChecker::Visit(EnumVariantsNode *node) {
+void ThirdChecker::Visit(EnumVariantsNode *node) {
   try {
     for (auto &enum_variant : node->enum_variant_s_) {
       GoDown(node, enum_variant.get());
@@ -36,7 +36,7 @@ void SecondChecker::Visit(EnumVariantsNode *node) {
   }
 }
 
-void SecondChecker::Visit(EnumerationNode *node) {
+void ThirdChecker::Visit(EnumerationNode *node) {
   try {
     if (node->enum_variants_ != nullptr) {
       GoDown(node, node->enum_variants_.get());
@@ -46,7 +46,7 @@ void SecondChecker::Visit(EnumerationNode *node) {
   }
 }
 
-void SecondChecker::Visit(LiteralExpressionNode *node) {
+void ThirdChecker::Visit(LiteralExpressionNode *node) {
   try {
     ASTNode *choose = nullptr;
     if (node->char_literal_ != nullptr) {
@@ -76,7 +76,7 @@ void SecondChecker::Visit(LiteralExpressionNode *node) {
   }
 }
 
-void SecondChecker::Visit(ArrayElementsNode *node) {
+void ThirdChecker::Visit(ArrayElementsNode *node) {
   try {
     if (node->semicolon_) {
       GoDown(node, node->exprs_[0].get());
@@ -106,7 +106,7 @@ void SecondChecker::Visit(ArrayElementsNode *node) {
   }
 }
 
-void SecondChecker::Visit(ArrayExpressionNode *node) {
+void ThirdChecker::Visit(ArrayExpressionNode *node) {
   try {
     if (node->array_elements_ != nullptr) {
       GoDown(node, node->array_elements_.get());
@@ -119,7 +119,7 @@ void SecondChecker::Visit(ArrayExpressionNode *node) {
   }
 }
 
-void SecondChecker::Visit(PathInExpressionNode *node) {
+void ThirdChecker::Visit(PathInExpressionNode *node) {
   try {
     GoDown(node, node->path_expr_segment1_.get());
     if (node->path_expr_segment2_ != nullptr) {
@@ -130,7 +130,7 @@ void SecondChecker::Visit(PathInExpressionNode *node) {
   }
 }
 
-void SecondChecker::Visit(StructExprFieldNode *node) {
+void ThirdChecker::Visit(StructExprFieldNode *node) {
   try {
     GoDown(node, node->identifier_.get());
     if (node->expr_ != nullptr) {
@@ -141,11 +141,11 @@ void SecondChecker::Visit(StructExprFieldNode *node) {
     } else if (node->need_calculate_) {
       auto target = node->scope_->FindValueName(*node->identifier_->val_);
       if (target == nullptr) {
-        throw Error("SecondChecker : struct expr field omit expr but can't find identifier");
+        throw Error("ThirdChecker : struct expr field omit expr but can't find identifier");
       }
       auto constant_item = dynamic_cast<ConstantItemNode *>(target);
       if (constant_item == nullptr) {
-        throw Error("SecondChecker : struct expr field omit expr but the identifier isn't const");
+        throw Error("ThirdChecker : struct expr field omit expr but the identifier isn't const");
       }
       node->type_value_ = constant_item->type_value_;
     }
@@ -154,13 +154,13 @@ void SecondChecker::Visit(StructExprFieldNode *node) {
   }
 }
 
-void SecondChecker::Visit(StructExprFieldsNode *node) {
+void ThirdChecker::Visit(StructExprFieldsNode *node) {
   try {
     std::set<std::string> identifiers;
     for (auto &struct_expr_field : node->struct_expr_field_s_) {
       GoDown(node, struct_expr_field.get());
       if (!identifiers.insert(*struct_expr_field->identifier_->val_).second) {
-        throw Error("SecondChecker : same identifier in struct expr fields");
+        throw Error("ThirdChecker : same identifier in struct expr fields");
       }
     }
   } catch (Error &) {
@@ -168,7 +168,7 @@ void SecondChecker::Visit(StructExprFieldsNode *node) {
   }
 }
 
-void SecondChecker::Visit(StructExpressionNode *node) {
+void ThirdChecker::Visit(StructExpressionNode *node) {
   try {
     GoDown(node, node->path_in_expr_.get());
     if (node->struct_expr_fields_) {
@@ -177,28 +177,28 @@ void SecondChecker::Visit(StructExpressionNode *node) {
 
     if (node->need_calculate_) {
       if (node->path_in_expr_->path_expr_segment2_ != nullptr) {
-        throw Error("SecondChecker : const struct but not single path");
+        throw Error("ThirdChecker : const struct but not single path");
       }
       if (node->path_in_expr_->path_expr_segment1_->identifier_ == nullptr) {
-        throw Error("SecondChecker : const struct but not identifier");
+        throw Error("ThirdChecker : const struct but not identifier");
       }
       ASTNode *target = node->scope_->FindTypeName(*node->path_in_expr_->path_expr_segment1_->identifier_->val_);
       if (target == nullptr) {
-        throw Error("SecondChecker : const struct but not found identifier");
+        throw Error("ThirdChecker : const struct but not found identifier");
       }
       auto struct_type = dynamic_cast<StructNode *>(target);
       if (struct_type == nullptr) {
-        throw Error("SecondChecker : const struct but identifier is not a struct");
+        throw Error("ThirdChecker : const struct but identifier is not a struct");
       }
       if (struct_type->type_value_->struct_type_info_->variant_.size() != node->struct_expr_fields_->struct_expr_field_s_.size()) {
-        throw Error("SecondChecker : const struct but identifier count doesn't match");
+        throw Error("ThirdChecker : const struct but identifier count doesn't match");
       }
       node->type_value_->type_ = kStructType;
       node->type_value_->struct_type_info_ = std::make_shared<StructTypeInfo>();
       for (auto &struct_expr_field : node->struct_expr_fields_->struct_expr_field_s_) {
         auto it = struct_type->type_value_->struct_type_info_->variant_.find(*struct_expr_field->identifier_->val_);
         if (it == struct_type->type_value_->struct_type_info_->variant_.end()) {
-          throw Error("SecondChecker : const struct but the identifier doesn't belong to the struct");
+          throw Error("ThirdChecker : const struct but the identifier doesn't belong to the struct");
         }
         SameTypeCheck(it->second.get(), struct_expr_field->type_value_.get());
         node->type_value_->struct_type_info_->variant_[it->first] = struct_expr_field->type_value_;
@@ -209,7 +209,7 @@ void SecondChecker::Visit(StructExpressionNode *node) {
   }
 }
 
-void SecondChecker::Visit(ExpressionWithoutBlockNode *node) {
+void ThirdChecker::Visit(ExpressionWithoutBlockNode *node) {
   try {
     GoDown(node, node->expr_.get());
   } catch (Error &) {
@@ -217,7 +217,7 @@ void SecondChecker::Visit(ExpressionWithoutBlockNode *node) {
   }
 }
 
-void SecondChecker::Visit(BlockExpressionNode *node) {
+void ThirdChecker::Visit(BlockExpressionNode *node) {
   try {
     assert(node->need_calculate_ == false);
     if (node->statements_ != nullptr) {
@@ -228,7 +228,7 @@ void SecondChecker::Visit(BlockExpressionNode *node) {
   }
 }
 
-void SecondChecker::Visit(InfiniteLoopExpressionNode *node) {
+void ThirdChecker::Visit(InfiniteLoopExpressionNode *node) {
   try {
     if (node->block_expr_ != nullptr) {
       GoDown(node, node->block_expr_.get());
@@ -238,7 +238,7 @@ void SecondChecker::Visit(InfiniteLoopExpressionNode *node) {
   }
 }
 
-void SecondChecker::Visit(ConditionsNode *node) {
+void ThirdChecker::Visit(ConditionsNode *node) {
   try {
     assert(node->need_calculate_ == false);
     GoDown(node, node->expr_.get());
@@ -247,7 +247,7 @@ void SecondChecker::Visit(ConditionsNode *node) {
   }
 }
 
-void SecondChecker::Visit(PredicateLoopExpressionNode *node) {
+void ThirdChecker::Visit(PredicateLoopExpressionNode *node) {
   try {
     GoDown(node, node->conditions_.get());
     GoDown(node, node->block_expr_.get());
@@ -256,7 +256,7 @@ void SecondChecker::Visit(PredicateLoopExpressionNode *node) {
   }
 }
 
-void SecondChecker::Visit(LoopExpressionNode *node) {
+void ThirdChecker::Visit(LoopExpressionNode *node) {
   try {
     assert(node->need_calculate_ == false);
     if (node->infinite_loop_expr_ != nullptr) {
@@ -269,7 +269,7 @@ void SecondChecker::Visit(LoopExpressionNode *node) {
   }
 }
 
-void SecondChecker::Visit(IfExpressionNode *node) {
+void ThirdChecker::Visit(IfExpressionNode *node) {
   try {
     assert(node->need_calculate_ == false);;
     GoDown(node, node->conditions_.get());
@@ -284,7 +284,7 @@ void SecondChecker::Visit(IfExpressionNode *node) {
   }
 }
 
-void SecondChecker::Visit(ExpressionWithBlockNode *node) {
+void ThirdChecker::Visit(ExpressionWithBlockNode *node) {
   try {
     assert(node->need_calculate_ == false);
     if (node->block_expr_ != nullptr) {
@@ -299,7 +299,7 @@ void SecondChecker::Visit(ExpressionWithBlockNode *node) {
   }
 }
 
-void SecondChecker::Visit(CallParamsNode *node) {
+void ThirdChecker::Visit(CallParamsNode *node) {
   try {
     for (auto &expr : node->exprs_) {
       GoDown(node, expr.get());
@@ -309,25 +309,42 @@ void SecondChecker::Visit(CallParamsNode *node) {
   }
 }
 
-void SecondChecker::Visit(ExpressionNode *node) {
+void ThirdChecker::Visit(ExpressionNode *node) {
+  try {
+    if (node->type_ == kLiteralExpr) {
+      GoDown(node, node->literal_expr_.get());
+    } else if (node->type_ == kPathExpr) {
+      GoDown(node, node->path_expr_.get());
+      if (node->need_calculate_) {
+        ASTNode *target = nullptr;
+        if (node->path_expr_->path_expr_segment2_ != nullptr) {
 
+        } else {
+          target = node->scope_->FindValueName(*node->path_expr_->path_expr_segment1_->identifier_->val_);
+        }
+
+      }
+    }
+  } catch (Error &) {
+    throw;
+  }
 }
 
-void SecondChecker::Visit(ShorthandSelfNode *node) {}
-void SecondChecker::Visit(TypedSelfNode *node) {}
-void SecondChecker::Visit(SelfParamNode *node) {}
-void SecondChecker::Visit(FunctionParamNode *node) {}
-void SecondChecker::Visit(FunctionParametersNode *node) {}
-void SecondChecker::Visit(FunctionReturnTypeNode *node) {}
-void SecondChecker::Visit(FunctionNode *node) {}
-void SecondChecker::Visit(ImplementationNode *node) {}
+void ThirdChecker::Visit(ShorthandSelfNode *node) {}
+void ThirdChecker::Visit(TypedSelfNode *node) {}
+void ThirdChecker::Visit(SelfParamNode *node) {}
+void ThirdChecker::Visit(FunctionParamNode *node) {}
+void ThirdChecker::Visit(FunctionParametersNode *node) {}
+void ThirdChecker::Visit(FunctionReturnTypeNode *node) {}
+void ThirdChecker::Visit(FunctionNode *node) {}
+void ThirdChecker::Visit(ImplementationNode *node) {}
 
-void SecondChecker::Visit(ConstantItemNode *node) {
+void ThirdChecker::Visit(ConstantItemNode *node) {
   try {
     GoDown(node, node->type_.get());
     if (node->expr_ == nullptr) {
       if (!node->in_trait_) {
-        throw Error("SecondChecker : a const item with no expr but not in trait");
+        throw Error("ThirdChecker : a const item with no expr but not in trait");
       }
     } else {
       node->expr_->need_calculate_ = true;
@@ -341,7 +358,7 @@ void SecondChecker::Visit(ConstantItemNode *node) {
   }
 }
 
-void SecondChecker::Visit(AssociatedItemNode *node) {
+void ThirdChecker::Visit(AssociatedItemNode *node) {
   try {
     if (node->function_ != nullptr) {
       GoDown(node, node->function_.get());
@@ -353,7 +370,7 @@ void SecondChecker::Visit(AssociatedItemNode *node) {
   }
 }
 
-void SecondChecker::Visit(ItemNode *node) {
+void ThirdChecker::Visit(ItemNode *node) {
   try {
     if (node->function_ != nullptr) {
       GoDown(node, node->function_.get());
@@ -373,38 +390,38 @@ void SecondChecker::Visit(ItemNode *node) {
   }
 }
 
-void SecondChecker::Visit(PathIdentSegmentNode *node) {}
-void SecondChecker::Visit(LiteralPatternNode *node) {}
-void SecondChecker::Visit(IdentifierPatternNode *node) {}
-void SecondChecker::Visit(ReferencePatternNode *node) {}
-void SecondChecker::Visit(PatternWithoutRangeNode *node) {}
-void SecondChecker::Visit(LetStatementNode *node) {}
-void SecondChecker::Visit(ExpressionStatementNode *node) {}
-void SecondChecker::Visit(StatementNode *node) {}
-void SecondChecker::Visit(StatementsNode *node) {}
-void SecondChecker::Visit(StructFieldNode *node) {}
-void SecondChecker::Visit(StructFieldsNode *node) {}
-void SecondChecker::Visit(StructNode *node) {}
-void SecondChecker::Visit(IdentifierNode *node) {}
-void SecondChecker::Visit(CharLiteralNode *node) {}
-void SecondChecker::Visit(StringLiteralNode *node) {}
-void SecondChecker::Visit(RawStringLiteralNode *node) {}
-void SecondChecker::Visit(CStringLiteralNode *node) {}
-void SecondChecker::Visit(RawCStringLiteralNode *node) {}
-void SecondChecker::Visit(IntegerLiteralNode *node) {}
-void SecondChecker::Visit(TrueNode *node) {}
-void SecondChecker::Visit(FalseNode *node) {}
-void SecondChecker::Visit(SelfLowerNode *node) {}
-void SecondChecker::Visit(SelfUpperNode *node) {}
-void SecondChecker::Visit(UnderscoreExpressionNode *node) {}
-void SecondChecker::Visit(ContinueExpressionNode *node) {}
-void SecondChecker::Visit(TraitNode *node) {}
-void SecondChecker::Visit(ReferenceTypeNode *node) {}
-void SecondChecker::Visit(ArrayTypeNode *node) {}
-void SecondChecker::Visit(UnitTypeNode *node) {}
-void SecondChecker::Visit(TypeNoBoundsNode *node) {}
+void ThirdChecker::Visit(PathIdentSegmentNode *node) {}
+void ThirdChecker::Visit(LiteralPatternNode *node) {}
+void ThirdChecker::Visit(IdentifierPatternNode *node) {}
+void ThirdChecker::Visit(ReferencePatternNode *node) {}
+void ThirdChecker::Visit(PatternWithoutRangeNode *node) {}
+void ThirdChecker::Visit(LetStatementNode *node) {}
+void ThirdChecker::Visit(ExpressionStatementNode *node) {}
+void ThirdChecker::Visit(StatementNode *node) {}
+void ThirdChecker::Visit(StatementsNode *node) {}
+void ThirdChecker::Visit(StructFieldNode *node) {}
+void ThirdChecker::Visit(StructFieldsNode *node) {}
+void ThirdChecker::Visit(StructNode *node) {}
+void ThirdChecker::Visit(IdentifierNode *node) {}
+void ThirdChecker::Visit(CharLiteralNode *node) {}
+void ThirdChecker::Visit(StringLiteralNode *node) {}
+void ThirdChecker::Visit(RawStringLiteralNode *node) {}
+void ThirdChecker::Visit(CStringLiteralNode *node) {}
+void ThirdChecker::Visit(RawCStringLiteralNode *node) {}
+void ThirdChecker::Visit(IntegerLiteralNode *node) {}
+void ThirdChecker::Visit(TrueNode *node) {}
+void ThirdChecker::Visit(FalseNode *node) {}
+void ThirdChecker::Visit(SelfLowerNode *node) {}
+void ThirdChecker::Visit(SelfUpperNode *node) {}
+void ThirdChecker::Visit(UnderscoreExpressionNode *node) {}
+void ThirdChecker::Visit(ContinueExpressionNode *node) {}
+void ThirdChecker::Visit(TraitNode *node) {}
+void ThirdChecker::Visit(ReferenceTypeNode *node) {}
+void ThirdChecker::Visit(ArrayTypeNode *node) {}
+void ThirdChecker::Visit(UnitTypeNode *node) {}
+void ThirdChecker::Visit(TypeNoBoundsNode *node) {}
 
-void SecondChecker::GoDown(ASTNode *father, ASTNode *son) {
+void ThirdChecker::GoDown(ASTNode *father, ASTNode *son) {
   son->need_calculate_ = father->need_calculate_;
   son->expect_type_ = father->expect_type_;
   son->Accept(this);

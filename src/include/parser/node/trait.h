@@ -9,7 +9,7 @@
 class TraitNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
-  friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   TraitNode() = delete;
   TraitNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
