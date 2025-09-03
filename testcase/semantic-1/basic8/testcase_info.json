@@ -7,7 +7,7 @@
     "compilememorylimit": 256,
     "compiletimelimit": 15,
     "exitcode": 0,
-    "id": 69722,
+    "id": 1277642,
     "input_path": "src/basic8/basic8.in",
     "input_visible": 1,
     "metainfo": {
@@ -27,6 +27,6 @@
     "runtimememorylimit": 256,
     "source_path": "src/basic8/basic8.rx",
     "source_visible": 1,
-    "stage_id": 987,
+    "stage_id": 15320,
     "stage_name": "semantic-1"
 }
