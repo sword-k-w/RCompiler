@@ -379,7 +379,7 @@ void FirstChecker::Visit(AssociatedItemNode *node) {
       node->constant_item_->in_trait_ = true;
       OldScope(node, node->constant_item_.get());
     } else {
-      node->constant_item_->in_trait_ = true;
+      node->function_->in_trait_ = true;
       OldScope(node, node->function_.get());
     }
   } catch (Error &) {

@@ -20,6 +20,7 @@ void TestCode(const std::string &s, bool expect_result) {
     SecondChecker sc;
     root->Accept(&sc);
   } catch (Error &err) {
+    std::cerr << err.Info() << '\n';
     EXPECT_EQ(expect_result, false);
     return;
   }
@@ -28,7 +29,11 @@ void TestCode(const std::string &s, bool expect_result) {
 
 void TestTestcase(const std::string &s, bool expect_result) {
   std::string input = LoadFromFile(s);
-  TestCode(s, expect_result);
+  TestCode(input, expect_result);
+}
+
+TEST(SemanticTest, TmpTest) {
+  TestTestcase("../testcase/tmp.rx", false);
 }
 
 TEST(SemanticTest, TestcaseTest_Array1) {
