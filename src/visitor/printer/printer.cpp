@@ -1227,18 +1227,6 @@ void Printer::Visit(FalseNode *node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(SuperNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Super\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-  os_ << next << "└──" << node->val_ << '\n';
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
 void Printer::Visit(SelfLowerNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");

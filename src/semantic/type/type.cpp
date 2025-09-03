@@ -113,3 +113,13 @@ void SameTypeCheck(TypeValue *type_value1, TypeValue *type_value2) {
     throw;
   }
 }
+
+std::shared_ptr<std::string> ExpectType(TypeValue *type) {
+  if (type->type_ == kLeafType) {
+    return type->name_;
+  }
+  if (type->type_ == kArrayType) {
+    return ExpectType(type->array_type_info_->type_values_[0].get());
+  }
+  return nullptr;
+}

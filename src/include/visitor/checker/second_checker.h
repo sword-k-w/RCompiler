@@ -59,7 +59,6 @@ public:
   void Visit(IntegerLiteralNode *) override;
   void Visit(TrueNode *) override;
   void Visit(FalseNode *) override;
-  void Visit(SuperNode *) override;
   void Visit(SelfLowerNode *) override;
   void Visit(SelfUpperNode *) override;
   void Visit(UnderscoreExpressionNode *) override;
@@ -69,4 +68,6 @@ public:
   void Visit(ArrayTypeNode *) override;
   void Visit(UnitTypeNode *) override;
   void Visit(TypeNoBoundsNode *) override;
+private:
+  void GoDown(ASTNode *, ASTNode *);
 };

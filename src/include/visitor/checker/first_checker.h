@@ -59,7 +59,6 @@ public:
   void Visit(IntegerLiteralNode *) override;
   void Visit(TrueNode *) override;
   void Visit(FalseNode *) override;
-  void Visit(SuperNode *) override;
   void Visit(SelfLowerNode *) override;
   void Visit(SelfUpperNode *) override;
   void Visit(UnderscoreExpressionNode *) override;
@@ -73,5 +72,5 @@ public:
 private:
   std::deque<ASTNode *> node_queue_;
   void NewScope(ASTNode *, ASTNode *, const std::string &);
-  void OldScope(ASTNode *father, ASTNode *son);
+  void OldScope(ASTNode *, ASTNode *);
 };

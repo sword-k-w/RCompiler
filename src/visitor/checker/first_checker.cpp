@@ -556,8 +556,6 @@ void FirstChecker::Visit(TrueNode *node) {}
 
 void FirstChecker::Visit(FalseNode *node) {}
 
-void FirstChecker::Visit(SuperNode *node) {}
-
 void FirstChecker::Visit(SelfLowerNode *node) {}
 
 void FirstChecker::Visit(SelfUpperNode *node) {}

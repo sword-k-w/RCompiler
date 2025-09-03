@@ -41,3 +41,5 @@ struct TypeValue {
 void TypeCast(TypeValue *type, TypeValue *value);
 
 void SameTypeCheck(TypeValue *type_value1, TypeValue *type_value2);
+
+std::shared_ptr<std::string> ExpectType(TypeValue *type);

@@ -114,18 +114,6 @@ private:
   const bool val_ = false;
 };
 
-class SuperNode : public ASTNode {
-  friend class Printer;
-  friend class FirstChecker;
-  friend class SecondChecker;
-public:
-  SuperNode() = delete;
-  SuperNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
-  void Accept(VisitorBase *) override;
-private:
-  std::shared_ptr<std::string> val_;
-};
-
 class SelfLowerNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;

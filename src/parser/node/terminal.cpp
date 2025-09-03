@@ -116,19 +116,6 @@ FalseNode::FalseNode(const std::vector<Token> &tokens, uint32_t &pos, const uint
   }
 }
 
-SuperNode::SuperNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Super") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "super") {
-      throw Error("expect super");
-    }
-    val_ = std::make_shared<std::string>(tokens[pos].lexeme);
-    ++pos;
-  } catch (Error &) {
-    throw;
-  }
-}
-
 SelfLowerNode::SelfLowerNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Self Lower") {
   try {
     CheckLength(pos, length);

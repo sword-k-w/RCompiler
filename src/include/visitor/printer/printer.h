@@ -61,7 +61,6 @@ public:
   void Visit(IntegerLiteralNode *) override;
   void Visit(TrueNode *) override;
   void Visit(FalseNode *) override;
-  void Visit(SuperNode *) override;
   void Visit(SelfLowerNode *) override;
   void Visit(SelfUpperNode *) override;
   void Visit(UnderscoreExpressionNode *) override;

@@ -57,7 +57,6 @@ public:
   virtual void Visit(IntegerLiteralNode *) = 0;
   virtual void Visit(TrueNode *) = 0;
   virtual void Visit(FalseNode *) = 0;
-  virtual void Visit(SuperNode *) = 0;
   virtual void Visit(SelfLowerNode *) = 0;
   virtual void Visit(SelfUpperNode *) = 0;
   virtual void Visit(UnderscoreExpressionNode *) = 0;

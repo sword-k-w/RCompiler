@@ -377,13 +377,6 @@ void FalseNode::Accept(VisitorBase * ptr) {
     throw;
   }
 }
-void SuperNode::Accept(VisitorBase * ptr) {
-  try {
-    ptr->Visit(this);  
-  } catch (Error &) {
-    throw;
-  }
-}
 void SelfLowerNode::Accept(VisitorBase * ptr) {
   try {
     ptr->Visit(this);  

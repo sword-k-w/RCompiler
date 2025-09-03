@@ -54,7 +54,6 @@ class RawCStringLiteralNode;
 class IntegerLiteralNode;
 class TrueNode;
 class FalseNode;
-class SuperNode;
 class SelfLowerNode;
 class SelfUpperNode;
 class UnderscoreExpressionNode;
