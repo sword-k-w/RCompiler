@@ -9,6 +9,7 @@
 class LiteralPatternNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   LiteralPatternNode() = delete;
@@ -22,6 +23,7 @@ private:
 class IdentifierPatternNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   IdentifierPatternNode() = delete;
@@ -36,6 +38,7 @@ private:
 class ReferencePatternNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ReferencePatternNode() = delete;
@@ -50,6 +53,7 @@ private:
 class PatternWithoutRangeNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   PatternWithoutRangeNode() = delete;

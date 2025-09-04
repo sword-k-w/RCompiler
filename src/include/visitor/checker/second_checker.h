@@ -1,12 +1,11 @@
 #pragma once
 
 #include "visitor/base/visitor_base.h"
-#include <deque>
 #include "parser/node/AST_node.h"
 
-class FirstChecker : public VisitorBase {
+class SecondChecker : public VisitorBase {
 public:
-  FirstChecker() = default;
+  SecondChecker() = default;
   void Visit(CrateNode *) override;
   void Visit(EnumVariantsNode *) override;
   void Visit(EnumerationNode *) override;
@@ -68,9 +67,4 @@ public:
   void Visit(ArrayTypeNode *) override;
   void Visit(UnitTypeNode *) override;
   void Visit(TypeNoBoundsNode *) override;
-  void Run(CrateNode *);
-private:
-  std::deque<ASTNode *> node_queue_;
-  void NewScope(ASTNode *, ASTNode *, const std::string &);
-  void OldScope(ASTNode *, ASTNode *);
 };

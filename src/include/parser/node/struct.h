@@ -8,6 +8,7 @@
 class StructFieldNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   StructFieldNode() = delete;
@@ -21,6 +22,7 @@ private:
 class StructFieldsNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   StructFieldsNode() = delete;
@@ -34,6 +36,7 @@ private:
 class StructNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   StructNode() = delete;
@@ -44,4 +47,6 @@ private:
   std::shared_ptr<IdentifierNode> identifier_;
   std::shared_ptr<StructFieldsNode> struct_fields_;
   bool semicolon_ = false;
+
+  std::map<std::string, ASTNode *> impl_;
 };

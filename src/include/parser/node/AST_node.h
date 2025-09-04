@@ -10,6 +10,7 @@
 
 class ASTNode {
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ASTNode() = delete;

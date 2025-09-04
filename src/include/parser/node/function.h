@@ -8,6 +8,7 @@
 class ShorthandSelfNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ShorthandSelfNode() = delete;
@@ -22,6 +23,7 @@ private:
 class TypedSelfNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   TypedSelfNode() = delete;
@@ -36,6 +38,7 @@ private:
 class SelfParamNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   SelfParamNode() = delete;
@@ -50,6 +53,7 @@ private:
 class FunctionParamNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   FunctionParamNode() = delete;
@@ -63,6 +67,7 @@ private:
 class FunctionParametersNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   FunctionParametersNode() = delete;
@@ -77,6 +82,7 @@ private:
 class FunctionReturnTypeNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   FunctionReturnTypeNode() = delete;
@@ -89,6 +95,7 @@ private:
 class FunctionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   FunctionNode() = delete;

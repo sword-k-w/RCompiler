@@ -9,6 +9,7 @@
 class IdentifierNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   IdentifierNode() = delete;
@@ -21,6 +22,7 @@ private:
 class CharLiteralNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   CharLiteralNode() = delete;
@@ -33,6 +35,7 @@ private:
 class StringLiteralNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   StringLiteralNode() = delete;
@@ -45,6 +48,7 @@ private:
 class RawStringLiteralNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   RawStringLiteralNode() = delete;
@@ -57,6 +61,7 @@ private:
 class CStringLiteralNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   CStringLiteralNode() = delete;
@@ -69,6 +74,7 @@ private:
 class RawCStringLiteralNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   RawCStringLiteralNode() = delete;
@@ -81,6 +87,7 @@ private:
 class IntegerLiteralNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   IntegerLiteralNode() = delete;
@@ -93,6 +100,7 @@ private:
 class TrueNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   TrueNode() = delete;
@@ -105,6 +113,7 @@ private:
 class FalseNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   FalseNode() = delete;
@@ -117,6 +126,7 @@ private:
 class SelfLowerNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   SelfLowerNode() = delete;
@@ -129,6 +139,7 @@ private:
 class SelfUpperNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   SelfUpperNode() = delete;
@@ -141,6 +152,7 @@ private:
 class UnderscoreExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   UnderscoreExpressionNode() = delete;
@@ -153,6 +165,7 @@ private:
 class ContinueExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ContinueExpressionNode() = delete;
@@ -165,6 +178,7 @@ private:
 class UnitTypeNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   UnitTypeNode() = delete;

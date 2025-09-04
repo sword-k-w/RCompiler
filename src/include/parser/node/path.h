@@ -9,6 +9,7 @@
 class PathIdentSegmentNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   PathIdentSegmentNode() = delete;

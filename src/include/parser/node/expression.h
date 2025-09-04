@@ -11,6 +11,7 @@
 class LiteralExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   LiteralExpressionNode() = delete;
@@ -30,6 +31,7 @@ private:
 class ArrayElementsNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ArrayElementsNode() = delete;
@@ -44,6 +46,7 @@ private:
 class ArrayExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ArrayExpressionNode() = delete;
@@ -56,6 +59,7 @@ private:
 class PathInExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   PathInExpressionNode() = delete;
@@ -69,6 +73,7 @@ private:
 class StructExprFieldNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   StructExprFieldNode() = delete;
@@ -82,6 +87,7 @@ private:
 class StructExprFieldsNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   StructExprFieldsNode() = delete;
@@ -95,6 +101,7 @@ private:
 class StructExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   StructExpressionNode() = delete;
@@ -108,6 +115,7 @@ private:
 class ExpressionWithoutBlockNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ExpressionWithoutBlockNode() = delete;
@@ -120,6 +128,7 @@ private:
 class BlockExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   BlockExpressionNode() = delete;
@@ -132,6 +141,7 @@ private:
 class InfiniteLoopExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   InfiniteLoopExpressionNode() = delete;
@@ -144,6 +154,7 @@ private:
 class ConditionsNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ConditionsNode() = delete;
@@ -156,6 +167,7 @@ private:
 class PredicateLoopExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   PredicateLoopExpressionNode() = delete;
@@ -169,6 +181,7 @@ private:
 class LoopExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   LoopExpressionNode() = delete;
@@ -182,6 +195,7 @@ private:
 class IfExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   IfExpressionNode() = delete;
@@ -197,6 +211,7 @@ private:
 class ExpressionWithBlockNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ExpressionWithBlockNode() = delete;
@@ -211,6 +226,7 @@ private:
 class CallParamsNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   CallParamsNode() = delete;
@@ -233,6 +249,7 @@ void Print(ExpressionType, std::ostream &);
 class ExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ExpressionNode() = delete;

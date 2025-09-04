@@ -1,8 +1,7 @@
 #pragma once
 
 #include "visitor/base/visitor_base.h"
-#include <deque>
-#include <parser/node/AST_node.h>
+#include "parser/node/AST_node.h"
 
 class ThirdChecker : public VisitorBase {
 public:

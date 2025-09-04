@@ -9,6 +9,7 @@
 class ConstantItemNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ConstantItemNode() = delete;
@@ -25,6 +26,7 @@ private:
 class AssociatedItemNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   AssociatedItemNode() = delete;
@@ -40,6 +42,7 @@ private:
 class ItemNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ItemNode() = delete;

@@ -10,6 +10,7 @@
 class ReferenceTypeNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ReferenceTypeNode() = delete;
@@ -23,6 +24,7 @@ private:
 class ArrayTypeNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ArrayTypeNode() = delete;
@@ -36,6 +38,7 @@ private:
 class TypeNoBoundsNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   TypeNoBoundsNode() = delete;

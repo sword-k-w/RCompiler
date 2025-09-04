@@ -8,6 +8,7 @@
 class LetStatementNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   LetStatementNode() = delete;
@@ -22,6 +23,7 @@ private:
 class ExpressionStatementNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   ExpressionStatementNode() = delete;
@@ -35,6 +37,7 @@ private:
 class StatementNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   StatementNode() = delete;
@@ -50,6 +53,7 @@ private:
 class StatementsNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   StatementsNode() = delete;

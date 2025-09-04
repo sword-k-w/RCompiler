@@ -9,6 +9,7 @@
 class EnumVariantsNode : public ASTNode {
     friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   EnumVariantsNode() = delete;
@@ -22,6 +23,7 @@ private:
 class EnumerationNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   EnumerationNode() = delete;

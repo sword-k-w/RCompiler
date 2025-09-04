@@ -9,6 +9,7 @@
 class CrateNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
+  friend class SecondChecker;
   friend class ThirdChecker;
 public:
   CrateNode() = delete;
