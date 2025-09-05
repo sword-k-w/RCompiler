@@ -67,11 +67,8 @@ leaf expression:
 
 * build scope tree
 * collect the name of items. (using 0/1 BFS to ensure names in same scope are added successively(maybe not necessary now))
-
-### Second Round
-
 * bind impl to struct
 
-### Third Round
+### Second Round
 
 * analyse type and calculate the value of const.

@@ -67,4 +67,6 @@ public:
   void Visit(ArrayTypeNode *) override;
   void Visit(UnitTypeNode *) override;
   void Visit(TypeNoBoundsNode *) override;
+private:
+  void GoDown(ASTNode *, ASTNode *);
 };

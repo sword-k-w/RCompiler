@@ -350,9 +350,29 @@ void FirstChecker::Visit(ImplementationNode *node) {
     if (node->identifier_ != nullptr) {
       OldScope(node, node->identifier_.get());
     }
+    if (node->type_->type_path_ == nullptr || node->type_->type_path_->identifier_ == nullptr) {
+      throw Error("FirstChecker : can't impl the type that isn't struct");
+    }
+    ASTNode *target = node->scope_->FindTypeName(*node->type_->type_path_->identifier_->val_);
+    if (target == nullptr) {
+      throw Error("FirstChecker : impl the type that is not found");
+    }
+    StructNode *struct_node = dynamic_cast<StructNode *>(target);
+    if (struct_node == nullptr) {
+      throw Error("FirstChecker : can't impl the type that isn't struct");
+    }
     OldScope(node, node->type_.get());
     for (auto &associated_item : node->associated_items_) {
-      OldScope(node, associated_item.get());
+      if (associated_item->function_ != nullptr) {
+        if (!struct_node->impl_.emplace(*associated_item->function_->identifier_->val_, associated_item->function_.get()).second) {
+          throw Error("FirstChecker : repeat method name for the same struct");
+        }
+      } else {
+        if (!struct_node->impl_.emplace(*associated_item->constant_item_->identifier_->val_, associated_item->constant_item_.get()).second) {
+          throw Error("FirstChecker : repeat const name for the same struct");
+        }
+      }
+      NewScope(struct_node, associated_item.get(), "?");
     }
   } catch (Error &) {
     throw;
@@ -400,7 +420,7 @@ void FirstChecker::Visit(ItemNode *node) {
     } else if (node->trait_ != nullptr) {
       OldScope(node, node->trait_.get());
     } else {
-      OldScope(node, node->implementation_.get());
+      node_queue_.emplace_back(node->implementation_.get());
     }
   } catch (Error &) {
     throw;

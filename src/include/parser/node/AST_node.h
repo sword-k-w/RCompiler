@@ -11,7 +11,6 @@
 class ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
-  friend class ThirdChecker;
 public:
   ASTNode() = delete;
   explicit ASTNode(const std::string_view &);

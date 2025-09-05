@@ -10,7 +10,6 @@ class PathIdentSegmentNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
-  friend class ThirdChecker;
 public:
   PathIdentSegmentNode() = delete;
   PathIdentSegmentNode(const std::vector<Token>&, uint32_t&, const uint32_t &);

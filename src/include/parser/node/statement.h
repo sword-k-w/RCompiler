@@ -9,7 +9,6 @@ class LetStatementNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
-  friend class ThirdChecker;
 public:
   LetStatementNode() = delete;
   LetStatementNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -24,7 +23,6 @@ class ExpressionStatementNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
-  friend class ThirdChecker;
 public:
   ExpressionStatementNode() = delete;
   ExpressionStatementNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -38,7 +36,6 @@ class StatementNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
-  friend class ThirdChecker;
 public:
   StatementNode() = delete;
   StatementNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -54,7 +51,6 @@ class StatementsNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
-  friend class ThirdChecker;
 public:
   StatementsNode() = delete;
   StatementsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
