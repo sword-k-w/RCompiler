@@ -21,9 +21,7 @@ void SecondChecker::Visit(CrateNode *node) {
     for (auto &item : node->items_) {
       GoDown(node, item.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(EnumVariantsNode *node) {
@@ -31,9 +29,7 @@ void SecondChecker::Visit(EnumVariantsNode *node) {
     for (auto &enum_variant : node->enum_variant_s_) {
       GoDown(node, enum_variant.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(EnumerationNode *node) {
@@ -41,9 +37,7 @@ void SecondChecker::Visit(EnumerationNode *node) {
     if (node->enum_variants_ != nullptr) {
       GoDown(node, node->enum_variants_.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(LiteralExpressionNode *node) {
@@ -69,11 +63,9 @@ void SecondChecker::Visit(LiteralExpressionNode *node) {
     assert(choose != nullptr);
     GoDown(node, choose);
     if (node->need_calculate_) {
-      node->type_value_ = choose->type_value_;
+      node->const_value_ = choose->const_value_;
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(ArrayElementsNode *node) {
@@ -86,24 +78,24 @@ void SecondChecker::Visit(ArrayElementsNode *node) {
       node->exprs_[1]->Accept(this);
 
       if (node->need_calculate_) {
-        node->type_value_->type_ = kArrayType;
-        std::vector<std::shared_ptr<TypeValue>> type_values(*node->exprs_[1]->type_value_->u32_value_, node->exprs_[0]->type_value_);
-        node->type_value_->array_type_info_ = std::make_shared<ArrayTypeInfo>(type_values, *node->exprs_[1]->type_value_->u32_value_);
+        node->const_value_ = std::make_shared<ConstValue>();
+        node->const_value_->type_ = kArrayType;
+        std::vector<std::shared_ptr<ConstValue>> values(node->exprs_[1]->const_value_->u32_value_, node->exprs_[0]->const_value_);
+        node->const_value_->array_value_info_ = std::make_shared<ArrayValueInfo>(values, node->exprs_[1]->const_value_->u32_value_);
       }
     } else {
-      std::vector<std::shared_ptr<TypeValue>> type_values;
+      std::vector<std::shared_ptr<ConstValue>> type_values;
       for (auto &expr : node->exprs_) {
         GoDown(node, expr.get());
-        type_values.emplace_back(expr->type_value_);
+        type_values.emplace_back(expr->const_value_);
       }
       if (node->need_calculate_) {
-        node->type_value_->type_ = kArrayType;
-        node->type_value_->array_type_info_ = std::make_shared<ArrayTypeInfo>(type_values, node->exprs_.size());
+        node->const_value_ = std::make_shared<ConstValue>();
+        node->const_value_->type_ = kArrayType;
+        node->const_value_->array_value_info_ = std::make_shared<ArrayValueInfo>(type_values, node->exprs_.size());
       }
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(ArrayExpressionNode *node) {
@@ -111,12 +103,10 @@ void SecondChecker::Visit(ArrayExpressionNode *node) {
     if (node->array_elements_ != nullptr) {
       GoDown(node, node->array_elements_.get());
       if (node->need_calculate_) {
-        node->type_value_ = node->array_elements_->type_value_;
+        node->const_value_ = node->array_elements_->const_value_;
       }
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(PathInExpressionNode *node) {
@@ -125,9 +115,7 @@ void SecondChecker::Visit(PathInExpressionNode *node) {
     if (node->path_expr_segment2_ != nullptr) {
       GoDown(node, node->path_expr_segment2_.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(StructExprFieldNode *node) {
@@ -136,7 +124,7 @@ void SecondChecker::Visit(StructExprFieldNode *node) {
     if (node->expr_ != nullptr) {
       GoDown(node, node->expr_.get());
       if (node->need_calculate_) {
-        node->type_value_ = node->expr_->type_value_;
+        node->const_value_ = node->expr_->const_value_;
       }
     } else if (node->need_calculate_) {
       auto target = node->scope_->FindValueName(*node->identifier_->val_);
@@ -147,11 +135,9 @@ void SecondChecker::Visit(StructExprFieldNode *node) {
       if (constant_item == nullptr) {
         throw Error("SecondChecker : struct expr field omit expr but the identifier isn't const");
       }
-      node->type_value_ = constant_item->type_value_;
+      node->const_value_ = constant_item->const_value_;
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(StructExprFieldsNode *node) {
@@ -163,9 +149,7 @@ void SecondChecker::Visit(StructExprFieldsNode *node) {
         throw Error("SecondChecker : same identifier in struct expr fields");
       }
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(StructExpressionNode *node) {
@@ -190,31 +174,32 @@ void SecondChecker::Visit(StructExpressionNode *node) {
       if (struct_type == nullptr) {
         throw Error("SecondChecker : const struct but identifier is not a struct");
       }
-      if (struct_type->type_value_->struct_type_info_->variant_.size() != node->struct_expr_fields_->struct_expr_field_s_.size()) {
+      if (struct_type->const_value_->struct_value_info_->variant_.size() != node->struct_expr_fields_->struct_expr_field_s_.size()) {
         throw Error("SecondChecker : const struct but identifier count doesn't match");
       }
-      node->type_value_->type_ = kStructType;
-      node->type_value_->struct_type_info_ = std::make_shared<StructTypeInfo>();
+      node->const_value_ = std::make_shared<ConstValue>();
+      node->const_value_->type_ = kStructType;
+      node->const_value_->type_source_ = target;
+      node->const_value_->struct_value_info_ = std::make_shared<StructValueInfo>();
       for (auto &struct_expr_field : node->struct_expr_fields_->struct_expr_field_s_) {
-        auto it = struct_type->type_value_->struct_type_info_->variant_.find(*struct_expr_field->identifier_->val_);
-        if (it == struct_type->type_value_->struct_type_info_->variant_.end()) {
+        auto it = struct_type->field_.find(*struct_expr_field->identifier_->val_);
+        if (it == struct_type->field_.end()) {
           throw Error("SecondChecker : const struct but the identifier doesn't belong to the struct");
         }
-        SameTypeCheck(it->second.get(), struct_expr_field->type_value_.get());
-        node->type_value_->struct_type_info_->variant_[it->first] = struct_expr_field->type_value_;
+        SameTypeCheck(it->second.get(), struct_expr_field->const_value_.get());
+        node->const_value_->struct_value_info_->variant_[it->first] = struct_expr_field->const_value_;
       }
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(ExpressionWithoutBlockNode *node) {
   try {
     GoDown(node, node->expr_.get());
-  } catch (Error &) {
-    throw;
-  }
+    if (node->need_calculate_) {
+      node->const_value_ = node->expr_->const_value_;
+    }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(BlockExpressionNode *node) {
@@ -223,9 +208,7 @@ void SecondChecker::Visit(BlockExpressionNode *node) {
     if (node->statements_ != nullptr) {
       GoDown(node, node->statements_.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(InfiniteLoopExpressionNode *node) {
@@ -233,27 +216,21 @@ void SecondChecker::Visit(InfiniteLoopExpressionNode *node) {
     if (node->block_expr_ != nullptr) {
       GoDown(node, node->block_expr_.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(ConditionsNode *node) {
   try {
     assert(node->need_calculate_ == false);
     GoDown(node, node->expr_.get());
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(PredicateLoopExpressionNode *node) {
   try {
     GoDown(node, node->conditions_.get());
     GoDown(node, node->block_expr_.get());
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(LoopExpressionNode *node) {
@@ -264,9 +241,7 @@ void SecondChecker::Visit(LoopExpressionNode *node) {
     } else {
       GoDown(node, node->predicate_loop_expr_.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(IfExpressionNode *node) {
@@ -279,9 +254,7 @@ void SecondChecker::Visit(IfExpressionNode *node) {
     } else {
       GoDown(node, node->if_expr_.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(ExpressionWithBlockNode *node) {
@@ -294,9 +267,7 @@ void SecondChecker::Visit(ExpressionWithBlockNode *node) {
     } else {
       GoDown(node, node->if_expr_.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(CallParamsNode *node) {
@@ -304,39 +275,424 @@ void SecondChecker::Visit(CallParamsNode *node) {
     for (auto &expr : node->exprs_) {
       GoDown(node, expr.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(ExpressionNode *node) {
   try {
     if (node->type_ == kLiteralExpr) {
       GoDown(node, node->literal_expr_.get());
+      if (node->need_calculate_) {
+        node->const_value_ = node->literal_expr_->const_value_;
+      }
     } else if (node->type_ == kPathExpr) {
       GoDown(node, node->path_expr_.get());
       if (node->need_calculate_) {
         ASTNode *target = nullptr;
         if (node->path_expr_->path_expr_segment2_ != nullptr) {
-
+          ASTNode *tmp = node->scope_->FindTypeName(*node->path_expr_->path_expr_segment1_->identifier_->val_);
+          auto *struct_node = dynamic_cast<StructNode *>(tmp);
+          if (struct_node != nullptr) {
+            auto it = struct_node->impl_.find(*node->path_expr_->path_expr_segment2_->identifier_->val_);
+            if (it == struct_node->impl_.end()) {
+              throw Error("SecondChecker : cannot resolve path expr");
+            }
+            target = it->second;
+            auto const_item = dynamic_cast<ConstantItemNode *>(target);
+            if (const_item == nullptr) {
+              throw Error("SecondChecker : path expr but function");
+            }
+            node->const_value_ = const_item->const_value_;
+          } else {
+            auto enum_node = dynamic_cast<EnumerationNode *>(tmp);
+            if (enum_node != nullptr) {
+              if (enum_node->enum_.find(*node->path_expr_->path_expr_segment2_->identifier_->val_) == enum_node->enum_.end()) {
+                throw Error("SecondChecker : the variant doesn't exist in enumeration");
+              }
+              node->const_value_ = std::make_shared<ConstValue>();
+              node->const_value_->type_source_ = tmp;
+              node->const_value_->type_ = kEnumType;
+              node->const_value_->str_value_ = *node->path_expr_->path_expr_segment2_->identifier_->val_;
+            } else {
+              auto trait_node = dynamic_cast<TraitNode *>(tmp);
+              assert(trait_node != nullptr);
+              auto it = trait_node->items_.find(*node->path_expr_->path_expr_segment2_->identifier_->val_);
+              if (it == trait_node->items_.end()) {
+                throw Error("SecondChecker : the identifier doesn't exist in trait");
+              }
+              auto const_item = dynamic_cast<ConstantItemNode *>(it->second);
+              if (const_item == nullptr) {
+                throw Error("SecondChecker : path expr but function");
+              }
+              if (const_item->expr_ == nullptr) {
+                throw Error("SecondChecker : want trait const value but no default value");
+              }
+              node->const_value_ = const_item->const_value_;
+            }
+          }
         } else {
           target = node->scope_->FindValueName(*node->path_expr_->path_expr_segment1_->identifier_->val_);
+          auto *struct_node = dynamic_cast<StructNode *>(target);
+          if (struct_node != nullptr) {
+            if (struct_node->struct_fields_ != nullptr) {
+              throw Error("SecondChecker : expect unit-like struct");
+            }
+            node->const_value_ = std::make_shared<ConstValue>();
+            node->const_value_->type_ = kStructType;
+            node->const_value_->type_source_ = target;
+            node->const_value_->type_name_ = *node->path_expr_->path_expr_segment1_->identifier_->val_;
+            node->const_value_->struct_value_info_ = std::make_shared<StructValueInfo>();
+          }
         }
-
       }
+    } else if (node->type_ == kArrayExpr) {
+      GoDown(node, node->array_expr_.get());
+      if (node->need_calculate_) {
+        node->const_value_ = node->array_expr_->const_value_;
+      }
+    } else if (node->type_ == kStructExpr) {
+      GoDown(node, node->struct_expr_.get());
+      if (node->need_calculate_) {
+        node->const_value_ = node->struct_expr_->const_value_;
+      }
+    } else if (node->type_ == kContinueExpr) {
+      if (node->need_calculate_) {
+        throw Error("SecondChecker : const expr but continue");
+      }
+      GoDown(node, node->continue_expr_.get());
+    } else if (node->type_ == kUnderscoreExpr) {
+      if (node->need_calculate_) {
+        throw Error("SecondChecker : const expr but underscore");
+      }
+      GoDown(node, node->underscore_expr_.get());
+    } else if (node->type_ == kBorrowExpr) {
+      if (node->need_calculate_) {
+        throw Error("SecondChecker : const expr but borrow");
+      }
+      GoDown(node, node->expr1_.get());
+    } else if (node->type_ == kDereferenceExpr) {
+      if (node->need_calculate_) {
+        throw Error("SecondChecker : const expr but dereference");
+      }
+      GoDown(node, node->expr1_.get());
+    } else if (node->type_ == kNegationExpr) {
+      GoDown(node, node->expr1_.get());
+      if (node->need_calculate_) {
+        node->const_value_ = std::make_shared<ConstValue>(*node->expr1_->const_value_);
+        if (node->const_value_->type_ != kLeafType || node->const_value_->type_name_ == "str" || node->const_value_->type_name_ == "char") {
+          throw Error("SecondChecker : negation with unexpected type");
+        }
+        if (node->op_ == "-") {
+          if (node->const_value_->type_name_ == "i32" || node->const_value_->type_name_ == "isize") {
+            node->const_value_->u32_value_ = -node->const_value_->u32_value_;
+          } else {
+            throw Error("SecondChecker : negation with unexpected type");
+          }
+        } else {
+          if (node->const_value_->type_name_ == "bool") {
+            node->const_value_->u32_value_ = !node->const_value_->u32_value_;
+          } else {
+            node->const_value_->u32_value_ = ~node->const_value_->u32_value_;
+          }
+        }
+      }
+    } else if (node->type_ == kArithmeticOrLogicExpr) {
+      GoDown(node, node->expr1_.get());
+      GoDown(node, node->expr2_.get());
+      if (node->need_calculate_) {
+        if (node->expr1_->const_value_->type_ != kLeafType || node->expr2_->const_value_->type_ != kLeafType) {
+          throw Error("SecondChecker : arithmetic or logic expr but not leaf type");
+        }
+        if (node->expr1_->const_value_->type_name_ == "char" || node->expr2_->const_value_->type_name_ == "char") {
+          throw Error("SecondChecker : arithmetic or logic expr but char");
+        }
+        if (node->expr1_->const_value_->type_name_ == "str" || node->expr2_->const_value_->type_name_ == "str") {
+          throw Error("SecondChecker : arithmetic or logic expr but str");
+        }
+        node->const_value_ = std::make_shared<ConstValue>(*node->expr1_->const_value_);
+        if (node->op_ == "<<" || node->op_ == ">>") {
+          if (node->expr1_->const_value_->type_name_ == "bool" || node->expr2_->const_value_->type_name_ == "bool") {
+            throw Error("SecondChecker : shift but str or bool");
+          }
+          if (node->expr2_->const_value_->type_name_ == "i32" || node->expr2_->const_value_->type_name_ == "isize") {
+            int32_t tmp = static_cast<int32_t>(node->expr2_->const_value_->u32_value_);
+            if (tmp < 0) {
+              throw Error("SecondChecker : const negative shift");
+            }
+            if (node->const_value_->type_name_ == "i32" || node->const_value_->type_name_ == "isize") {
+              if (node->op_ == "<<") {
+                node->const_value_->u32_value_ = static_cast<int32_t>(node->const_value_->u32_value_) << tmp;
+              } else {
+                node->const_value_->u32_value_ = static_cast<int32_t>(node->const_value_->u32_value_) >> tmp;
+              }
+            } else {
+              if (node->op_ == "<<") {
+                node->const_value_->u32_value_ <<= tmp;
+              } else {
+                node->const_value_->u32_value_ >>= tmp;
+              }
+            }
+          } else {
+            uint32_t tmp = node->expr2_->const_value_->u32_value_;
+            if (node->const_value_->type_name_ == "i32" || node->const_value_->type_name_ == "isize") {
+              if (node->op_ == "<<") {
+                node->const_value_->u32_value_ = static_cast<int32_t>(node->const_value_->u32_value_) << tmp;
+              } else {
+                node->const_value_->u32_value_ = static_cast<int32_t>(node->const_value_->u32_value_) >> tmp;
+              }
+            } else {
+              if (node->op_ == "<<") {
+                node->const_value_->u32_value_ <<= tmp;
+              } else {
+                node->const_value_->u32_value_ >>= tmp;
+              }
+            }
+          }
+        }
+        if (node->expr1_->const_value_->type_name_ != node->expr2_->const_value_->type_name_) {
+          throw Error("SecondChecker : arithmetic or logic expr but different type");
+        }
+        if (node->expr1_->const_value_->type_name_ == "bool") {
+          if (node->op_ == "&") {
+            node->const_value_->u32_value_ &= node->expr2_->const_value_->u32_value_;
+          } else if (node->op_ == "|") {
+            node->const_value_->u32_value_ |= node->expr2_->const_value_->u32_value_;
+          } else if (node->op_ == "^") {
+            node->const_value_->u32_value_ ^= node->expr2_->const_value_->u32_value_;
+          } else {
+            throw Error("SecondChecker : arithmetic or logic expr but bool with unexpected operation");
+          }
+        } else {
+          if (node->op_ == "+") {
+            node->const_value_->u32_value_ += node->expr2_->const_value_->u32_value_;
+          } else if (node->op_ == "-") {
+            node->const_value_->u32_value_ -= node->expr2_->const_value_->u32_value_;
+          } else if (node->op_ == "*") {
+            node->const_value_->u32_value_ *= node->expr2_->const_value_->u32_value_;
+          } else if (node->op_ == "/") {
+            if (node->expr2_->const_value_->u32_value_ == 0) {
+              throw Error("SecondChecker : const but divide 0");
+            }
+            if (node->const_value_->type_name_ == "i32" || node->const_value_->type_name_ == "isize") {
+              int32_t tmp = static_cast<int32_t>(node->const_value_->u32_value_);
+              tmp /= static_cast<int32_t>(node->expr2_->const_value_->u32_value_);
+              node->const_value_->u32_value_ = tmp;
+            } else {
+              node->const_value_->u32_value_ /= node->expr2_->const_value_->u32_value_;
+            }
+          } else if (node->op_ == "%") {
+            if (node->expr2_->const_value_->u32_value_ == 0) {
+              throw Error("SecondChecker : const but divide 0");
+            }
+            if (node->const_value_->type_name_ == "i32" || node->const_value_->type_name_ == "isize") {
+              int32_t tmp = static_cast<int32_t>(node->const_value_->u32_value_);
+              tmp %= static_cast<int32_t>(node->expr2_->const_value_->u32_value_);
+              node->const_value_->u32_value_ = tmp;
+            } else {
+              node->const_value_->u32_value_ %= node->expr2_->const_value_->u32_value_;
+            }
+          } else if (node->op_ == "&") {
+            node->const_value_->u32_value_ &= node->expr2_->const_value_->u32_value_;
+          } else if (node->op_ == "|") {
+            node->const_value_->u32_value_ |= node->expr2_->const_value_->u32_value_;
+          } else {
+            node->const_value_->u32_value_ ^= node->expr2_->const_value_->u32_value_;
+          }
+        }
+      }
+    } else if (node->type_ == kComparisonExpr) {
+      GoDown(node, node->expr1_.get());
+      GoDown(node, node->expr2_.get());
+      if (node->need_calculate_) {
+        if (node->expr1_->const_value_->type_ != kLeafType || node->expr2_->const_value_->type_ != kLeafType) {
+          throw Error("SecondChecker : comparison expr but not leaf type");
+        }
+        if (node->expr1_->const_value_->type_name_ == "str" || node->expr2_->const_value_->type_name_ == "str") {
+          throw Error("SecondChecker : comparison expr but str");
+        }
+        if (node->expr1_->const_value_->type_name_ != node->expr2_->const_value_->type_name_) {
+          throw Error("SecondChecker : comparison expr but different type");
+        }
+        node->const_value_ = std::make_shared<ConstValue>();
+        node->const_value_->type_ = kLeafType;
+        node->const_value_->type_name_ = "bool";
+        if (node->op_ == "==") {
+          node->const_value_->u32_value_ = node->expr1_->const_value_->u32_value_ == node->expr2_->const_value_->u32_value_;
+        } else if (node->op_ == "!=") {
+          node->const_value_->u32_value_ = node->expr1_->const_value_->u32_value_ != node->expr2_->const_value_->u32_value_;
+        } else if (node->op_ == ">") {
+          node->const_value_->u32_value_ = node->expr1_->const_value_->u32_value_ > node->expr2_->const_value_->u32_value_;
+        } else if (node->op_ == "<") {
+          node->const_value_->u32_value_ = node->expr1_->const_value_->u32_value_ < node->expr2_->const_value_->u32_value_;
+        } else if (node->op_ == ">=") {
+          node->const_value_->u32_value_ = node->expr1_->const_value_->u32_value_ >= node->expr2_->const_value_->u32_value_;
+        } else {
+          node->const_value_->u32_value_ = node->expr1_->const_value_->u32_value_ <= node->expr2_->const_value_->u32_value_;
+        }
+      }
+    } else if (node->type_ == kLazyBooleanExpr) {
+      if (node->expr1_->const_value_->type_ != kLeafType || node->expr2_->const_value_->type_ != kLeafType) {
+        throw Error("SecondChecker : lazy boolean expr but not leaf type");
+      }
+      if (node->expr1_->const_value_->type_name_ != "bool" || node->expr2_->const_value_->type_name_ != "bool") {
+        throw Error("SecondChecker : lazy boolean expr but not bool");
+      }
+      node->const_value_ = std::make_shared<ConstValue>();
+      node->const_value_->type_ = kLeafType;
+      node->const_value_->type_name_ = "bool";
+      if (node->op_ == "||") {
+        node->const_value_->u32_value_ = node->expr1_->const_value_->u32_value_ | node->expr2_->const_value_->u32_value_;
+      } else {
+        node->const_value_->u32_value_ = node->expr1_->const_value_->u32_value_ & node->expr2_->const_value_->u32_value_;
+      }
+    } else if (node->type_ == kTypeCastExpr) {
+      GoDown(node, node->expr1_.get());
+      GoDown(node, node->type_no_bounds_.get());
+      if (node->need_calculate_) {
+        node->const_value_ = std::make_shared<ConstValue>(*node->expr1_->const_value_);
+        TypeCast(node->type_no_bounds_->type_info_.get(), node->const_value_.get());
+      }
+    } else if (node->type_ == kAssignmentExpr) {
+      if (node->need_calculate_) {
+        throw Error("SecondChecker : const expr but assignment");
+      }
+      GoDown(node, node->expr1_.get());
+      GoDown(node, node->expr2_.get());
+    } else if (node->type_ == kCompoundAssignmentExpr) {
+      if (node->need_calculate_) {
+        throw Error("SecondChecker : const expr but compound assignment");
+      }
+      GoDown(node, node->expr1_.get());
+      GoDown(node, node->expr2_.get());
+    } else if (node->type_ == kGroupedExpr) {
+      GoDown(node, node->expr1_.get());
+      if (node->need_calculate_) {
+        node->const_value_ = node->expr1_->const_value_;
+      }
+    } else if (node->type_ == kIndexExpr) {
+      GoDown(node, node->expr1_.get());
+      if (node->expr1_->const_value_->type_ != kArrayType) {
+        throw Error("SecondChecker : index expr but not array");
+      }
+      node->expr2_->need_calculate_ = node->need_calculate_;
+      node->expr2_->expect_type_ = std::make_shared<std::string>("usize");
+      node->expr2_->Accept(this);
+      if (node->expr2_->const_value_->type_ != kLeafType || node->expr2_->const_value_->type_name_ != "usize" ) {
+        throw Error("SecondChecker : index expr but index is not usize");
+      }
+      if (node->need_calculate_) {
+        if (node->expr2_->const_value_->u32_value_ >= node->expr1_->const_value_->array_value_info_->length_) {
+          throw Error("SecondChecker : const index expr but index exceeds length");
+        }
+        node->const_value_ = node->expr1_->const_value_->array_value_info_->values_[node->expr2_->const_value_->u32_value_];
+      }
+    } else if (node->type_ == kCallExpr) {
+      if (node->need_calculate_) {
+        throw Error("SecondChecker : const expr but call");
+      }
+      GoDown(node, node->expr1_.get());
+      if (node->call_params_ != nullptr) {
+        GoDown(node, node->call_params_.get());
+      }
+    } else if (node->type_ == kMethodCallExpr) {
+      if (node->need_calculate_) {
+        throw Error("SecondChecker : const expr but method call");
+      }
+      GoDown(node, node->expr1_.get());
+      GoDown(node, node->path_expr_segment_.get());
+      if (node->call_params_ != nullptr) {
+        GoDown(node, node->call_params_.get());
+      }
+    } else if (node->type_ == kFieldExpr) {
+      GoDown(node, node->expr1_.get());
+      GoDown(node, node->identifier_.get());
+      if (node->expr1_->const_value_->type_ != kStructType) {
+        throw Error("SecondChecker : field expr but not struct");
+      }
+      if (node->need_calculate_) {
+        auto it = node->expr1_->const_value_->struct_value_info_->variant_.find(*node->identifier_->val_);
+        if (it == node->expr1_->const_value_->struct_value_info_->variant_.end()) {
+          throw Error("SecondChecker : field expr but can't find field");
+        }
+        node->const_value_ = it->second;
+      }
+    } else if (node->type_ == kBreakExpr) {
+      if (node->need_calculate_) {
+        throw Error("SecondChecker : const expr but break");
+      }
+      GoDown(node, node->expr1_.get());
+    } else if (node->type_ == kReturnExpr) {
+      if (node->need_calculate_) {
+        throw Error("SecondChecker : const expr but return");
+      }
+      GoDown(node, node->expr1_.get());
+    } else {
+      if (node->need_calculate_) {
+        throw Error("SecondChecker : const expr but with block");
+      }
+      GoDown(node, node->expr1_.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(ShorthandSelfNode *node) {}
-void SecondChecker::Visit(TypedSelfNode *node) {}
-void SecondChecker::Visit(SelfParamNode *node) {}
-void SecondChecker::Visit(FunctionParamNode *node) {}
-void SecondChecker::Visit(FunctionParametersNode *node) {}
-void SecondChecker::Visit(FunctionReturnTypeNode *node) {}
-void SecondChecker::Visit(FunctionNode *node) {}
+
+void SecondChecker::Visit(TypedSelfNode *node) {
+  try {
+    GoDown(node, node->type_.get());
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(SelfParamNode *node) {
+  try {
+    if (node->shorthand_self_ != nullptr) {
+      GoDown(node, node->shorthand_self_.get());
+    } else {
+      GoDown(node, node->typed_self_.get());
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(FunctionParamNode *node) {
+  try {
+    GoDown(node, node->pattern_no_top_alt_.get());
+    GoDown(node, node->type_.get());
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(FunctionParametersNode *node) {
+  try {
+    if (node->self_param_ != nullptr) {
+      GoDown(node, node->self_param_.get());
+    }
+    for (auto &function_param : node->function_params_) {
+      GoDown(node, function_param.get());
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(FunctionReturnTypeNode *node) {
+  try {
+    GoDown(node, node->type_.get());
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(FunctionNode *node) {
+  try {
+    assert(!node->need_calculate_);
+    GoDown(node, node->identifier_.get());
+    if (node->function_parameters_ != nullptr) {
+      GoDown(node, node->function_parameters_.get());
+    }
+    if (node->function_return_type_ != nullptr) {
+      GoDown(node, node->function_return_type_.get());
+    }
+    if (node->block_expr_ != nullptr) {
+      GoDown(node, node->block_expr_.get());
+    }
+  } catch (Error &) { throw; }
+}
+
 void SecondChecker::Visit(ImplementationNode *node) {}
 
 void SecondChecker::Visit(ConstantItemNode *node) {
@@ -348,14 +704,12 @@ void SecondChecker::Visit(ConstantItemNode *node) {
       }
     } else {
       node->expr_->need_calculate_ = true;
-      node->expr_->expect_type_ = ExpectType(node->type_->type_value_.get());
+      node->expr_->expect_type_ = std::make_shared<std::string>(ExpectType(node->type_->type_info_.get()));
       node->expr_->Accept(this);
-      node->type_value_ = node->expr_->type_value_;
-      TypeCast(node->type_->type_value_.get(), node->type_value_.get());
+      node->const_value_ = node->expr_->const_value_;
+      SameTypeCheck(node->type_->type_info_.get(), node->const_value_.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(AssociatedItemNode *node) {
@@ -365,9 +719,7 @@ void SecondChecker::Visit(AssociatedItemNode *node) {
     } else {
       GoDown(node, node->constant_item_.get());
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 void SecondChecker::Visit(ItemNode *node) {
@@ -383,23 +735,102 @@ void SecondChecker::Visit(ItemNode *node) {
     } else if (node->trait_ != nullptr) {
       GoDown(node, node->trait_.get());
     } else {
-      GoDown(node, node->implementation_.get());
+      // ignore implementation
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
-void SecondChecker::Visit(PathIdentSegmentNode *node) {}
-void SecondChecker::Visit(LiteralPatternNode *node) {}
-void SecondChecker::Visit(IdentifierPatternNode *node) {}
-void SecondChecker::Visit(ReferencePatternNode *node) {}
-void SecondChecker::Visit(PatternWithoutRangeNode *node) {}
-void SecondChecker::Visit(LetStatementNode *node) {}
-void SecondChecker::Visit(ExpressionStatementNode *node) {}
-void SecondChecker::Visit(StatementNode *node) {}
-void SecondChecker::Visit(StatementsNode *node) {}
-void SecondChecker::Visit(StructFieldNode *node) {}
+void SecondChecker::Visit(PathIdentSegmentNode *node) {
+  try {
+    if (node->identifier_ != nullptr) {
+      GoDown(node, node->identifier_.get());
+    } else if (node->self_upper_ != nullptr) {
+      GoDown(node, node->self_upper_.get());
+    } else {
+      GoDown(node, node->self_lower_.get());
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(LiteralPatternNode *node) {
+  try {
+    GoDown(node, node->literal_expr_.get());
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(IdentifierPatternNode *node) {
+  try {
+    GoDown(node, node->identifier_.get());
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(ReferencePatternNode *node) {
+  try {
+    GoDown(node, node->pattern_without_range_.get());
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(PatternWithoutRangeNode *node) {
+  try {
+    if (node->literal_pattern_ != nullptr) {
+      GoDown(node, node->literal_pattern_.get());
+    } else if (node->identifier_pattern_ != nullptr) {
+      GoDown(node, node->identifier_pattern_.get());
+    } else if (node->wildcard_pattern_ != nullptr) {
+      GoDown(node, node->wildcard_pattern_.get());
+    } else if (node->reference_pattern_ != nullptr) {
+      GoDown(node, node->reference_pattern_.get());
+    } else {
+      GoDown(node, node->path_pattern_.get());
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(LetStatementNode *node) {
+  try {
+    GoDown(node, node->pattern_no_top_alt_.get());
+    GoDown(node, node->type_.get());
+    if (node->expr_ != nullptr) {
+      node->expr_->need_calculate_ = false;
+      node->expr_->Accept(this);
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(ExpressionStatementNode *node) {
+  try {
+    node->expr_->need_calculate_ = false;
+    node->expr_->Accept(this);
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(StatementNode *node) {
+  try {
+    if (node->item_ != nullptr) {
+      GoDown(node, node->item_.get());
+    } else if (node->let_statement_ != nullptr) {
+      GoDown(node, node->let_statement_.get());
+    } else if (node->expr_statement_ != nullptr) {
+      GoDown(node, node->expr_statement_.get());
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(StatementsNode *node) {
+  try {
+    for (auto &statement : node->statement_s_) {
+      GoDown(node, statement.get());
+    }
+    GoDown(node, node->expr_without_block_.get());
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(StructFieldNode *node) {
+  try {
+
+  } catch (Error &) { throw; }
+}
+
 void SecondChecker::Visit(StructFieldsNode *node) {}
 void SecondChecker::Visit(StructNode *node) {}
 void SecondChecker::Visit(IdentifierNode *node) {}
@@ -418,8 +849,22 @@ void SecondChecker::Visit(ContinueExpressionNode *node) {}
 void SecondChecker::Visit(TraitNode *node) {}
 void SecondChecker::Visit(ReferenceTypeNode *node) {}
 void SecondChecker::Visit(ArrayTypeNode *node) {}
+
 void SecondChecker::Visit(UnitTypeNode *node) {}
-void SecondChecker::Visit(TypeNoBoundsNode *node) {}
+
+void SecondChecker::Visit(TypeNoBoundsNode *node) {
+  try {
+    if (node->type_path_ != nullptr) {
+      GoDown(node, node->type_path_.get());
+    } else if (node->reference_type_ != nullptr) {
+      GoDown(node, node->reference_type_.get());
+    } else if (node->array_type_ != nullptr) {
+      GoDown(node, node->array_type_.get());
+    } else {
+      GoDown(node, node->unit_type_.get());
+    }
+  } catch (Error &) { throw; }
+}
 
 void SecondChecker::GoDown(ASTNode *father, ASTNode *son) {
   son->need_calculate_ = father->need_calculate_;

@@ -15,7 +15,6 @@ public:
   PathIdentSegmentNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
-  std::shared_ptr<TypeValue> type_info_;
   std::shared_ptr<IdentifierNode> identifier_;
   std::shared_ptr<SelfLowerNode> self_lower_;
   std::shared_ptr<SelfUpperNode> self_upper_;

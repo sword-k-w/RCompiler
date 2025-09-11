@@ -11,9 +11,7 @@ LiteralPatternNode::LiteralPatternNode(const std::vector<Token> &tokens, uint32_
       ++pos;
     }
     literal_expr_ = std::make_shared<LiteralExpressionNode>(tokens, pos, length);
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 IdentifierPatternNode::IdentifierPatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Identifier Pattern") {
@@ -30,9 +28,7 @@ IdentifierPatternNode::IdentifierPatternNode(const std::vector<Token> &tokens, u
       CheckLength(pos, length);
     }
     identifier_ = std::make_shared<IdentifierNode>(tokens, pos, length);
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 ReferencePatternNode::ReferencePatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Reference Pattern") {
@@ -49,9 +45,7 @@ ReferencePatternNode::ReferencePatternNode(const std::vector<Token> &tokens, uin
       mut_ = true;
     }
     pattern_without_range_ = std::make_shared<PatternWithoutRangeNode>(tokens, pos, length);
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 PatternWithoutRangeNode::PatternWithoutRangeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Pattern Without Range") {
@@ -77,7 +71,5 @@ PatternWithoutRangeNode::PatternWithoutRangeNode(const std::vector<Token> &token
         }
       }
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }

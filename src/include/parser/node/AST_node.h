@@ -20,7 +20,8 @@ public:
 protected:
   std::shared_ptr<Scope> scope_;
   SymbolType symbol_type_;
-  std::shared_ptr<TypeValue> type_value_;
+  std::shared_ptr<ConstValue> const_value_;
+  std::shared_ptr<Type> type_info_;
   bool need_calculate_ = false;
   std::shared_ptr<std::string> expect_type_;
 private:

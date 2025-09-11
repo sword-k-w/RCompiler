@@ -29,9 +29,7 @@ LetStatementNode::LetStatementNode(const std::vector<Token> &tokens, uint32_t &p
       throw Error("try parsing Let Statement Node but no ;");
     }
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 ExpressionStatementNode::ExpressionStatementNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Expression Statement") {
@@ -44,9 +42,7 @@ ExpressionStatementNode::ExpressionStatementNode(const std::vector<Token> &token
     } else if (expr_->Type() != kExprWithBlock) {
       throw Error("try parsing Expression Statement Node but no ;");
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 StatementNode::StatementNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Statement") {
@@ -64,9 +60,7 @@ StatementNode::StatementNode(const std::vector<Token> &tokens, uint32_t &pos, co
     } else {
       expr_statement_ = std::make_shared<ExpressionStatementNode>(tokens, pos, length);
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 StatementsNode::StatementsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Statements") {
@@ -83,7 +77,5 @@ StatementsNode::StatementsNode(const std::vector<Token> &tokens, uint32_t &pos, 
     if (tokens[pos].lexeme != "}") {
       expr_without_block_ = std::make_shared<ExpressionWithoutBlockNode>(tokens, pos, length);
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }

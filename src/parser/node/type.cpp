@@ -17,9 +17,7 @@ ReferenceTypeNode::ReferenceTypeNode(const std::vector<Token> &tokens, uint32_t 
       ++pos;
     }
     type_no_bounds_ = std::make_shared<TypeNoBoundsNode>(tokens, pos, length);
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 ArrayTypeNode::ArrayTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Array Type") {
@@ -41,9 +39,7 @@ ArrayTypeNode::ArrayTypeNode(const std::vector<Token> &tokens, uint32_t &pos, co
       throw Error("try parsing Array Type Node but no ]");
     }
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 TypeNoBoundsNode::TypeNoBoundsNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Type No Bounds") {
@@ -58,7 +54,5 @@ TypeNoBoundsNode::TypeNoBoundsNode(const std::vector<Token> &tokens, uint32_t &p
     } else {
       type_path_ = std::make_shared<TypePathNode>(tokens, pos, length);
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }

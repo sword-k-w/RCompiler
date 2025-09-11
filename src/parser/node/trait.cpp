@@ -23,7 +23,5 @@ TraitNode::TraitNode(const std::vector<Token> &tokens, uint32_t &pos, const uint
       throw Error("try parsing Trait Node but no }");
     }
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }

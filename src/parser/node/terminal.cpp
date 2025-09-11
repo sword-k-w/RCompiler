@@ -9,9 +9,7 @@ IdentifierNode::IdentifierNode(const std::vector<Token> &tokens, uint32_t &pos, 
     }
     val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 CharLiteralNode::CharLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Char Literal") {
@@ -22,9 +20,7 @@ CharLiteralNode::CharLiteralNode(const std::vector<Token> &tokens, uint32_t &pos
     }
     val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 StringLiteralNode::StringLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("String Literal") {
@@ -35,9 +31,7 @@ StringLiteralNode::StringLiteralNode(const std::vector<Token> &tokens, uint32_t 
     }
     val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 RawStringLiteralNode::RawStringLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Raw String Literal") {
@@ -48,9 +42,7 @@ RawStringLiteralNode::RawStringLiteralNode(const std::vector<Token> &tokens, uin
     }
     val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 CStringLiteralNode::CStringLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("C String Literal") {
@@ -61,9 +53,7 @@ CStringLiteralNode::CStringLiteralNode(const std::vector<Token> &tokens, uint32_
     }
     val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 RawCStringLiteralNode::RawCStringLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Raw C String Literal") {
@@ -74,9 +64,7 @@ RawCStringLiteralNode::RawCStringLiteralNode(const std::vector<Token> &tokens, u
     }
     val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 IntegerLiteralNode::IntegerLiteralNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Integer Literal") {
@@ -87,9 +75,7 @@ IntegerLiteralNode::IntegerLiteralNode(const std::vector<Token> &tokens, uint32_
     }
     val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 TrueNode::TrueNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("True") {
@@ -99,9 +85,7 @@ TrueNode::TrueNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32
       throw Error("expect true");
     }
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 FalseNode::FalseNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("False") {
@@ -111,9 +95,7 @@ FalseNode::FalseNode(const std::vector<Token> &tokens, uint32_t &pos, const uint
       throw Error("expect false");
     }
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 SelfLowerNode::SelfLowerNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Self Lower") {
@@ -124,9 +106,7 @@ SelfLowerNode::SelfLowerNode(const std::vector<Token> &tokens, uint32_t &pos, co
     }
     val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 SelfUpperNode::SelfUpperNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Self Upper") {
@@ -137,9 +117,7 @@ SelfUpperNode::SelfUpperNode(const std::vector<Token> &tokens, uint32_t &pos, co
     }
     val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 UnderscoreExpressionNode::UnderscoreExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Inferred Type") {
@@ -150,9 +128,7 @@ UnderscoreExpressionNode::UnderscoreExpressionNode(const std::vector<Token> &tok
     }
     val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 ContinueExpressionNode::ContinueExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Continue Expression") {
@@ -163,9 +139,7 @@ ContinueExpressionNode::ContinueExpressionNode(const std::vector<Token> &tokens,
     }
     val_ = std::make_shared<std::string>(tokens[pos].lexeme);
     ++pos;
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }
 
 UnitTypeNode::UnitTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Unit Type") {
@@ -177,7 +151,5 @@ UnitTypeNode::UnitTypeNode(const std::vector<Token> &tokens, uint32_t &pos, cons
     ++pos;
     ++pos;
     val_ = std::make_shared<std::string>("()");
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }

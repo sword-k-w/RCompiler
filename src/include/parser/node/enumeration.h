@@ -5,6 +5,7 @@
 #include "parser/node/AST_node.h"
 #include <cstdint>
 #include <memory>
+#include <set>
 
 class EnumVariantsNode : public ASTNode {
     friend class Printer;
@@ -30,5 +31,7 @@ public:
 private:
   std::shared_ptr<IdentifierNode> identifier_;
   std::shared_ptr<EnumVariantsNode> enum_variants_;
+
+  std::set<std::string> enum_;
 };
 

@@ -17,4 +17,6 @@ public:
 private:
   std::shared_ptr<IdentifierNode> identifier_;
   std::vector<std::shared_ptr<AssociatedItemNode>> asscociated_items_;
+
+  std::map<std::string, ASTNode *> items_;
 };

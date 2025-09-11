@@ -49,7 +49,5 @@ ImplementationNode::ImplementationNode(const std::vector<Token> &tokens, uint32_
       }
       ++pos;
     }
-  } catch (Error &) {
-    throw;
-  }
+  } catch (Error &) { throw; }
 }

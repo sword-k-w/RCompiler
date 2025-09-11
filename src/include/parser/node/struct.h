@@ -40,10 +40,10 @@ public:
   StructNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
-  std::shared_ptr<TypeValue> type_info_;
   std::shared_ptr<IdentifierNode> identifier_;
   std::shared_ptr<StructFieldsNode> struct_fields_;
   bool semicolon_ = false;
 
+  std::map<std::string, std::shared_ptr<Type>> field_;
   std::map<std::string, ASTNode *> impl_;
 };
