@@ -15,6 +15,7 @@
 #include "parser/node/statement.h"
 #include "common/error.h"
 #include <set>
+#include "common/tool_func.h"
 
 void SecondChecker::Visit(CrateNode *node) {
   try {
@@ -827,41 +828,365 @@ void SecondChecker::Visit(StatementsNode *node) {
 
 void SecondChecker::Visit(StructFieldNode *node) {
   try {
-
+    GoDown(node, node->identifier_.get());
+    GoDown(node, node->type_.get());
   } catch (Error &) { throw; }
 }
 
-void SecondChecker::Visit(StructFieldsNode *node) {}
-void SecondChecker::Visit(StructNode *node) {}
-void SecondChecker::Visit(IdentifierNode *node) {}
-void SecondChecker::Visit(CharLiteralNode *node) {}
-void SecondChecker::Visit(StringLiteralNode *node) {}
-void SecondChecker::Visit(RawStringLiteralNode *node) {}
-void SecondChecker::Visit(CStringLiteralNode *node) {}
-void SecondChecker::Visit(RawCStringLiteralNode *node) {}
-void SecondChecker::Visit(IntegerLiteralNode *node) {}
-void SecondChecker::Visit(TrueNode *node) {}
-void SecondChecker::Visit(FalseNode *node) {}
-void SecondChecker::Visit(SelfLowerNode *node) {}
-void SecondChecker::Visit(SelfUpperNode *node) {}
-void SecondChecker::Visit(UnderscoreExpressionNode *node) {}
-void SecondChecker::Visit(ContinueExpressionNode *node) {}
-void SecondChecker::Visit(TraitNode *node) {}
-void SecondChecker::Visit(ReferenceTypeNode *node) {}
-void SecondChecker::Visit(ArrayTypeNode *node) {}
+void SecondChecker::Visit(StructFieldsNode *node) {
+  try {
+    for (auto &struct_field : node->struct_field_s_) {
+      GoDown(node, struct_field.get());
+    }
+  } catch (Error &) { throw; }
+}
 
-void SecondChecker::Visit(UnitTypeNode *node) {}
+void SecondChecker::Visit(StructNode *node) {
+  try {
+    GoDown(node, node->identifier_.get());
+    if (node->struct_fields_ != nullptr) {
+      GoDown(node, node->struct_fields_.get());
+      for (auto &struct_field : node->struct_fields_->struct_field_s_) {
+        if (!node->field_.emplace(*struct_field->identifier_->val_, struct_field->type_->type_info_).second) {
+          throw Error("SecondChecker : struct definition but repeated identifier");
+        }
+      }
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(IdentifierNode *node) {}
+
+void SecondChecker::Visit(CharLiteralNode *node) {
+  try {
+    if (!node->need_calculate_) {
+      return;
+    }
+    node->const_value_ = std::make_shared<ConstValue>();
+    node->const_value_->type_ = kLeafType;
+    node->const_value_->type_name_ = "char";
+    if ((*node->val_)[1] != '\\') {
+      node->const_value_->u32_value_ = (*node->val_)[1];
+    } else if ((*node->val_)[2] == '\'') {
+      node->const_value_->u32_value_ = '\'';
+    } else if ((*node->val_)[2] == '\"') {
+      node->const_value_->u32_value_ = '\"';
+    } else if ((*node->val_)[2] == 'n') {
+      node->const_value_->u32_value_ = '\n';
+    } else if ((*node->val_)[2] == 'r') {
+      node->const_value_->u32_value_ = '\r';
+    } else if ((*node->val_)[2] == 't') {
+      node->const_value_->u32_value_ = '\t';
+    } else if ((*node->val_)[2] == '\\') {
+      node->const_value_->u32_value_ = '\\';
+    } else if ((*node->val_)[2] == '\0') {
+      node->const_value_->u32_value_ = '\0';
+    } else {
+      node->const_value_->u32_value_ = ToDigitalValue((*node->val_)[3]) * 16 + ToDigitalValue((*node->val_)[4]);
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(StringLiteralNode *node) {
+  try {
+    if (!node->need_calculate_) {
+      return;
+    }
+    node->const_value_ = std::make_shared<ConstValue>();
+    node->const_value_->type_ = kPointerType;
+    node->const_value_->pointer_info_ = std::make_shared<ConstValue>();
+    node->const_value_->pointer_info_->type_ = kLeafType;
+    node->const_value_->pointer_info_->type_name_ = "str";
+    auto it = node->val_->begin();
+    ++it;
+    while (*it != '\"') {
+      if (*it != '\\') {
+        node->const_value_->pointer_info_->str_value_.push_back(*it++);
+      } else {
+        ++it;
+        if (*it == '\'') {
+          node->const_value_->pointer_info_->str_value_.push_back('\'');
+        } else if (*it == '\"') {
+          node->const_value_->pointer_info_->str_value_.push_back('\"');
+        } else if (*it == 'n') {
+          node->const_value_->pointer_info_->str_value_.push_back('\n');
+        } else if (*it == 'r') {
+          node->const_value_->pointer_info_->str_value_.push_back('\r');
+        } else if (*it == 't') {
+          node->const_value_->pointer_info_->str_value_.push_back('\t');
+        } else if (*it == '\\') {
+          node->const_value_->pointer_info_->str_value_.push_back('\\');
+        } else if (*it == '0') {
+          node->const_value_->pointer_info_->str_value_.push_back('\0');
+        } else if (*it == 'x') {
+          int32_t x = ToDigitalValue(*++it);
+          int32_t y = ToDigitalValue(*++it);
+          node->const_value_->pointer_info_->str_value_.push_back(static_cast<char>(x * 16 + y));
+        }
+        ++it;
+      }
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(RawStringLiteralNode *node) {
+  try {
+    if (!node->need_calculate_) {
+      return;
+    }
+    node->const_value_ = std::make_shared<ConstValue>();
+    node->const_value_->type_ = kPointerType;
+    node->const_value_->pointer_info_ = std::make_shared<ConstValue>();
+    node->const_value_->pointer_info_->type_ = kLeafType;
+    node->const_value_->pointer_info_->type_name_ = "str";
+    auto it = node->val_->begin();
+    while (*it != '\"') { ++it; }
+    ++it;
+    while (*it != '\"') {
+      node->const_value_->pointer_info_->str_value_.push_back(*it++);
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(CStringLiteralNode *node) {
+  try {
+    if (!node->need_calculate_) {
+      return;
+    }
+    node->const_value_ = std::make_shared<ConstValue>();
+    node->const_value_->type_ = kPointerType;
+    node->const_value_->pointer_info_ = std::make_shared<ConstValue>();
+    node->const_value_->pointer_info_->type_ = kLeafType;
+    node->const_value_->pointer_info_->type_name_ = "str";
+    auto it = node->val_->begin();
+    ++it;
+    while (*it != '\"') {
+      if (*it != '\\') {
+        node->const_value_->pointer_info_->str_value_.push_back(*it++);
+      } else {
+        ++it;
+        if (*it == '\'') {
+          node->const_value_->pointer_info_->str_value_.push_back('\'');
+        } else if (*it == '\"') {
+          node->const_value_->pointer_info_->str_value_.push_back('\"');
+        } else if (*it == 'n') {
+          node->const_value_->pointer_info_->str_value_.push_back('\n');
+        } else if (*it == 'r') {
+          node->const_value_->pointer_info_->str_value_.push_back('\r');
+        } else if (*it == 't') {
+          node->const_value_->pointer_info_->str_value_.push_back('\t');
+        } else if (*it == '\\') {
+          node->const_value_->pointer_info_->str_value_.push_back('\\');
+        } else if (*it == '0') {
+          node->const_value_->pointer_info_->str_value_.push_back('\0');
+        } else if (*it == 'x') {
+          int32_t x = ToDigitalValue(*++it);
+          int32_t y = ToDigitalValue(*++it);
+          node->const_value_->pointer_info_->str_value_.push_back(static_cast<char>(x * 16 + y));
+        }
+        ++it;
+      }
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(RawCStringLiteralNode *node) {
+  try {
+    if (!node->need_calculate_) {
+      return;
+    }
+    node->const_value_ = std::make_shared<ConstValue>();
+    node->const_value_->type_ = kPointerType;
+    node->const_value_->pointer_info_ = std::make_shared<ConstValue>();
+    node->const_value_->pointer_info_->type_ = kLeafType;
+    node->const_value_->pointer_info_->type_name_ = "str";
+    auto it = node->val_->begin();
+    while (*it != '\"') { ++it; }
+    ++it;
+    while (*it != '\"') {
+      node->const_value_->pointer_info_->str_value_.push_back(*it++);
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(IntegerLiteralNode *node) {
+  try {
+    if (!node->need_calculate_) {
+      return;
+    }
+    node->const_value_ = std::make_shared<ConstValue>();
+    node->const_value_->type_ = kLeafType;
+    assert(node->expect_type_ != nullptr);
+    if (node->val_->size() == 1) {
+      if (IsIntegerType(*node->expect_type_)) {
+        node->const_value_->type_name_ = *node->expect_type_;
+        node->const_value_->u32_value_ = ToDigitalValue(*node->val_->begin());
+      }
+    } else {
+      uint64_t base = 10;
+      auto it = node->val_->begin();
+      if (*it == 0) {
+        if (*std::next(it) == 'b') {
+          base = 2;
+          ++it;
+          ++it;
+        } else if (*std::next(it) == 'o') {
+          base = 8;
+          ++it;
+          ++it;
+        } else if (*std::next(it) == 'x') {
+          base = 16;
+          ++it;
+          ++it;
+        }
+      }
+      uint64_t val = 0;
+      while (it != node->val_->end()) {
+        if (base == 2) {
+          if (*it != '0' && *it != '1') {
+            break;
+          }
+        } else if (base == 8) {
+          if (*it < '0' || *it > '7') {
+            break;
+          }
+        } else if (base == 10) {
+          if (*it < '0' || *it > '9') {
+            break;
+          }
+        } else {
+          if (!(*it >= '0' && *it <= '9' || *it >= 'A' && *it <= 'F')) {
+            break;
+          }
+        }
+        val = val * base + ToDigitalValue(*it++);
+        if (val >> 32) {
+          throw Error("SecondChecker : too large integer literal");
+        }
+      }
+      if (it != node->val_->end()) {
+        while (it != node->val_->end()) {
+          node->const_value_->type_name_.push_back(*it++);
+        }
+      } else {
+        node->const_value_->type_name_ = *node->expect_type_;
+      }
+      if (!IsIntegerType(node->const_value_->type_name_)) {
+        throw Error("SecondChecker : integer literal but the suffix isn't integer type");
+      }
+      if ((node->const_value_->type_name_ == "i32" || node->const_value_->type_name_ == "isize")
+        && val > INT_MAX) {
+        throw Error("SecondChecker : too large integer literal");
+      }
+      node->const_value_->u32_value_ = static_cast<uint32_t>(val);
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(TrueNode *node) {
+  try {
+    node->const_value_ = std::make_shared<ConstValue>();
+    node->const_value_->type_ = kLeafType;
+    node->const_value_->type_name_ = "bool";
+    node->const_value_->u32_value_ = 1;
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(FalseNode *node) {
+  try {
+    node->const_value_ = std::make_shared<ConstValue>();
+    node->const_value_->type_ = kLeafType;
+    node->const_value_->type_name_ = "bool";
+    node->const_value_->u32_value_ = 0;
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(SelfLowerNode *node) {}
+
+void SecondChecker::Visit(SelfUpperNode *node) {}
+
+void SecondChecker::Visit(UnderscoreExpressionNode *node) {}
+
+void SecondChecker::Visit(ContinueExpressionNode *node) {}
+
+void SecondChecker::Visit(TraitNode *node) {
+  try {
+    GoDown(node, node->identifier_.get());
+    for (auto &associated_item : node->asscociated_items_) {
+      GoDown(node, associated_item.get());
+    }
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(ReferenceTypeNode *node) {
+  try {
+    GoDown(node, node->type_no_bounds_.get());
+    node->type_info_ = std::make_shared<Type>();
+    node->type_info_->type_ = kPointerType;
+    node->type_info_->mut_ = node->mut_;
+    node->type_info_->pointer_type_ = node->type_no_bounds_->type_info_;
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(ArrayTypeNode *node) {
+  try {
+    GoDown(node, node->type_.get());
+    node->expr_->need_calculate_ = true;
+    node->expr_->Accept(this);
+    node->type_info_ = std::make_shared<Type>();
+    node->type_info_->type_ = kArrayType;
+    node->type_info_->array_type_info_ = std::make_pair(node->type_->type_info_, node->expr_->const_value_->u32_value_);
+  } catch (Error &) { throw; }
+}
+
+void SecondChecker::Visit(UnitTypeNode *node) {
+  node->type_info_ = std::make_shared<Type>();
+  node->type_info_->type_ = kUnitType;
+}
 
 void SecondChecker::Visit(TypeNoBoundsNode *node) {
   try {
     if (node->type_path_ != nullptr) {
-      GoDown(node, node->type_path_.get());
+      GoDown(node, node->type_path_.get()); // !!!
+      if (node->type_path_->identifier_ == nullptr) {
+        throw Error("SecondChecker : type path but not identifier");
+      }
+      node->type_info_ = std::make_shared<Type>();
+      bool flag = false;
+      for (uint32_t i = 0; i < 7; ++i) {
+        if (*node->type_path_->identifier_->val_ == kBuiltinType[i]) {
+          node->type_info_->type_ = kLeafType;
+          node->type_info_->type_name_ = kBuiltinType[i];
+          flag = true;
+          break;
+        }
+      }
+      if (!flag) {
+        auto target = node->scope_->FindTypeName(*node->type_path_->identifier_->val_);
+        auto struct_node = dynamic_cast<StructNode *>(target);
+        if (struct_node != nullptr) {
+          node->type_info_->type_ = kStructType;
+          node->type_info_->type_name_ = *node->type_path_->identifier_->val_;
+          node->type_info_->source_ = target;
+        } else {
+          auto enum_node = dynamic_cast<EnumerationNode *>(target);
+          node->type_info_->type_ = kEnumType;
+          node->type_info_->type_name_ = *node->type_path_->identifier_->val_;
+          node->type_info_->source_ = target;
+          if (enum_node == nullptr) {
+            throw Error("SecondChecker : not found needed type");
+          }
+        }
+      }
     } else if (node->reference_type_ != nullptr) {
       GoDown(node, node->reference_type_.get());
+      node->type_info_ = node->reference_type_->type_info_;
     } else if (node->array_type_ != nullptr) {
       GoDown(node, node->array_type_.get());
+      node->type_info_ = node->array_type_->type_info_;
     } else {
       GoDown(node, node->unit_type_.get());
+      node->type_info_ = node->unit_type_->type_info_;
     }
   } catch (Error &) { throw; }
 }

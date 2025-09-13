@@ -32,11 +32,11 @@ void TypeCast(Type *type, ConstValue *value) {
       if (value->type_ != kArrayType) {
         throw Error("SecondChecker : can't cast a different type as an array");
       }
-      if (type->array_type_info_->second != value->array_value_info_->length_) {
+      if (type->array_type_info_.second != value->array_value_info_->length_) {
         throw Error("SecondChecker : try cast array but length doesn't match");
       }
-      for (uint32_t i = 0; i < type->array_type_info_->second; ++i) {
-        TypeCast(type->array_type_info_->first.get(), value->array_value_info_->values_[i].get());
+      for (uint32_t i = 0; i < type->array_type_info_.second; ++i) {
+        TypeCast(type->array_type_info_.first.get(), value->array_value_info_->values_[i].get());
       }
       return;
     }
@@ -87,11 +87,11 @@ void SameTypeCheck(Type *type, ConstValue *value) {
       return;
     }
     if (type->type_ == kArrayType) {
-      if (type->array_type_info_->second != value->array_value_info_->length_) {
+      if (type->array_type_info_.second != value->array_value_info_->length_) {
         throw Error("SecondChecker : different type");
       }
-      for (uint32_t i = 0; i < type->array_type_info_->second; ++i) {
-        SameTypeCheck(type->array_type_info_->first.get(), value->array_value_info_->values_[i].get());
+      for (uint32_t i = 0; i < type->array_type_info_.second; ++i) {
+        SameTypeCheck(type->array_type_info_.first.get(), value->array_value_info_->values_[i].get());
       }
       return;
     }
@@ -106,7 +106,7 @@ std::string ExpectType(Type *type) {
     return type->type_name_;
   }
   if (type->type_ == kArrayType) {
-    return ExpectType(type->array_type_info_->first.get());
+    return ExpectType(type->array_type_info_.first.get());
   }
   return nullptr;
 }

@@ -1,14 +1,3 @@
-struct A {
-    x : i32,
-    y : u32
-}
-
 fn main() {
-    const x : i32 = 1;
-    const y : u32 = 1;
-    const a : A = A{
-        x,
-        x,
-        y
-    };
+    let a : char = 'a';
 }

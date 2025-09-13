@@ -7,7 +7,7 @@
 #include "parser/class_declaration.h"
 
 enum TypeValueType {
-  kLeafType, kArrayType, kStructType, kEnumType, kPointerType
+  kLeafType, kArrayType, kStructType, kEnumType, kPointerType, kUnitType
 };
 
 struct ConstValue;
@@ -39,7 +39,7 @@ struct Type {
   TypeValueType type_;
   ASTNode *source_; // for enumeration and struct
   std::string type_name_;
-  std::shared_ptr<std::pair<std::shared_ptr<Type>, uint32_t>> array_type_info_;
+  std::pair<std::shared_ptr<Type>, uint32_t> array_type_info_;
   bool mut_;
   std::shared_ptr<Type> pointer_type_;
 };
