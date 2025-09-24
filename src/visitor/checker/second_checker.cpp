@@ -73,7 +73,7 @@ void SecondChecker::Visit(ArrayElementsNode *node) {
     if (node->semicolon_) {
       GoDown(node, node->exprs_[0].get());
 
-      node->exprs_[1]->need_calculate_ = node->need_calculate_;
+      node->exprs_[1]->need_calculate_ = true;
       node->exprs_[1]->Accept(this);
 
       if (node->need_calculate_) {

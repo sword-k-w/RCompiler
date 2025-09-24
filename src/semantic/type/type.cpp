@@ -96,23 +96,23 @@ void TypeCast(Type *type, ConstValue *value) {
 void SameTypeCheck(Type *type, ConstValue *value) {
   try {
     if (type->type_ != value->type_) {
-      throw Error("SecondChecker : different type");
+      throw Error("different type");
     }
     if (type->type_ == kPointerType) {
       if (type->pointer_mut_ != value->pointer_mut_) {
-        throw Error("SecondChecker : different type");
+        throw Error("different type");
       }
       return TypeCast(type->pointer_type_.get(), value->pointer_info_.get());
     }
     if (type->type_ == kStructType || type->type_ == kEnumType) {
       if (type->source_ != value->type_source_) {
-        throw Error("SecondChecker : different type");
+        throw Error("different type");
       }
       return;
     }
     if (type->type_ == kArrayType) {
       if (type->array_type_info_.second != value->array_value_info_->length_) {
-        throw Error("SecondChecker : different type");
+        throw Error("different type");
       }
       for (uint32_t i = 0; i < type->array_type_info_.second; ++i) {
         SameTypeCheck(type->array_type_info_.first.get(), value->array_value_info_->values_[i].get());
@@ -121,7 +121,7 @@ void SameTypeCheck(Type *type, ConstValue *value) {
     }
 
     if (MergeLeafType(type->type_name_, value->type_name_).empty()) {
-      throw Error("SecondChecker : different type");
+      throw Error("different type");
     }
   } catch (Error &) { throw; }
 }
@@ -132,22 +132,22 @@ void SameTypeCheck(Type *type1, Type *type2) {
       return;
     }
     if (type1->type_ != type2->type_) {
-      throw Error("SecondChecker : different type");
+      throw Error("different type");
     }
     if (type1->type_ == kPointerType) {
       if (type1->pointer_mut_ != type2->pointer_mut_) {
-        throw Error("SecondChecker : different type");
+        throw Error("different type");
       }
       SameTypeCheck(type1->pointer_type_.get(), type2->pointer_type_.get());
     }
     if (type1->type_ == kStructType || type1->type_ == kEnumType) {
       if (type1->source_ != type2->source_) {
-        throw Error("SecondChecker : different type");
+        throw Error("different type");
       }
     }
     if (type1->type_ == kArrayType) {
       if (type1->array_type_info_.second != type2->array_type_info_.second) {
-        throw Error("SecondChecker : different type");
+        throw Error("different type");
       }
       for (uint32_t i = 0; i < type1->array_type_info_.second; ++i) {
         SameTypeCheck(type1->array_type_info_.first.get(), type2->array_type_info_.first.get());
@@ -155,7 +155,7 @@ void SameTypeCheck(Type *type1, Type *type2) {
       return;
     }
     if (MergeLeafType(type1->type_name_, type2->type_name_).empty()) {
-      throw Error("SecondChecker : different type");
+      throw Error("different type");
     }
   } catch (Error &) { throw; }
 }

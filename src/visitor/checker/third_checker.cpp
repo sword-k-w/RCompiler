@@ -68,12 +68,8 @@ void ThirdChecker::Visit(ArrayExpressionNode *node) {
       node->type_info_ = node->const_value_->GetType();
       return;
     }
-    if (node->const_value_ != nullptr) {
-      node->type_info_ = node->const_value_->GetType();
-    } else {
-      node->array_elements_->Accept(this);
-      node->type_info_ = node->array_elements_->type_info_;
-    }
+    node->array_elements_->Accept(this);
+    node->type_info_ = node->array_elements_->type_info_;
   } catch (Error &) { throw; }
 }
 

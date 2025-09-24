@@ -46,9 +46,9 @@ void TestTestcase(const std::string &s, bool expect_result) {
 //   TestTestcase("../testcase/semantic-1/array1/array1.rx", true);
 // }
 //
-TEST(SemanticTest, TestcaseTest_Array2) {
-  TestTestcase("../testcase/semantic-1/array2/array2.rx", true);
-}
+// TEST(SemanticTest, TestcaseTest_Array2) {
+//   TestTestcase("../testcase/semantic-1/array2/array2.rx", true);
+// }
 //
 // TEST(SemanticTest, TestcaseTest_Array3) {
 //   TestTestcase("../testcase/semantic-1/array3/array3.rx", true);
@@ -232,4 +232,84 @@ TEST(SemanticTest, TestcaseTest_Array2) {
 //
 // TEST(SemanticTest, TestcaseTest_Basic40) {
 //   TestTestcase("../testcase/semantic-1/basic40/basic40.rx", true);
+// }
+
+TEST(SemanticTest, TestcaseTest_Type1) {
+  TestTestcase("../testcase/semantic-1/type1/type1.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Type2) {
+  TestTestcase("../testcase/semantic-1/type2/type2.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Type3) {
+  TestTestcase("../testcase/semantic-1/type3/type3.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Type4) {
+  TestTestcase("../testcase/semantic-1/type4/type4.rx", false);
+}
+
+// TEST(SemanticTest, TestcaseTest_Type5) {
+//   TestTestcase("../testcase/semantic-1/type5/type5.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type6) {
+//   TestTestcase("../testcase/semantic-1/type6/type6.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type7) {
+//   TestTestcase("../testcase/semantic-1/type7/type7.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type8) {
+//   TestTestcase("../testcase/semantic-1/type8/type8.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type9) {
+//   TestTestcase("../testcase/semantic-1/type9/type9.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type10) {
+//   TestTestcase("../testcase/semantic-1/type10/type10.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type11) {
+//   TestTestcase("../testcase/semantic-1/type11/type11.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type12) {
+//   TestTestcase("../testcase/semantic-1/type12/type12.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type13) {
+//   TestTestcase("../testcase/semantic-1/type13/type13.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type14) {
+//   TestTestcase("../testcase/semantic-1/type14/type14.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type15) {
+//   TestTestcase("../testcase/semantic-1/type15/type15.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type16) {
+//   TestTestcase("../testcase/semantic-1/type16/type16.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type17) {
+//   TestTestcase("../testcase/semantic-1/type17/type17.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type18) {
+//   TestTestcase("../testcase/semantic-1/type18/type18.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type19) {
+//   TestTestcase("../testcase/semantic-1/type19/type19.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type20) {
+//   TestTestcase("../testcase/semantic-1/type20/type20.rx", false);
 // }
