@@ -22,34 +22,9 @@ ShorthandSelfNode::ShorthandSelfNode(const std::vector<Token> &tokens, uint32_t 
   } catch (Error &) { throw; }
 }
 
-TypedSelfNode::TypedSelfNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Typed Self") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme == "mut") {
-      mut_ = true;
-      ++pos;
-      CheckLength(pos, length);
-    }
-    self_lower_ = std::make_shared<SelfLowerNode>(tokens, pos, length);
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != ":") {
-      throw Error("try parsing Typed Self Node but no :");
-    }
-    ++pos;
-    type_ = std::make_shared<TypeNode>(tokens, pos, length);
-  } catch (Error &) { throw; }
-}
-
 SelfParamNode::SelfParamNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Self Param") {
   try {
-    uint32_t tmp = pos;
-    try {
-      shorthand_self_ = std::make_shared<ShorthandSelfNode>(tokens, pos, length);
-    } catch (...) {
-      shorthand_self_ = nullptr;
-      pos = tmp;
-      typed_self_ = std::make_shared<TypedSelfNode>(tokens, pos, length);
-    }
+    shorthand_self_ = std::make_shared<ShorthandSelfNode>(tokens, pos, length);
   } catch (Error &) { throw; }
 }
 

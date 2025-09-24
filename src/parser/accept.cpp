@@ -118,11 +118,6 @@ void ShorthandSelfNode::Accept(VisitorBase * ptr) {
     ptr->Visit(this);  
   } catch (Error &) { throw; }
 }
-void TypedSelfNode::Accept(VisitorBase * ptr) {
-  try {
-    ptr->Visit(this);  
-  } catch (Error &) { throw; }
-}
 void SelfParamNode::Accept(VisitorBase * ptr) {
   try {
     ptr->Visit(this);  
@@ -169,11 +164,6 @@ void ItemNode::Accept(VisitorBase * ptr) {
   } catch (Error &) { throw; }
 }
 void PathIdentSegmentNode::Accept(VisitorBase * ptr) {
-  try {
-    ptr->Visit(this);  
-  } catch (Error &) { throw; }
-}
-void LiteralPatternNode::Accept(VisitorBase * ptr) {
   try {
     ptr->Visit(this);  
   } catch (Error &) { throw; }

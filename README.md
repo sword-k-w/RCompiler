@@ -74,3 +74,7 @@ leaf expression:
 
 * analyse type and calculate the value of const.
 
+### Third Round
+
+* type check
+

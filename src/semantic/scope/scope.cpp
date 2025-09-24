@@ -1,6 +1,8 @@
 #include "semantic/scope/scope.h"
 #include "common/error.h"
 #include "common/config.h"
+#include <cassert>
+#include <parser/node/pattern.h>
 
 Scope::Scope(std::shared_ptr<Scope> parent, const std::string &name)
   : parent_(std::move(parent)), name_(std::make_shared<std::string>(name)) {}
@@ -17,9 +19,12 @@ void Scope::AddTypeName(const std::string &name, ASTNode *source) {
   type_namespace_[name] = source;
 }
 
-void Scope::AddValueName(const std::string &name, ASTNode *source) {
+void Scope::AddValueName(const std::string &name, ASTNode *source, bool shadow) {
   if (value_namespace_.find(name) != value_namespace_.end()) {
-    throw Error("FirstChecker : same value name " + name);
+    if (!shadow) {
+      throw Error("FirstChecker : same value name " + name);
+    }
+    assert(dynamic_cast<IdentifierPatternNode *>(source) != nullptr);
   }
   value_namespace_[name] = source;
 }

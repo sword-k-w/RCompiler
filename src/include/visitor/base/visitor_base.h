@@ -26,7 +26,6 @@ public:
   virtual void Visit(CallParamsNode *) = 0;
   virtual void Visit(ExpressionNode *) = 0;
   virtual void Visit(ShorthandSelfNode *) = 0;
-  virtual void Visit(TypedSelfNode *) = 0;
   virtual void Visit(SelfParamNode *) = 0;
   virtual void Visit(FunctionParamNode *) = 0;
   virtual void Visit(FunctionParametersNode *) = 0;
@@ -37,7 +36,6 @@ public:
   virtual void Visit(AssociatedItemNode *) = 0;
   virtual void Visit(ItemNode *) = 0;
   virtual void Visit(PathIdentSegmentNode *) = 0;
-  virtual void Visit(LiteralPatternNode *) = 0;
   virtual void Visit(IdentifierPatternNode *) = 0;
   virtual void Visit(ReferencePatternNode *) = 0;
   virtual void Visit(PatternWithoutRangeNode *) = 0;

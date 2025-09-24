@@ -8,7 +8,7 @@ public:
   Scope() = delete;
   Scope(std::shared_ptr<Scope>, const std::string &);
   void AddTypeName(const std::string &, ASTNode *);
-  void AddValueName(const std::string &, ASTNode *);
+  void AddValueName(const std::string &, ASTNode *, bool);
   ASTNode *FindTypeName(const std::string &);
   ASTNode *FindValueName(const std::string &);
   std::shared_ptr<std::string> name_;

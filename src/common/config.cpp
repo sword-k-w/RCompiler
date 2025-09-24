@@ -22,5 +22,35 @@ bool IsIntegerType(const std::string &name) {
       return true;
     }
   }
+  if (name == "$" || name == "@") {
+    return true;
+  }
   return false;
+}
+
+bool IsSignedIntegerType(const std::string &name) {
+  return name == "$" || name == "@" || name == "i32" || name == "isize";
+}
+
+std::string MergeLeafType(const std::string &name1, const std::string &name2) {
+  if (name1 == "$") {
+    if (IsIntegerType(name2)) {
+      return name2;
+    }
+  } else if (name2 == "$") {
+    if (IsIntegerType(name1)) {
+      return name1;
+    }
+  } else if (name1 == "@") {
+    if (IsSignedIntegerType(name2)) {
+      return name2;
+    }
+  } else if (name2 == "@") {
+    if (!IsSignedIntegerType(name1)) {
+      return name2;
+    }
+  } else if (name1 == name2) {
+    return name1;
+  }
+  return "";
 }

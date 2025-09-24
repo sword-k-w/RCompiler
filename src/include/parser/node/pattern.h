@@ -6,23 +6,11 @@
 #include <cstdint>
 #include <memory>
 
-class LiteralPatternNode : public ASTNode {
-  friend class Printer;
-  friend class FirstChecker;
-  friend class SecondChecker;
-public:
-  LiteralPatternNode() = delete;
-  LiteralPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-  void Accept(VisitorBase *) override;
-private:
-  bool hyphen_ = false;
-  std::shared_ptr<LiteralExpressionNode> literal_expr_;
-};
-
 class IdentifierPatternNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   IdentifierPatternNode() = delete;
   IdentifierPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -37,6 +25,7 @@ class ReferencePatternNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   ReferencePatternNode() = delete;
   ReferencePatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -51,14 +40,13 @@ class PatternWithoutRangeNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   PatternWithoutRangeNode() = delete;
   PatternWithoutRangeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
-  std::shared_ptr<LiteralPatternNode> literal_pattern_;
   std::shared_ptr<IdentifierPatternNode> identifier_pattern_;
   std::shared_ptr<WildcardPatternNode> wildcard_pattern_;
   std::shared_ptr<ReferencePatternNode> reference_pattern_;
-  std::shared_ptr<PathPatternNode> path_pattern_;
 };

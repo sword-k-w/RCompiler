@@ -11,6 +11,7 @@
 class ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   ASTNode() = delete;
   explicit ASTNode(const std::string_view &);
@@ -23,7 +24,8 @@ protected:
   std::shared_ptr<ConstValue> const_value_;
   std::shared_ptr<Type> type_info_;
   bool need_calculate_ = false;
-  std::shared_ptr<std::string> expect_type_;
+
+  StructNode *outside_struct_;
 private:
   std::shared_ptr<std::string> name_;
 };

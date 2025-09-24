@@ -34,13 +34,13 @@ void FirstChecker::Visit(EnumVariantsNode *node) {
 void FirstChecker::Visit(EnumerationNode *node) {
   try {
     node->symbol_type_ = kType;
-    node->scope_->AddTypeName(*node->identifier_->val_, node);
-    node->scope_->AddValueName(*node->identifier_->val_, node);
+    node->scope_->AddTypeName(node->identifier_->val_, node);
+    node->scope_->AddValueName(node->identifier_->val_, node, false);
     OldScope(node, node->identifier_.get());
     if (node->enum_variants_ != nullptr) {
-      NewScope(node, node->enum_variants_.get(), *node->identifier_->val_);
+      NewScope(node, node->enum_variants_.get(), node->identifier_->val_);
       for (auto &enum_variant : node->enum_variants_->enum_variant_s_) {
-        if (!node->enum_.emplace(*enum_variant->val_).second) {
+        if (!node->enum_.emplace(enum_variant->val_).second) {
           throw Error("FirstChecker : repeated enum member");
         }
       }
@@ -98,9 +98,7 @@ void FirstChecker::Visit(PathInExpressionNode *node) {
 void FirstChecker::Visit(StructExprFieldNode *node) {
   try {
     OldScope(node, node->identifier_.get());
-    if (node->expr_ != nullptr) {
-      OldScope(node, node->expr_.get());
-    }
+    OldScope(node, node->expr_.get());
   } catch (Error &) { throw; }
 }
 
@@ -211,7 +209,7 @@ void FirstChecker::Visit(ExpressionNode *node) {
     } else if (node->type_ == kUnderscoreExpr) {
       OldScope(node, node->underscore_expr_.get());
     } else if (node->type_ == kBorrowExpr || node->type_ == kDereferenceExpr || node->type_ == kNegationExpr
-      || node->type_ == kGroupedExpr || node->type_ == kBreakExpr || node->type_ == kReturnExpr) {
+      || node->type_ == kGroupedExpr || (node->type_ == kBreakExpr && node->expr1_ != nullptr) || (node->type_ == kReturnExpr && node->expr1_ != nullptr)) {
       OldScope(node, node->expr1_.get());
     } else if (node->type_ == kArithmeticOrLogicExpr || node->type_ == kComparisonExpr || node->type_ == kLazyBooleanExpr
       || node->type_ == kAssignmentExpr || node->type_ == kCompoundAssignmentExpr || node->type_ == kIndexExpr) {
@@ -242,19 +240,10 @@ void FirstChecker::Visit(ExpressionNode *node) {
 
 void FirstChecker::Visit(ShorthandSelfNode *node) {}
 
-void FirstChecker::Visit(TypedSelfNode *node) {
-  try {
-    OldScope(node, node->type_.get());
-  } catch (Error &) { throw; }
-}
 
 void FirstChecker::Visit(SelfParamNode *node) {
   try {
-    if (node->shorthand_self_ != nullptr) {
-      OldScope(node, node->shorthand_self_.get());
-    } else {
-      OldScope(node, node->typed_self_.get());
-    }
+    OldScope(node, node->shorthand_self_.get());
   } catch (Error &) { throw; }
 }
 
@@ -285,16 +274,16 @@ void FirstChecker::Visit(FunctionReturnTypeNode *node) {
 void FirstChecker::Visit(FunctionNode *node) {
   try {
     node->symbol_type_ = kFunction;
-    node->scope_->AddValueName(*node->identifier_->val_, node);
+    node->scope_->AddValueName(node->identifier_->val_, node, false);
     OldScope(node, node->identifier_.get());
     if (node->function_parameters_ != nullptr) {
-      NewScope(node, node->function_parameters_.get(), "");
+      OldScope(node, node->function_parameters_.get());
     }
     if (node->function_return_type_ != nullptr) {
       OldScope(node, node->function_return_type_.get());
     }
     if (node->block_expr_ != nullptr) {
-      NewScope(node, node->block_expr_.get(), *node->identifier_->val_);
+      OldScope(node, node->block_expr_.get());
     }
   } catch (Error &) { throw; }
 }
@@ -307,7 +296,7 @@ void FirstChecker::Visit(ImplementationNode *node) {
     if (node->type_->type_path_ == nullptr || node->type_->type_path_->identifier_ == nullptr) {
       throw Error("FirstChecker : can't impl the type that isn't struct");
     }
-    ASTNode *target = node->scope_->FindTypeName(*node->type_->type_path_->identifier_->val_);
+    ASTNode *target = node->scope_->FindTypeName(node->type_->type_path_->identifier_->val_);
     if (target == nullptr) {
       throw Error("FirstChecker : impl the type that is not found");
     }
@@ -318,14 +307,15 @@ void FirstChecker::Visit(ImplementationNode *node) {
     OldScope(node, node->type_.get());
     for (auto &associated_item : node->associated_items_) {
       if (associated_item->function_ != nullptr) {
-        if (!struct_node->impl_.emplace(*associated_item->function_->identifier_->val_, associated_item->function_.get()).second) {
+        if (!struct_node->impl_.emplace(associated_item->function_->identifier_->val_, associated_item->function_.get()).second) {
           throw Error("FirstChecker : repeat method name for the same struct");
         }
       } else {
-        if (!struct_node->impl_.emplace(*associated_item->constant_item_->identifier_->val_, associated_item->constant_item_.get()).second) {
+        if (!struct_node->impl_.emplace(associated_item->constant_item_->identifier_->val_, associated_item->constant_item_.get()).second) {
           throw Error("FirstChecker : repeat const name for the same struct");
         }
       }
+      associated_item->in_implement_ = true;
       NewScope(struct_node, associated_item.get(), "?");
     }
   } catch (Error &) { throw; }
@@ -334,7 +324,7 @@ void FirstChecker::Visit(ImplementationNode *node) {
 void FirstChecker::Visit(ConstantItemNode *node) {
   try {
     node->symbol_type_ = kConst;
-    node->scope_->AddValueName(*node->identifier_->val_, node);
+    node->scope_->AddValueName(node->identifier_->val_, node, false);
     OldScope(node, node->identifier_.get());
     OldScope(node, node->expr_.get());
     if (node->expr_ != nullptr) {
@@ -346,10 +336,12 @@ void FirstChecker::Visit(ConstantItemNode *node) {
 void FirstChecker::Visit(AssociatedItemNode *node) {
   try {
     if (node->constant_item_ != nullptr) {
-      node->constant_item_->in_trait_ = true;
+      node->constant_item_->in_trait_ = node->in_trait_;
+      node->constant_item_->in_implement_ = node->in_implement_;
       OldScope(node, node->constant_item_.get());
     } else {
-      node->function_->in_trait_ = true;
+      node->function_->in_trait_ = node->in_trait_;
+      node->function_->in_implement_ = node->in_implement_;
       OldScope(node, node->function_.get());
     }
   } catch (Error &) { throw; }
@@ -358,7 +350,7 @@ void FirstChecker::Visit(AssociatedItemNode *node) {
 void FirstChecker::Visit(ItemNode *node) {
   try {
     if (node->function_ != nullptr) {
-      OldScope(node, node->function_.get());
+      NewScope(node, node->function_.get(), "");
     } else if (node->struct_ != nullptr) {
       OldScope(node, node->struct_.get());
     } else if (node->enumeration_ != nullptr) {
@@ -381,12 +373,6 @@ void FirstChecker::Visit(PathIdentSegmentNode *node) {
   } catch (Error &) { throw; }
 }
 
-void FirstChecker::Visit(LiteralPatternNode *node) {
-  try {
-    OldScope(node, node->literal_expr_.get());
-  } catch (Error &) { throw; }
-}
-
 void FirstChecker::Visit(IdentifierPatternNode *node) {
   try {
     OldScope(node, node->identifier_.get());
@@ -401,16 +387,12 @@ void FirstChecker::Visit(ReferencePatternNode *node) {
 
 void FirstChecker::Visit(PatternWithoutRangeNode *node) {
   try {
-    if (node->literal_pattern_ != nullptr) {
-      OldScope(node, node->literal_pattern_.get());
-    } else if (node->identifier_pattern_ != nullptr) {
+    if (node->identifier_pattern_ != nullptr) {
       OldScope(node, node->identifier_pattern_.get());
     } else if (node->wildcard_pattern_ != nullptr) {
       OldScope(node, node->wildcard_pattern_.get());
-    } else if (node->reference_pattern_ != nullptr) {
-      OldScope(node, node->reference_pattern_.get());
     } else {
-      OldScope(node, node->path_pattern_.get());
+      OldScope(node, node->reference_pattern_.get());
     }
   } catch (Error &) { throw; }
 }
@@ -419,9 +401,7 @@ void FirstChecker::Visit(LetStatementNode *node) {
   try {
     OldScope(node, node->pattern_no_top_alt_.get());
     OldScope(node, node->type_.get());
-    if (node->expr_ != nullptr) {
-      OldScope(node, node->expr_.get());
-    }
+    OldScope(node, node->expr_.get());
   } catch (Error &) { throw; }
 }
 
@@ -472,11 +452,11 @@ void FirstChecker::Visit(StructFieldsNode *node) {
 void FirstChecker::Visit(StructNode *node) {
   try {
     node->symbol_type_ = kType;
-    node->scope_->AddTypeName(*node->identifier_->val_, node);
-    node->scope_->AddValueName(*node->identifier_->val_, node);
+    node->scope_->AddTypeName(node->identifier_->val_, node);
+    node->scope_->AddValueName(node->identifier_->val_, node, false);
     OldScope(node, node->identifier_.get());
     if (node->struct_fields_ != nullptr) {
-      NewScope(node, node->struct_fields_.get(), *node->identifier_->val_);
+      NewScope(node, node->struct_fields_.get(), node->identifier_->val_);
     }
   } catch (Error &) { throw; }
 }
@@ -510,17 +490,17 @@ void FirstChecker::Visit(ContinueExpressionNode *node) {}
 void FirstChecker::Visit(TraitNode *node) {
   try {
     node->symbol_type_ = kTrait;
-    node->scope_->AddTypeName(*node->identifier_->val_, node);
+    node->scope_->AddTypeName(node->identifier_->val_, node);
     OldScope(node, node->identifier_.get());
     for (auto &associated_item : node->asscociated_items_) {
       associated_item->in_trait_ = true;
       OldScope(node, associated_item.get());
       if (associated_item->function_ != nullptr) {
-        if (!node->items_.emplace(*associated_item->function_->identifier_->val_, associated_item->function_.get()).second) {
+        if (!node->items_.emplace(associated_item->function_->identifier_->val_, associated_item->function_.get()).second) {
           throw Error("FirstChecker : repeated identifier in trait");
         }
       } else {
-        if (!node->items_.emplace(*associated_item->constant_item_->identifier_->val_, associated_item->constant_item_.get()).second) {
+        if (!node->items_.emplace(associated_item->constant_item_->identifier_->val_, associated_item->constant_item_.get()).second) {
           throw Error("FirstChecker : repeated identifier in trait");
         }
       }

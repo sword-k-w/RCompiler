@@ -3,17 +3,6 @@
 #include "parser/node/terminal.h"
 #include "parser/node/expression.h"
 
-LiteralPatternNode::LiteralPatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Literal Pattern") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme ==  "-") {
-      hyphen_ = true;
-      ++pos;
-    }
-    literal_expr_ = std::make_shared<LiteralExpressionNode>(tokens, pos, length);
-  } catch (Error &) { throw; }
-}
-
 IdentifierPatternNode::IdentifierPatternNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Identifier Pattern") {
   try {
     CheckLength(pos, length);
@@ -56,20 +45,7 @@ PatternWithoutRangeNode::PatternWithoutRangeNode(const std::vector<Token> &token
     } else if (tokens[pos].lexeme == "&" || tokens[pos].lexeme == "&&") {
       reference_pattern_ = std::make_shared<ReferencePatternNode>(tokens, pos, length);
     } else {
-      uint32_t tmp = pos;
-      try {
-        literal_pattern_ = std::make_shared<LiteralPatternNode>(tokens, pos, length);
-      } catch (...) {
-        literal_pattern_ = nullptr;
-        pos = tmp;
-        try {
-          path_pattern_ = std::make_shared<PathPatternNode>(tokens, pos, length);
-        } catch (...) {
-          path_pattern_ = nullptr;
-          pos = tmp;
-          identifier_pattern_ = std::make_shared<IdentifierPatternNode>(tokens, pos, length);
-        }
-      }
+      identifier_pattern_ = std::make_shared<IdentifierPatternNode>(tokens, pos, length);
     }
   } catch (Error &) { throw; }
 }

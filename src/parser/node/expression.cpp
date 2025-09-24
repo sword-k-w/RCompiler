@@ -88,10 +88,11 @@ StructExprFieldNode::StructExprFieldNode(const std::vector<Token> &tokens, uint3
   try {
     identifier_ = std::make_shared<IdentifierNode>(tokens, pos, length);
     CheckLength(pos, length);
-    if (tokens[pos].lexeme == ":") {
-      ++pos;
-      expr_ = std::make_shared<ExpressionNode>(tokens, pos, length);
+    if (tokens[pos].lexeme != ":") {
+      throw Error("try parsing Struct Expr Field Node but no :");
     }
+    ++pos;
+    expr_ = std::make_shared<ExpressionNode>(tokens, pos, length);
   } catch (Error &) { throw; }
 }
 

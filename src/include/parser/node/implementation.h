@@ -10,6 +10,7 @@ class ImplementationNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   ImplementationNode();
   ImplementationNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

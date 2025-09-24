@@ -11,6 +11,7 @@ class EnumVariantsNode : public ASTNode {
     friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   EnumVariantsNode() = delete;
   EnumVariantsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -24,6 +25,7 @@ class EnumerationNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   EnumerationNode() = delete;
   EnumerationNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

@@ -9,6 +9,7 @@ class ShorthandSelfNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   ShorthandSelfNode() = delete;
   ShorthandSelfNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -19,38 +20,24 @@ private:
   std::shared_ptr<SelfLowerNode> self_lower_;
 };
 
-class TypedSelfNode : public ASTNode {
-  friend class Printer;
-  friend class FirstChecker;
-  friend class SecondChecker;
-public:
-  TypedSelfNode() = delete;
-  TypedSelfNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
-  void Accept(VisitorBase *) override;
-private:
-  bool mut_ = false;
-  std::shared_ptr<SelfLowerNode> self_lower_;
-  std::shared_ptr<TypeNode> type_;
-};
-
 class SelfParamNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   SelfParamNode() = delete;
   SelfParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<ShorthandSelfNode> shorthand_self_;
-  std::shared_ptr<TypedSelfNode> typed_self_;
 };
-
 
 class FunctionParamNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   FunctionParamNode() = delete;
   FunctionParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -64,6 +51,7 @@ class FunctionParametersNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   FunctionParametersNode() = delete;
   FunctionParametersNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -78,6 +66,7 @@ class FunctionReturnTypeNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   FunctionReturnTypeNode() = delete;
   FunctionReturnTypeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -90,6 +79,7 @@ class FunctionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
+  friend class ThirdChecker;
 public:
   FunctionNode() = delete;
   FunctionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -103,4 +93,5 @@ private:
   std::shared_ptr<BlockExpressionNode> block_expr_;
 
   bool in_trait_ = false;
+  bool in_implement_ = false;
 };

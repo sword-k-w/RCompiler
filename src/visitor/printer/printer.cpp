@@ -186,7 +186,7 @@ void Printer::Visit(PathInExpressionNode *node) {
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
 
   prefixes_.emplace(next);
-  is_lasts_.emplace(node->path_expr_segment1_ == nullptr);
+  is_lasts_.emplace(node->path_expr_segment2_ == nullptr);
   node->path_expr_segment1_->Accept(this);
   if (node->path_expr_segment2_ != nullptr) {
     os_ << next << "├──::\n";
@@ -205,14 +205,12 @@ void Printer::Visit(StructExprFieldNode *node) {
 
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   prefixes_.emplace(next);
-  is_lasts_.emplace(node->expr_ == nullptr);
+  is_lasts_.emplace(false);
   node->identifier_->Accept(this);
-  if (node->expr_ != nullptr) {
-    os_ << next << "├──:\n";
-    prefixes_.emplace(next);
-    is_lasts_.emplace(true);
-    node->expr_->Accept(this);
-  }
+  os_ << next << "├──:\n";
+  prefixes_.emplace(next);
+  is_lasts_.emplace(true);
+  node->expr_->Accept(this);
 
   prefixes_.pop();
   is_lasts_.pop();
@@ -608,25 +606,6 @@ void Printer::Visit(ShorthandSelfNode *node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(TypedSelfNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Typed Self\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-  if (node->mut_) {
-    os_ << next << "├──mut\n";
-  }
-  os_ << next << "├──self\n";
-  os_ << next << "├──:\n";
-  prefixes_.emplace(next);
-  is_lasts_.emplace(true);
-  node->type_->Accept(this);
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
 void Printer::Visit(SelfParamNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
@@ -635,11 +614,7 @@ void Printer::Visit(SelfParamNode *node) {
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  if (node->shorthand_self_) {
-    node->shorthand_self_->Accept(this);
-  } else {
-    node->typed_self_->Accept(this);
-  }
+  node->shorthand_self_->Accept(this);
 
   prefixes_.pop();
   is_lasts_.pop();
@@ -871,23 +846,6 @@ void Printer::Visit(PathIdentSegmentNode *node) {
   is_lasts_.pop();
 }
 
-void Printer::Visit(LiteralPatternNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Literal Pattern\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-  if (node->hyphen_) {
-    os_ << next << "├──-\n";
-  }
-  prefixes_.emplace(next);
-  is_lasts_.emplace(true);
-  node->literal_expr_->Accept(this);
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
 void Printer::Visit(IdentifierPatternNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
@@ -938,16 +896,12 @@ void Printer::Visit(PatternWithoutRangeNode *node) {
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   prefixes_.emplace(next);
   is_lasts_.emplace(true);
-  if (node->literal_pattern_ != nullptr) {
-    node->literal_pattern_->Accept(this);
-  } else if (node->identifier_pattern_ != nullptr) {
+  if (node->identifier_pattern_ != nullptr) {
     node->identifier_pattern_->Accept(this);
   } else if (node->wildcard_pattern_ != nullptr) {
     node->wildcard_pattern_->Accept(this);
-  } else if (node->reference_pattern_ != nullptr) {
-    node->reference_pattern_->Accept(this);
   } else {
-    node->path_pattern_->Accept(this);
+    node->reference_pattern_->Accept(this);
   }
 
   prefixes_.pop();
@@ -964,18 +918,14 @@ void Printer::Visit(LetStatementNode *node) {
   prefixes_.emplace(next);
   is_lasts_.emplace(false);
   node->pattern_no_top_alt_->Accept(this);
-  if (node->type_ != nullptr) {
-    os_ << next << "├──:\n";
-    prefixes_.emplace(next);
-    is_lasts_.emplace(false);
-    node->type_->Accept(this);
-  }
-  if (node->expr_ != nullptr) {
-    os_ << next << "├──=\n";
-    prefixes_.emplace(next);
-    is_lasts_.emplace(false);
-    node->expr_->Accept(this);
-  }
+  os_ << next << "├──:\n";
+  prefixes_.emplace(next);
+  is_lasts_.emplace(false);
+  node->type_->Accept(this);
+  os_ << next << "├──=\n";
+  prefixes_.emplace(next);
+  is_lasts_.emplace(false);
+  node->expr_->Accept(this);
   os_ << next << "└──;\n";
 
   prefixes_.pop();

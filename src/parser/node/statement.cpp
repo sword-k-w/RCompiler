@@ -20,11 +20,12 @@ LetStatementNode::LetStatementNode(const std::vector<Token> &tokens, uint32_t &p
     ++pos;
     type_ = std::make_shared<TypeNode>(tokens, pos, length);
     CheckLength(pos, length);
-    if (tokens[pos].lexeme == "=") {
-      ++pos;
-      expr_ = std::make_shared<ExpressionNode>(tokens, pos, length);
-      CheckLength(pos, length);
+    if (tokens[pos].lexeme != "=") {
+      throw Error("try parsing Let Statement but no =");
     }
+    ++pos;
+    expr_ = std::make_shared<ExpressionNode>(tokens, pos, length);
+    CheckLength(pos, length);
     if (tokens[pos].lexeme != ";") {
       throw Error("try parsing Let Statement Node but no ;");
     }

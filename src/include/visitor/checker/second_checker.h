@@ -2,6 +2,7 @@
 
 #include "visitor/base/visitor_base.h"
 #include "parser/node/AST_node.h"
+#include <stack>
 
 class SecondChecker : public VisitorBase {
 public:
@@ -27,7 +28,6 @@ public:
   void Visit(CallParamsNode *) override;
   void Visit(ExpressionNode *) override;
   void Visit(ShorthandSelfNode *) override;
-  void Visit(TypedSelfNode *) override;
   void Visit(SelfParamNode *) override;
   void Visit(FunctionParamNode *) override;
   void Visit(FunctionParametersNode *) override;
@@ -38,7 +38,6 @@ public:
   void Visit(AssociatedItemNode *) override;
   void Visit(ItemNode *) override;
   void Visit(PathIdentSegmentNode *) override;
-  void Visit(LiteralPatternNode *) override;
   void Visit(IdentifierPatternNode *) override;
   void Visit(ReferencePatternNode *) override;
   void Visit(PatternWithoutRangeNode *) override;
@@ -69,4 +68,7 @@ public:
   void Visit(TypeNoBoundsNode *) override;
 private:
   void GoDown(ASTNode *, ASTNode *);
+  std::stack<StructNode *> current_Self_;
+  std::stack<LoopExpressionNode *> current_loop_;
+  std::stack<FunctionNode *> current_function_;
 };

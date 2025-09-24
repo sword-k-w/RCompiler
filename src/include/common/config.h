@@ -75,4 +75,9 @@ bool IsKeyword(const std::string_view &);
 constexpr std::string_view kBuiltinType[7] = {"i32", "u32", "isize", "usize", "char", "str", "bool"};
 
 bool IsIntegerType(const std::string &);
+
+bool IsSignedIntegerType(const std::string &);
+
+std::string MergeLeafType(const std::string &, const std::string &);
+
 #endif //CONFIG_H

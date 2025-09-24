@@ -30,7 +30,6 @@ public:
   void Visit(CallParamsNode *) override;
   void Visit(ExpressionNode *) override;
   void Visit(ShorthandSelfNode *) override;
-  void Visit(TypedSelfNode *) override;
   void Visit(SelfParamNode *) override;
   void Visit(FunctionParamNode *) override;
   void Visit(FunctionParametersNode *) override;
@@ -41,7 +40,6 @@ public:
   void Visit(AssociatedItemNode *) override;
   void Visit(ItemNode *) override;
   void Visit(PathIdentSegmentNode *) override;
-  void Visit(LiteralPatternNode *) override;
   void Visit(IdentifierPatternNode *) override;
   void Visit(ReferencePatternNode *) override;
   void Visit(PatternWithoutRangeNode *) override;
