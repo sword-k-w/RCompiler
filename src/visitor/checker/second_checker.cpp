@@ -225,13 +225,11 @@ void SecondChecker::Visit(PredicateLoopExpressionNode *node) {
 void SecondChecker::Visit(LoopExpressionNode *node) {
   try {
     assert(node->need_calculate_ == false);
-    current_loop_.emplace(node);
     if (node->infinite_loop_expr_ != nullptr) {
       GoDown(node, node->infinite_loop_expr_.get());
     } else {
       GoDown(node, node->predicate_loop_expr_.get());
     }
-    current_loop_.pop();
   } catch (Error &) { throw; }
 }
 
@@ -787,7 +785,9 @@ void SecondChecker::Visit(StatementsNode *node) {
     for (auto &statement : node->statement_s_) {
       GoDown(node, statement.get());
     }
-    GoDown(node, node->expr_without_block_.get());
+    if (node->expr_without_block_ != nullptr) {
+      GoDown(node, node->expr_without_block_.get());
+    }
   } catch (Error &) { throw; }
 }
 

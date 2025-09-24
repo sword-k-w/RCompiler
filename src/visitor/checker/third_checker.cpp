@@ -13,6 +13,7 @@
 #include "parser/node/item.h"
 #include "parser/node/path.h"
 #include "parser/node/statement.h"
+#include "semantic/builtin/builtin_node.h"
 
 #include "common/error.h"
 
@@ -299,6 +300,13 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           }
         }
       } else {
+        if (node->path_expr_->path_expr_segment1_->identifier_->val_ == "exit") {
+          node->type_info_ = std::make_shared<Type>();
+          node->type_info_->type_ = kFunctionCallType;
+          builtin_.emplace_back(std::make_shared<BuiltinFunctionNode>("exit"));
+          node->type_info_->source_ = builtin_.back().get();
+          return;
+        }
         target = node->scope_->FindValueName(node->path_expr_->path_expr_segment1_->identifier_->val_);
         auto *struct_node = dynamic_cast<StructNode *>(target);
         if (struct_node != nullptr) {
@@ -519,6 +527,21 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       if (node->expr1_->type_info_->type_ != kFunctionCallType) {
         throw Error("ThirdChecker : call expr but not function path");
       }
+      auto builtin_function = dynamic_cast<BuiltinFunctionNode *>(node->expr1_->type_info_->source_);
+      if (builtin_function != nullptr) {
+        if (builtin_function->function_name_ == "exit") {
+          if (node->call_params_ == nullptr || node->call_params_->exprs_.size() != 1) {
+            throw Error("ThirdChecker : exit but parameter count is not 1");
+          }
+          if (!ExpectI32(node->call_params_->exprs_[0]->type_info_.get())) {
+            throw Error("ThirdChecker : exit but not i32");
+          }
+          if (current_function_.size() != 1 || current_function_.top()->identifier_->val_ != "main") {
+
+          }
+        }
+        return;
+      }
       auto function_node = dynamic_cast<FunctionNode *>(node->expr1_->type_info_->source_);
       if (function_node->function_parameters_ == nullptr) {
         if (node->call_params_ != nullptr) {
@@ -686,7 +709,18 @@ void ThirdChecker::Visit(FunctionNode *node) {
       node->function_parameters_->Accept(this);
     }
     assert(node->block_expr_ != nullptr);
+    if (node->identifier_->val_ == "main") {
+      if (!current_function_.empty()) {
+        throw Error("ThirdChecker : find main in function");
+      }
+      if (main_exist_) {
+        throw Error("ThirdChecker : find multiple main");
+      }
+      main_exist_ = true;
+    }
+    current_function_.emplace(node);
     node->block_expr_->Accept(this);
+    current_function_.pop();
   } catch (Error &) { throw; }
 }
 

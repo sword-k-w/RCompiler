@@ -78,3 +78,8 @@ leaf expression:
 
 * type check
 
+### not do yet
+
+* trait
+* builtin except exit
+* check exit occur in the tail of main

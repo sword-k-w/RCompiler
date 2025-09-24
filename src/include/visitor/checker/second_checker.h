@@ -69,6 +69,4 @@ public:
 private:
   void GoDown(ASTNode *, ASTNode *);
   std::stack<StructNode *> current_Self_;
-  std::stack<LoopExpressionNode *> current_loop_;
-  std::stack<FunctionNode *> current_function_;
 };

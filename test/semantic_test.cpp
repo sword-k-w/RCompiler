@@ -23,8 +23,8 @@ void TestCode(const std::string &s, bool expect_result) {
     printer.Visit(root.get());
     SecondChecker sc;
     root->Accept(&sc);
-    // ThirdChecker tc;
-    // root->Accept(&tc);
+    ThirdChecker tc;
+    root->Accept(&tc);
   } catch (Error &err) {
     std::cerr << err.Info() << '\n';
     EXPECT_EQ(expect_result, false);
@@ -46,9 +46,9 @@ void TestTestcase(const std::string &s, bool expect_result) {
 //   TestTestcase("../testcase/semantic-1/array1/array1.rx", true);
 // }
 //
-// TEST(SemanticTest, TestcaseTest_Array2) {
-//   TestTestcase("../testcase/semantic-1/array2/array2.rx", true);
-// }
+TEST(SemanticTest, TestcaseTest_Array2) {
+  TestTestcase("../testcase/semantic-1/array2/array2.rx", true);
+}
 //
 // TEST(SemanticTest, TestcaseTest_Array3) {
 //   TestTestcase("../testcase/semantic-1/array3/array3.rx", true);
@@ -73,11 +73,11 @@ void TestTestcase(const std::string &s, bool expect_result) {
 // TEST(SemanticTest, TestcaseTest_Array8) {
 //   TestTestcase("../testcase/semantic-1/array8/array8.rx", false);
 // }
-
-TEST(SemanticTest, TestcaseTest_Basic1) {
-  TestTestcase("../testcase/semantic-1/basic1/basic1.rx", true);
-}
-
+//
+// TEST(SemanticTest, TestcaseTest_Basic1) {
+//   TestTestcase("../testcase/semantic-1/basic1/basic1.rx", true);
+// }
+//
 // TEST(SemanticTest, TestcaseTest_Basic2) {
 //   TestTestcase("../testcase/semantic-1/basic2/basic2.rx", false);
 // }

@@ -2,6 +2,7 @@
 
 #include "visitor/base/visitor_base.h"
 #include "parser/node/AST_node.h"
+#include "semantic/builtin/builtin_node.h"
 #include <stack>
 
 class ThirdChecker : public VisitorBase {
@@ -69,5 +70,8 @@ public:
 private:
   std::stack<StructNode *> current_Self_;
   std::stack<LoopExpressionNode *> current_loop_;
-  std::stack<FunctionNode *>current_function_;
+  std::stack<FunctionNode *> current_function_;
+
+  std::vector<std::shared_ptr<BuiltinFunctionNode>> builtin_;
+  bool main_exist_ = false;
 };
