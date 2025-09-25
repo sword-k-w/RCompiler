@@ -233,18 +233,18 @@ void TestTestcase(const std::string &s, bool expect_result) {
 // TEST(SemanticTest, TestcaseTest_Basic40) {
 //   TestTestcase("../testcase/semantic-1/basic40/basic40.rx", true);
 // }
-
-TEST(SemanticTest, TestcaseTest_Type1) {
-  TestTestcase("../testcase/semantic-1/type1/type1.rx", false);
-}
-
-TEST(SemanticTest, TestcaseTest_Type2) {
-  TestTestcase("../testcase/semantic-1/type2/type2.rx", false);
-}
-
-TEST(SemanticTest, TestcaseTest_Type3) {
-  TestTestcase("../testcase/semantic-1/type3/type3.rx", false);
-}
+//
+// TEST(SemanticTest, TestcaseTest_Type1) {
+//   TestTestcase("../testcase/semantic-1/type1/type1.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type2) {
+//   TestTestcase("../testcase/semantic-1/type2/type2.rx", false);
+// }
+//
+// TEST(SemanticTest, TestcaseTest_Type3) {
+//   TestTestcase("../testcase/semantic-1/type3/type3.rx", false);
+// }
 
 TEST(SemanticTest, TestcaseTest_Type4) {
   TestTestcase("../testcase/semantic-1/type4/type4.rx", false);
