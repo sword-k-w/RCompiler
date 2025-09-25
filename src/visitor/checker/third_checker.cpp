@@ -22,6 +22,9 @@ void ThirdChecker::Visit(CrateNode *node) {
     for (auto &item: node->items_) {
       item->Accept(this);
     }
+    if (!main_exist_) {
+      throw Error("ThirdChecker : no main");
+    }
   } catch (Error &) { throw; }
 }
 
@@ -806,7 +809,6 @@ void ThirdChecker::Visit(LetStatementNode *node) {
   try {
     node->type_info_ = node->type_->type_info_;
     node->expr_->Accept(this);
-    std::cerr << "!!!\n";
     SameTypeCheck(node->type_info_.get(), node->expr_->type_info_.get());
     node->scope_->AddValueName(node->pattern_no_top_alt_->identifier_pattern_->identifier_->val_, node->pattern_no_top_alt_->identifier_pattern_.get(), true);
     node->pattern_no_top_alt_->identifier_pattern_->type_info_ = std::make_shared<Type>(*node->type_->type_info_);

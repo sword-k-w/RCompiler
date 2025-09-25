@@ -300,6 +300,9 @@ void FirstChecker::Visit(ImplementationNode *node) {
     if (node->type_->type_path_ == nullptr || node->type_->type_path_->identifier_ == nullptr) {
       throw Error("FirstChecker : can't impl the type that isn't struct");
     }
+    if (node->scope_ == nullptr) {
+      std::cerr << "?????\n";
+    }
     ASTNode *target = node->scope_->FindTypeName(node->type_->type_path_->identifier_->val_);
     if (target == nullptr) {
       throw Error("FirstChecker : impl the type that is not found");
@@ -364,6 +367,7 @@ void FirstChecker::Visit(ItemNode *node) {
     } else if (node->trait_ != nullptr) {
       OldScope(node, node->trait_.get());
     } else {
+      node->implementation_->scope_ = node->scope_;
       node_queue_.emplace_back(node->implementation_.get());
     }
   } catch (Error &) { throw; }
