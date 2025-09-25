@@ -356,6 +356,7 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
         break;
       }
       uint32_t power = binding_power[{op.lexeme, true}].first;
+      std::cerr << context_precedence << " " << power << '\n';
       if (context_precedence == power) {
         throw Error("try parsing Expression Node but same binding power");
       }

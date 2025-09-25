@@ -281,8 +281,6 @@ private:
 // true means binary, false means unary
 inline std::map<std::pair<std::string, bool>, std::pair<uint32_t, uint32_t>> binding_power = {
   {{".", true}, {5000000, 5000001}},
-  {{"(", true}, {2000000, 2000001}},
-  {{"[", true}, {2000000, 2000001}},
   {{"-", false}, {0, 1000000}},
   {{"!", false}, {0, 1000000}},
   {{"*", false}, {0, 1000000}},
@@ -321,6 +319,8 @@ inline std::map<std::pair<std::string, bool>, std::pair<uint32_t, uint32_t>> bin
   {{"return", false}, {0, 200}},
   {{"break", false}, {0, 200}},
   {{"(", false}, {0, 0}},
+  {{"[", true}, {2, 1}},
+  {{"(", true}, {2, 1}},
 };
 
 inline std::map<std::string, ExpressionType> infix_type = {
