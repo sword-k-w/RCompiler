@@ -277,13 +277,17 @@ void FirstChecker::Visit(FunctionNode *node) {
     node->scope_->AddValueName(node->identifier_->val_, node, false);
     OldScope(node, node->identifier_.get());
     if (node->function_parameters_ != nullptr) {
-      OldScope(node, node->function_parameters_.get());
+      NewScope(node, node->function_parameters_.get(), "");
     }
     if (node->function_return_type_ != nullptr) {
       OldScope(node, node->function_return_type_.get());
     }
     if (node->block_expr_ != nullptr) {
-      OldScope(node, node->block_expr_.get());
+      if (node->function_parameters_ != nullptr) {
+        OldScope(node->function_parameters_.get(), node->block_expr_.get());
+      } else {
+        NewScope(node, node->block_expr_.get(), "");
+      }
     }
   } catch (Error &) { throw; }
 }
@@ -350,7 +354,7 @@ void FirstChecker::Visit(AssociatedItemNode *node) {
 void FirstChecker::Visit(ItemNode *node) {
   try {
     if (node->function_ != nullptr) {
-      NewScope(node, node->function_.get(), "");
+      OldScope(node, node->function_.get());
     } else if (node->struct_ != nullptr) {
       OldScope(node, node->struct_.get());
     } else if (node->enumeration_ != nullptr) {

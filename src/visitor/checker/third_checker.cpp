@@ -343,7 +343,7 @@ void ThirdChecker::Visit(ExpressionNode *node) {
                   node->type_info_ = std::make_shared<Type>(*self_param->type_info_);
                   node->type_info_->is_mut_left_ = self_param->shorthand_self_->mut_;
                 } else {
-                  throw Error("SecondChecker : unexpected path");
+                  throw Error("ThirdChecker : unexpected path");
                 }
               }
             }
@@ -714,7 +714,7 @@ void ThirdChecker::Visit(SelfParamNode *node) {
 
 void ThirdChecker::Visit(FunctionParamNode *node) {
   try {
-    node->scope_->AddValueName(node->pattern_no_top_alt_->identifier_pattern_->identifier_->val_, node->pattern_no_top_alt_.get(), false);
+    node->scope_->AddValueName(node->pattern_no_top_alt_->identifier_pattern_->identifier_->val_, node->pattern_no_top_alt_->identifier_pattern_.get(), false);
     node->pattern_no_top_alt_->identifier_pattern_->type_info_ = std::make_shared<Type>(*node->type_->type_info_);
     node->pattern_no_top_alt_->identifier_pattern_->type_info_->is_mut_left_ = node->pattern_no_top_alt_->identifier_pattern_->mut_;
   } catch (Error &) { throw; }

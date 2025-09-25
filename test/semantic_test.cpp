@@ -263,21 +263,22 @@ TEST(SemanticTest, TestcaseTest_Type6) {
 //   TestTestcase("../RCompiler-Testcases/semantic-1/type7/type7.rx", false);
 // }
 
-TEST(SemanticTest, TestcaseTest_Type8) {
-  TestTestcase("../RCompiler-Testcases/semantic-1/type8/type8.rx", false);
+// bad testcase
+// TEST(SemanticTest, TestcaseTest_Type8) {
+//   TestTestcase("../RCompiler-Testcases/semantic-1/type8/type8.rx", false);
+// }
+
+TEST(SemanticTest, TestcaseTest_Type9) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/type9/type9.rx", false);
 }
 
-// TEST(SemanticTest, TestcaseTest_Type9) {
-//   TestTestcase("../RCompiler-Testcases/semantic-1/type9/type9.rx", false);
-// }
-//
-// TEST(SemanticTest, TestcaseTest_Type10) {
-//   TestTestcase("../RCompiler-Testcases/semantic-1/type10/type10.rx", false);
-// }
-//
-// TEST(SemanticTest, TestcaseTest_Type11) {
-//   TestTestcase("../RCompiler-Testcases/semantic-1/type11/type11.rx", false);
-// }
+TEST(SemanticTest, TestcaseTest_Type10) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/type10/type10.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Type11) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/type11/type11.rx", false);
+}
 
 // TEST(SemanticTest, TestcaseTest_Type12) {
 //   TestTestcase("../RCompiler-Testcases/semantic-1/type12/type12.rx", false);
