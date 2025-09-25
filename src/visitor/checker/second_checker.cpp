@@ -1073,7 +1073,8 @@ void SecondChecker::Visit(ReferenceTypeNode *node) {
     node->type_info_ = std::make_shared<Type>();
     node->type_info_->type_ = kPointerType;
     node->type_info_->pointer_mut_ = node->mut_;
-    node->type_info_->pointer_type_ = node->type_no_bounds_->type_info_;
+    node->type_info_->pointer_type_ = std::make_shared<Type>(*node->type_no_bounds_->type_info_);
+    node->type_info_->pointer_type_->is_mut_left_ = node->mut_;
   } catch (Error &) { throw; }
 }
 
@@ -1096,11 +1097,12 @@ void SecondChecker::Visit(UnitTypeNode *node) {
 void SecondChecker::Visit(TypeNoBoundsNode *node) {
   try {
     if (node->type_path_ != nullptr) {
-      GoDown(node, node->type_path_.get()); // !!!
+      GoDown(node, node->type_path_.get());
       if (node->type_path_->self_upper_ != nullptr) {
         if (current_Self_.empty()) {
           throw Error("SecondChecker : no struct but Self");
         }
+        node->type_info_ = std::make_shared<Type>();
         node->type_info_->type_ = kStructType;
         node->type_info_->type_name_ = current_Self_.top()->identifier_->val_;
         node->type_info_->source_ = current_Self_.top();

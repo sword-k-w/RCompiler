@@ -645,16 +645,17 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       }
     } else if (node->type_ == kFieldExpr) {
       node->expr1_->Accept(this);
-      if (node->expr1_->type_info_->type_ != kStructType) {
+      auto [type, dep] = AutoDereference(node->expr1_->type_info_.get());
+      if (type->type_ != kStructType) {
         throw Error("ThirdChecker : field expr but not struct");
       }
-      auto struct_node = dynamic_cast<StructNode *>(node->expr1_->type_info_->source_);
+      auto struct_node = dynamic_cast<StructNode *>(type->source_);
       auto it = struct_node->field_.find(node->identifier_->val_);
       if (it == struct_node->field_.end()) {
         throw Error("ThirdChecker : field expr but not found field");
       }
       node->type_info_ = std::make_shared<Type>(*it->second);
-      node->type_info_->is_mut_left_ = node->expr1_->type_info_->is_mut_left_;
+      node->type_info_->is_mut_left_ = type->is_mut_left_;
     } else if (node->type_ == kBreakExpr) {
       if (current_loop_.empty()) {
         throw Error("ThirdChecker : no loop but break expr");
