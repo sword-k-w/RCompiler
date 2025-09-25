@@ -113,15 +113,22 @@ void ThirdChecker::Visit(StructExpressionNode *node) {
     if (struct_type == nullptr) {
       throw Error("ThirdChecker : struct but identifier is not a struct");
     }
-    if (struct_type->field_.size() != node->struct_expr_fields_->struct_expr_field_s_.size()) {
-      throw Error("ThirdChecker : struct but identifier count doesn't match");
-    }
-    for (auto &struct_expr_field: node->struct_expr_fields_->struct_expr_field_s_) {
-      auto it = struct_type->field_.find(struct_expr_field->identifier_->val_);
-      if (it == struct_type->field_.end()) {
-        throw Error("ThirdChecker : struct but the identifier doesn't belong to the struct");
+    if (node->struct_expr_fields_ != nullptr) {
+      if (struct_type->field_.size() != node->struct_expr_fields_->struct_expr_field_s_.size()) {
+        throw Error("ThirdChecker : struct but identifier count doesn't match");
       }
-      SameTypeCheck(it->second.get(), struct_expr_field->expr_->type_info_.get());
+      node->struct_expr_fields_->Accept(this);
+      for (auto &struct_expr_field: node->struct_expr_fields_->struct_expr_field_s_) {
+        auto it = struct_type->field_.find(struct_expr_field->identifier_->val_);
+        if (it == struct_type->field_.end()) {
+          throw Error("ThirdChecker : struct but the identifier doesn't belong to the struct");
+        }
+        SameTypeCheck(it->second.get(), struct_expr_field->expr_->type_info_.get());
+      }
+    } else {
+      if (!struct_type->field_.empty()) {
+        throw Error("ThirdChecker : struct but no field");
+      }
     }
     node->type_info_ = std::make_shared<Type>();
     node->type_info_->type_ = kStructType;
@@ -296,10 +303,10 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           }
         }
       } else {
-        if (node->path_expr_->path_expr_segment1_->identifier_->val_ == "exit") {
+        if (IsBuiltinFunction(node->path_expr_->path_expr_segment1_->identifier_->val_)) {
           node->type_info_ = std::make_shared<Type>();
           node->type_info_->type_ = kFunctionCallType;
-          builtin_.emplace_back(std::make_shared<BuiltinFunctionNode>("exit"));
+          builtin_.emplace_back(std::make_shared<BuiltinFunctionNode>(node->path_expr_->path_expr_segment1_->identifier_->val_));
           node->type_info_->source_ = builtin_.back().get();
           return;
         }
@@ -525,6 +532,22 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       }
       auto builtin_function = dynamic_cast<BuiltinFunctionNode *>(node->expr1_->type_info_->source_);
       if (builtin_function != nullptr) {
+        if (builtin_function->function_name_ == "getString") {
+          if (node->call_params_ != nullptr) {
+            throw Error("ThirdChecker : getString but parameter is not empty");
+          }
+          throw Error("can't support String now");
+          return;
+        }
+        if (builtin_function->function_name_ == "getInt") {
+          if (node->call_params_ != nullptr) {
+            throw Error("ThirdChecker : getInt but parameter is not empty");
+          }
+          node->type_info_ = std::make_shared<Type>();
+          node->type_info_->type_ = kLeafType;
+          node->type_info_->type_name_ = "i32";
+          return;
+        }
         if (builtin_function->function_name_ == "exit") {
           if (node->call_params_ == nullptr || node->call_params_->exprs_.size() != 1) {
             throw Error("ThirdChecker : exit but parameter count is not 1");
@@ -533,9 +556,25 @@ void ThirdChecker::Visit(ExpressionNode *node) {
             throw Error("ThirdChecker : exit but not i32");
           }
           if (current_function_.size() != 1 || current_function_.top()->identifier_->val_ != "main") {
-
+            throw Error("ThirdChecker : exit but not in main");
+          }
+        } else if (builtin_function->function_name_ == "print" || builtin_function->function_name_ == "println") {
+          if (node->call_params_ == nullptr || node->call_params_->exprs_.size() != 1) {
+            throw Error("ThirdChecker : print/println but parameter count is not 1");
+          }
+          if (!ExpectStr(node->call_params_->exprs_[0]->type_info_.get())) {
+            throw Error("ThirdChecker : print/println but not &str");
+          }
+        } else if (builtin_function->function_name_ == "printInt" || builtin_function->function_name_ == "printlnInt") {
+          if (node->call_params_ == nullptr || node->call_params_->exprs_.size() != 1) {
+            throw Error("ThirdChecker : printInt/printlnInt but parameter count is not 1");
+          }
+          if (!ExpectI32(node->call_params_->exprs_[0]->type_info_.get())) {
+            throw Error("ThirdChecker : printInt/printlnInt but not i32");
           }
         }
+        node->type_info_ = std::make_shared<Type>();
+        node->type_info_->type_ = kUnitType;
         return;
       }
       auto function_node = dynamic_cast<FunctionNode *>(node->expr1_->type_info_->source_);
@@ -643,6 +682,12 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       auto function_node = current_function_.top();
       if (node->expr1_ != nullptr) {
         node->expr1_->Accept(this);
+        if (function_node->type_info_ == nullptr) {
+          std::cerr << "1\n";
+        }
+        if (node->expr1_->type_info_ == nullptr) {
+          std::cerr << "2\n";
+        }
         SameTypeCheck(function_node->type_info_.get(), node->expr1_->type_info_.get());
       } else {
         if (function_node->type_info_->type_ != kUnitType) {
@@ -686,11 +731,16 @@ void ThirdChecker::Visit(FunctionParametersNode *node) {
   } catch (Error &) { throw; }
 }
 
-void ThirdChecker::Visit(FunctionReturnTypeNode *node) {}
+void ThirdChecker::Visit(FunctionReturnTypeNode *node) {
+  try {
+    node->type_info_ = node->type_->type_info_;
+  } catch (Error &) { throw; }
+}
 
 void ThirdChecker::Visit(FunctionNode *node) {
   try {
     if (node->function_return_type_ != nullptr) {
+      node->function_return_type_->Accept(this);
       node->type_info_ = node->function_return_type_->type_info_;
     } else {
       node->type_info_ = std::make_shared<Type>();
@@ -792,12 +842,10 @@ void ThirdChecker::Visit(StatementsNode *node) {
       node->type_info_ = node->expr_without_block_->type_info_;
       return;
     }
-    if (node->expr_without_block_ != nullptr){
-      auto tail_statement = *node->statement_s_.rbegin();
-      if (tail_statement->expr_statement_ != nullptr && tail_statement->expr_statement_->semicolon_ == false) {
-        node->type_info_ = tail_statement->expr_statement_->type_info_;
-        return;
-      }
+    auto tail_statement = *node->statement_s_.rbegin();
+    if (tail_statement->expr_statement_ != nullptr && tail_statement->expr_statement_->semicolon_ == false) {
+      node->type_info_ = tail_statement->expr_statement_->type_info_;
+      return;
     }
     node->type_info_ = std::make_shared<Type>();
     node->type_info_->type_ = kUnitType;

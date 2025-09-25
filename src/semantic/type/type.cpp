@@ -1,6 +1,7 @@
 #include "semantic/type/type.h"
 #include "common/error.h"
 #include "common/config.h"
+#include <iostream>
 
 ArrayValueInfo::ArrayValueInfo(const std::vector<std::shared_ptr<ConstValue>> &type_values, const uint32_t &length) : values_(type_values), length_(length) {}
 
@@ -32,6 +33,13 @@ bool ExpectUsize(Type *type) {
   return true;
 }
 
+bool ExpectStr(Type *type) {
+  if (type->type_ != kPointerType || type->pointer_type_->type_ != kLeafType || type->pointer_type_->type_name_ != "str") {
+    return false;
+  }
+  return true;
+}
+
 bool ExpectI32(ConstValue *value) {
   if (value->type_ != kLeafType || value->type_name_ != "i32" && value->type_name_ != "$" && value->type_name_ != "@") {
     return false;
@@ -55,6 +63,13 @@ bool ExpectIsize(ConstValue *value) {
 
 bool ExpectUsize(ConstValue *value) {
   if (value->type_ != kLeafType || value->type_name_ != "size" && value->type_name_ != "$") {
+    return false;
+  }
+  return true;
+}
+
+bool ExpectStr(ConstValue *value) {
+  if (value->type_ != kPointerType || value->pointer_info_->type_ != kLeafType || value->pointer_info_->type_name_ != "str") {
     return false;
   }
   return true;

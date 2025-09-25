@@ -145,7 +145,7 @@ ContinueExpressionNode::ContinueExpressionNode(const std::vector<Token> &tokens,
 UnitTypeNode::UnitTypeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Unit Type") {
   try {
     CheckLength(pos + 1, length);
-    if (tokens[pos].lexeme != "(" || tokens[pos].lexeme != ")") {
+    if (tokens[pos].lexeme != "(" || tokens[pos + 1].lexeme != ")") {
       throw Error("expect ()");
     }
     ++pos;

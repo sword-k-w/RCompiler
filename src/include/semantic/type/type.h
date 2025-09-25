@@ -57,6 +57,8 @@ bool ExpectIsize(Type *);
 
 bool ExpectUsize(Type *);
 
+bool ExpectStr(Type *);
+
 bool ExpectI32(ConstValue *);
 
 bool ExpectU32(ConstValue *);
@@ -64,6 +66,8 @@ bool ExpectU32(ConstValue *);
 bool ExpectIsize(ConstValue *);
 
 bool ExpectUsize(ConstValue *);
+
+bool ExpectStr(ConstValue *);
 
 void TypeCast(Type *, ConstValue *);
 

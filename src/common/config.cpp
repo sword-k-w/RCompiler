@@ -54,3 +54,12 @@ std::string MergeLeafType(const std::string &name1, const std::string &name2) {
   }
   return "";
 }
+
+bool IsBuiltinFunction(const std::string &name) {
+  for (uint32_t i = 0; i < 7; ++i) {
+    if (kBuiltinFunction[i] == name) {
+      return true;
+    }
+  }
+  return false;
+}

@@ -80,4 +80,8 @@ bool IsSignedIntegerType(const std::string &);
 
 std::string MergeLeafType(const std::string &, const std::string &);
 
+constexpr std::string_view kBuiltinFunction[7] = {"exit", "print", "println", "printInt", "printlnInt", "getString", "getInt"};
+
+bool IsBuiltinFunction(const std::string &);
+
 #endif //CONFIG_H
