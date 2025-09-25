@@ -27,7 +27,7 @@ bool ExpectIsize(Type *type) {
 }
 
 bool ExpectUsize(Type *type) {
-  if (type->type_ != kLeafType || type->type_name_ != "size" && type->type_name_ != "$") {
+  if (type->type_ != kLeafType || type->type_name_ != "usize" && type->type_name_ != "$") {
     return false;
   }
   return true;
@@ -62,7 +62,7 @@ bool ExpectIsize(ConstValue *value) {
 }
 
 bool ExpectUsize(ConstValue *value) {
-  if (value->type_ != kLeafType || value->type_name_ != "size" && value->type_name_ != "$") {
+  if (value->type_ != kLeafType || value->type_name_ != "usize" && value->type_name_ != "$") {
     return false;
   }
   return true;
@@ -153,12 +153,13 @@ void SameTypeCheck(Type *type1, Type *type2) {
       if (type1->pointer_mut_ != type2->pointer_mut_) {
         throw Error("different type");
       }
-      SameTypeCheck(type1->pointer_type_.get(), type2->pointer_type_.get());
+      return SameTypeCheck(type1->pointer_type_.get(), type2->pointer_type_.get());
     }
     if (type1->type_ == kStructType || type1->type_ == kEnumType) {
       if (type1->source_ != type2->source_) {
         throw Error("different type");
       }
+      return;
     }
     if (type1->type_ == kArrayType) {
       if (type1->array_type_info_.second != type2->array_type_info_.second) {
