@@ -686,12 +686,6 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       auto function_node = current_function_.top();
       if (node->expr1_ != nullptr) {
         node->expr1_->Accept(this);
-        if (function_node->type_info_ == nullptr) {
-          std::cerr << "1\n";
-        }
-        if (node->expr1_->type_info_ == nullptr) {
-          std::cerr << "2\n";
-        }
         SameTypeCheck(function_node->type_info_.get(), node->expr1_->type_info_.get());
       } else {
         if (function_node->type_info_->type_ != kUnitType) {

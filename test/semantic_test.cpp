@@ -287,11 +287,11 @@ TEST(SemanticTest, TestcaseTest_Type12) {
 TEST(SemanticTest, TestcaseTest_Type13) {
   TestTestcase("../RCompiler-Testcases/semantic-1/type13/type13.rx", false);
 }
-//
-// TEST(SemanticTest, TestcaseTest_Type14) {
-//   TestTestcase("../RCompiler-Testcases/semantic-1/type14/type14.rx", false);
-// }
-//
+
+TEST(SemanticTest, TestcaseTest_Type14) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/type14/type14.rx", false);
+}
+
 // TEST(SemanticTest, TestcaseTest_Type15) {
 //   TestTestcase("../RCompiler-Testcases/semantic-1/type15/type15.rx", false);
 // }

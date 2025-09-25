@@ -149,6 +149,9 @@ void SameTypeCheck(Type *type1, Type *type2) {
     if (type1->type_ != type2->type_) {
       throw Error("different type");
     }
+    if (type1->type_ == kUnitType) {
+      return;
+    }
     if (type1->type_ == kPointerType) {
       if (type1->pointer_mut_ != type2->pointer_mut_) {
         throw Error("different type");
