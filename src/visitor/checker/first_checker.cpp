@@ -209,8 +209,10 @@ void FirstChecker::Visit(ExpressionNode *node) {
     } else if (node->type_ == kUnderscoreExpr) {
       OldScope(node, node->underscore_expr_.get());
     } else if (node->type_ == kBorrowExpr || node->type_ == kDereferenceExpr || node->type_ == kNegationExpr
-      || node->type_ == kGroupedExpr || (node->type_ == kBreakExpr && node->expr1_ != nullptr) || (node->type_ == kReturnExpr && node->expr1_ != nullptr)) {
-      OldScope(node, node->expr1_.get());
+      || node->type_ == kGroupedExpr || node->type_ == kBreakExpr || node->type_ == kReturnExpr) {
+      if (node->expr1_ != nullptr) {
+        OldScope(node, node->expr1_.get());
+      }
     } else if (node->type_ == kArithmeticOrLogicExpr || node->type_ == kComparisonExpr || node->type_ == kLazyBooleanExpr
       || node->type_ == kAssignmentExpr || node->type_ == kCompoundAssignmentExpr || node->type_ == kIndexExpr) {
       OldScope(node, node->expr1_.get());

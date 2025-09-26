@@ -84,7 +84,6 @@ std::shared_ptr<Type> ConstValue::GetType() {
   } else if (type_ == kStructType || type_ == kEnumType) {
     type->source_ = type_source_;
   } else if (type_ == kPointerType) {
-    type->pointer_mut_ = pointer_mut_;
     type->pointer_type_ = pointer_info_->GetType();
   }
   return type;
@@ -114,10 +113,7 @@ void SameTypeCheck(Type *type, ConstValue *value) {
       throw Error("different type");
     }
     if (type->type_ == kPointerType) {
-      if (type->pointer_mut_ != value->pointer_mut_) {
-        throw Error("different type");
-      }
-      return TypeCast(type->pointer_type_.get(), value->pointer_info_.get());
+      return SameTypeCheck(type->pointer_type_.get(), value->pointer_info_.get());
     }
     if (type->type_ == kStructType || type->type_ == kEnumType) {
       if (type->source_ != value->type_source_) {
@@ -153,9 +149,6 @@ void SameTypeCheck(Type *type1, Type *type2) {
       return;
     }
     if (type1->type_ == kPointerType) {
-      if (type1->pointer_mut_ != type2->pointer_mut_) {
-        throw Error("different type");
-      }
       return SameTypeCheck(type1->pointer_type_.get(), type2->pointer_type_.get());
     }
     if (type1->type_ == kStructType || type1->type_ == kEnumType) {

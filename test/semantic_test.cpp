@@ -39,7 +39,7 @@ void TestTestcase(const std::string &s, bool expect_result) {
 }
 
 TEST(SemanticTest, TmpTest) {
-  TestTestcase("../RCompiler-Testcases/tmp.rx", false);
+  TestTestcase("../my_data/tmp.txt", false);
 }
 
 TEST(SemanticTest, TestcaseTest_Array1) {
@@ -418,15 +418,13 @@ TEST(SemanticTest, TestcaseTest_Type6) {
   TestTestcase("../RCompiler-Testcases/semantic-1/type6/type6.rx", false);
 }
 
-// bad testcase
-// TEST(SemanticTest, TestcaseTest_Type7) {
-//   TestTestcase("../RCompiler-Testcases/semantic-1/type7/type7.rx", false);
-// }
+TEST(SemanticTest, TestcaseTest_Type7) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/type7/type7.rx", false);
+}
 
-// bad testcase
-// TEST(SemanticTest, TestcaseTest_Type8) {
-//   TestTestcase("../RCompiler-Testcases/semantic-1/type8/type8.rx", false);
-// }
+TEST(SemanticTest, TestcaseTest_Type8) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/type8/type8.rx", false);
+}
 
 TEST(SemanticTest, TestcaseTest_Type9) {
   TestTestcase("../RCompiler-Testcases/semantic-1/type9/type9.rx", false);

@@ -16,6 +16,7 @@
 #include "semantic/builtin/builtin_node.h"
 
 #include "common/error.h"
+#include "visitor/printer/printer.h"
 
 void ThirdChecker::Visit(CrateNode *node) {
   try {
@@ -306,14 +307,22 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           }
         }
       } else {
-        if (IsBuiltinFunction(node->path_expr_->path_expr_segment1_->identifier_->val_)) {
+        std::string val = "";
+        if (node->path_expr_->path_expr_segment1_->identifier_ != nullptr) {
+          val = node->path_expr_->path_expr_segment1_->identifier_->val_;
+        } else if (node->path_expr_->path_expr_segment1_->self_lower_ != nullptr) {
+          val = node->path_expr_->path_expr_segment1_->self_lower_->val_;
+        } else {
+          throw Error("ThirdChecker : path expr but Self");
+        }
+        if (IsBuiltinFunction(val)) {
           node->type_info_ = std::make_shared<Type>();
           node->type_info_->type_ = kFunctionCallType;
-          builtin_.emplace_back(std::make_shared<BuiltinFunctionNode>(node->path_expr_->path_expr_segment1_->identifier_->val_));
+          builtin_.emplace_back(std::make_shared<BuiltinFunctionNode>(val));
           node->type_info_->source_ = builtin_.back().get();
           return;
         }
-        target = node->scope_->FindValueName(node->path_expr_->path_expr_segment1_->identifier_->val_);
+        target = node->scope_->FindValueName(val);
         auto *struct_node = dynamic_cast<StructNode *>(target);
         if (struct_node != nullptr) {
           if (struct_node->struct_fields_ != nullptr) {
@@ -375,12 +384,10 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       }
       auto tmp = std::make_shared<Type>();
       tmp->type_= kPointerType;
-      tmp->pointer_mut_ = node->mut_;
       tmp->pointer_type_ = node->expr1_->type_info_;
       if (node->op_ == "&&") {
         node->type_info_ = std::make_shared<Type>();
         node->type_info_->type_ = kPointerType;
-        node->type_info_->pointer_mut_ = false;
         node->type_info_->pointer_type_ = tmp;
       } else {
         node->type_info_ = tmp;
@@ -419,13 +426,8 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       node->type_info_ = std::make_shared<Type>(*node->expr1_->type_info_);
       node->type_info_->is_mut_left_ = false;
       if (node->op_ == "<<" || node->op_ == ">>") {
-        if (node->expr1_->const_value_->type_name_ == "bool" || node->expr2_->const_value_->type_name_ == "bool") {
-          throw Error("ThirdChecker : shift but str or bool");
-        }
-        if (IsSignedIntegerType(node->expr2_->const_value_->type_name_)) {
-          if (static_cast<int32_t>(node->expr2_->const_value_->u32_value_) < 0) {
-            throw Error("ThirdChecker : const negative shift");
-          }
+        if (node->expr1_->type_info_->type_name_ == "bool" || node->expr2_->type_info_->type_name_ == "bool") {
+          throw Error("ThirdChecker : shift but bool");
         }
         return;
       }
@@ -530,7 +532,7 @@ void ThirdChecker::Visit(ExpressionNode *node) {
         throw Error("ThirdChecker : index expr but index is not usize");
       }
       node->type_info_ = std::make_shared<Type>(*type->array_type_info_.first);
-      node->type_info_->is_mut_left_ = node->expr1_->type_info_->is_mut_left_;
+      node->type_info_->is_mut_left_ = type->is_mut_left_;
     } else if (node->type_ == kCallExpr) {
       node->expr1_->Accept(this);
       if (node->call_params_ != nullptr) {
@@ -633,14 +635,11 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       if (function_node->function_parameters_->self_param_->shorthand_self_->mut_ && !type->is_mut_left_) {
         throw Error("ThirdChecker : method call expr but expect mut instance");
       }
-      if (function_node->function_parameters_ == nullptr) {
+      if (function_node->function_parameters_->function_params_.empty()) {
         if (node->call_params_ != nullptr) {
           throw Error("ThirdChecker : method call expr but parameter count doesn't match");
         }
       } else {
-        if (function_node->function_parameters_->self_param_ != nullptr) {
-          throw Error("ThirdChecker : method call expr but invoke method");
-        }
         if (node->call_params_ == nullptr || node->call_params_->exprs_.size() != function_node->function_parameters_->function_params_.size()) {
           throw Error("ThirdChecker : method call expr but parameter count doesn't match");
         }
@@ -648,6 +647,12 @@ void ThirdChecker::Visit(ExpressionNode *node) {
         for (uint32_t i = 0; i < size; ++i) {
           SameTypeCheck(node->call_params_->exprs_[i]->type_info_.get(), function_node->function_parameters_->function_params_[i]->type_->type_info_.get());
         }
+      }
+      if (function_node->function_return_type_ == nullptr) {
+        node->type_info_ = std::make_shared<Type>();
+        node->type_info_->type_ = kUnitType;
+      } else {
+        node->type_info_ = function_node->function_return_type_->type_info_;
       }
     } else if (node->type_ == kFieldExpr) {
       node->expr1_->Accept(this);

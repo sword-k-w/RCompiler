@@ -519,19 +519,23 @@ void SecondChecker::Visit(ExpressionNode *node) {
         }
       }
     } else if (node->type_ == kLazyBooleanExpr) {
-      if (node->expr1_->const_value_->type_ != kLeafType || node->expr2_->const_value_->type_ != kLeafType) {
-        throw Error("SecondChecker : lazy boolean expr but not leaf type");
-      }
-      if (node->expr1_->const_value_->type_name_ != "bool" || node->expr2_->const_value_->type_name_ != "bool") {
-        throw Error("SecondChecker : lazy boolean expr but not bool");
-      }
-      node->const_value_ = std::make_shared<ConstValue>();
-      node->const_value_->type_ = kLeafType;
-      node->const_value_->type_name_ = "bool";
-      if (node->op_ == "||") {
-        node->const_value_->u32_value_ = node->expr1_->const_value_->u32_value_ | node->expr2_->const_value_->u32_value_;
-      } else {
-        node->const_value_->u32_value_ = node->expr1_->const_value_->u32_value_ & node->expr2_->const_value_->u32_value_;
+      GoDown(node, node->expr1_.get());
+      GoDown(node, node->expr2_.get());
+      if (node->need_calculate_) {
+        if (node->expr1_->const_value_->type_ != kLeafType || node->expr2_->const_value_->type_ != kLeafType) {
+          throw Error("SecondChecker : lazy boolean expr but not leaf type");
+        }
+        if (node->expr1_->const_value_->type_name_ != "bool" || node->expr2_->const_value_->type_name_ != "bool") {
+          throw Error("SecondChecker : lazy boolean expr but not bool");
+        }
+        node->const_value_ = std::make_shared<ConstValue>();
+        node->const_value_->type_ = kLeafType;
+        node->const_value_->type_name_ = "bool";
+        if (node->op_ == "||") {
+          node->const_value_->u32_value_ = node->expr1_->const_value_->u32_value_ | node->expr2_->const_value_->u32_value_;
+        } else {
+          node->const_value_->u32_value_ = node->expr1_->const_value_->u32_value_ & node->expr2_->const_value_->u32_value_;
+        }
       }
     } else if (node->type_ == kTypeCastExpr) {
       GoDown(node, node->expr1_.get());
@@ -607,12 +611,16 @@ void SecondChecker::Visit(ExpressionNode *node) {
       if (node->need_calculate_) {
         throw Error("SecondChecker : const expr but break");
       }
-      GoDown(node, node->expr1_.get());
+      if (node->expr1_ != nullptr) {
+        GoDown(node, node->expr1_.get());
+      }
     } else if (node->type_ == kReturnExpr) {
       if (node->need_calculate_) {
         throw Error("SecondChecker : const expr but return");
       }
-      GoDown(node, node->expr1_.get());
+      if (node->expr1_ != nullptr) {
+        GoDown(node, node->expr1_.get());
+      }
     } else {
       if (node->need_calculate_) {
         throw Error("SecondChecker : const expr but with block");
@@ -808,6 +816,9 @@ void SecondChecker::Visit(StructFieldsNode *node) {
 
 void SecondChecker::Visit(StructNode *node) {
   try {
+    node->type_info_ = std::make_shared<Type>();
+    node->type_info_->type_ = kStructType;
+    node->type_info_->source_ = node;
     GoDown(node, node->identifier_.get());
     if (node->struct_fields_ != nullptr) {
       GoDown(node, node->struct_fields_.get());
@@ -1072,7 +1083,6 @@ void SecondChecker::Visit(ReferenceTypeNode *node) {
     GoDown(node, node->type_no_bounds_.get());
     node->type_info_ = std::make_shared<Type>();
     node->type_info_->type_ = kPointerType;
-    node->type_info_->pointer_mut_ = node->mut_;
     node->type_info_->pointer_type_ = std::make_shared<Type>(*node->type_no_bounds_->type_info_);
     node->type_info_->pointer_type_->is_mut_left_ = node->mut_;
   } catch (Error &) { throw; }

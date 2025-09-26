@@ -18,7 +18,6 @@ struct Type {
   std::string type_name_;
   bool is_mut_left_ = false;
   std::pair<std::shared_ptr<Type>, uint32_t> array_type_info_;
-  bool pointer_mut_ = false;
   std::shared_ptr<Type> pointer_type_;
 };
 
@@ -44,7 +43,6 @@ struct ConstValue {
   bool mut_;
   std::shared_ptr<ArrayValueInfo> array_value_info_;
   std::shared_ptr<StructValueInfo> struct_value_info_;
-  bool pointer_mut_;
   std::shared_ptr<ConstValue> pointer_info_;
   std::shared_ptr<Type> GetType();
 };
