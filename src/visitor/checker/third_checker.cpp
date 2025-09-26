@@ -167,9 +167,10 @@ void ThirdChecker::Visit(BlockExpressionNode *node) {
 void ThirdChecker::Visit(InfiniteLoopExpressionNode *node) {
   try {
     node->block_expr_->Accept(this);
-    if (node->block_expr_->type_info_->type_ != kUnitType) {
-      throw Error("ThirdChecker : loop expression but the type of the body is not unit type");
+    if (node->block_expr_->type_info_->type_ != kUnitType && node->block_expr_->type_info_->type_ != kNeverType) {
+      throw Error("ThirdChecker : loop expression but the type of the body is not unit or never type");
     }
+    node->type_info_ = node->block_expr_->type_info_;
   } catch (Error &) { throw; }
 }
 
@@ -186,21 +187,22 @@ void ThirdChecker::Visit(PredicateLoopExpressionNode *node) {
   try {
     node->conditions_->Accept(this);
     node->block_expr_->Accept(this);
-    if (node->block_expr_->type_info_->type_ != kUnitType) {
-      throw Error("ThirdChecker : loop expression but the type of the body is not unit type");
+    if (node->block_expr_->type_info_->type_ != kUnitType && node->block_expr_->type_info_->type_ != kNeverType) {
+      throw Error("ThirdChecker : loop expression but the type of the body is not unit or never  type");
     }
+    node->type_info_ = node->block_expr_->type_info_;
   } catch (Error &) { throw; }
 }
 
 void ThirdChecker::Visit(LoopExpressionNode *node) {
   try {
     current_loop_.emplace(node);
-    node->type_info_ = std::make_shared<Type>();
-    node->type_info_->type_ = kUnitType;
     if (node->infinite_loop_expr_ != nullptr) {
       node->infinite_loop_expr_->Accept(this);
+      node->type_info_ = node->infinite_loop_expr_->type_info_;
     } else {
       node->predicate_loop_expr_->Accept(this);
+      node->type_info_ = node->predicate_loop_expr_->type_info_;
     }
     current_loop_.pop();
   } catch (Error &) { throw; }
@@ -445,10 +447,10 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       if (dep1 != dep2) {
         throw Error("ThirdChecker : auto dereference but the depths don't match");
       }
-      if (type1->type_ != kLeafType || type2->type_ != kLeafType) {
+      SameTypeCheck(type1, type2);
+      if (node->op_ != "!=" && node->op_ != "==" && (type1->type_ != kLeafType || type2->type_ != kLeafType)) {
         throw Error("ThirdChecker : comparison expr but not leaf type");
       }
-      SameTypeCheck(type1, type2);
       node->type_info_ = std::make_shared<Type>();
       node->type_info_->type_ = kLeafType;
       node->type_info_->type_name_ = "bool";
@@ -740,21 +742,10 @@ void ThirdChecker::Visit(FunctionParametersNode *node) {
   } catch (Error &) { throw; }
 }
 
-void ThirdChecker::Visit(FunctionReturnTypeNode *node) {
-  try {
-    node->type_info_ = node->type_->type_info_;
-  } catch (Error &) { throw; }
-}
+void ThirdChecker::Visit(FunctionReturnTypeNode *node) {}
 
 void ThirdChecker::Visit(FunctionNode *node) {
   try {
-    if (node->function_return_type_ != nullptr) {
-      node->function_return_type_->Accept(this);
-      node->type_info_ = node->function_return_type_->type_info_;
-    } else {
-      node->type_info_ = std::make_shared<Type>();
-      node->type_info_->type_ = kUnitType;
-    }
     if (node->function_parameters_ != nullptr) {
       if (node->function_parameters_->self_param_ != nullptr) {
         if (!node->in_trait_ && !node->in_implement_) {
@@ -775,6 +766,7 @@ void ThirdChecker::Visit(FunctionNode *node) {
     }
     current_function_.emplace(node);
     node->block_expr_->Accept(this);
+    SameTypeCheck(node->block_expr_->type_info_.get(), node->type_info_.get());
     current_function_.pop();
   } catch (Error &) { throw; }
 }
@@ -852,9 +844,15 @@ void ThirdChecker::Visit(StatementsNode *node) {
       return;
     }
     auto tail_statement = *node->statement_s_.rbegin();
-    if (tail_statement->expr_statement_ != nullptr && tail_statement->expr_statement_->semicolon_ == false) {
-      node->type_info_ = tail_statement->expr_statement_->type_info_;
-      return;
+    if (tail_statement->expr_statement_ != nullptr) {
+      if (tail_statement->expr_statement_->semicolon_ == false) {
+        node->type_info_ = tail_statement->expr_statement_->type_info_;
+        return;
+      }
+      if (tail_statement->expr_statement_->expr_->type_info_->type_ == kNeverType) {
+        node->type_info_ = tail_statement->expr_statement_->expr_->type_info_;
+        return;
+      }
     }
     node->type_info_ = std::make_shared<Type>();
     node->type_info_->type_ = kUnitType;

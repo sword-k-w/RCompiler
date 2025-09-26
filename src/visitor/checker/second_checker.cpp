@@ -659,6 +659,7 @@ void SecondChecker::Visit(FunctionParametersNode *node) {
 void SecondChecker::Visit(FunctionReturnTypeNode *node) {
   try {
     GoDown(node, node->type_.get());
+    node->type_info_ = node->type_->type_info_;
   } catch (Error &) { throw; }
 }
 
@@ -671,6 +672,10 @@ void SecondChecker::Visit(FunctionNode *node) {
     }
     if (node->function_return_type_ != nullptr) {
       GoDown(node, node->function_return_type_.get());
+      node->type_info_ = node->function_return_type_->type_info_;
+    } else {
+      node->type_info_ = std::make_shared<Type>();
+      node->type_info_->type_ = kUnitType;
     }
     if (node->block_expr_ != nullptr) {
       GoDown(node, node->block_expr_.get());
