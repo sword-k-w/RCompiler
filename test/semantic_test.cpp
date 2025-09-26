@@ -234,6 +234,166 @@ TEST(SemanticTest, TestcaseTest_Array8) {
 //   TestTestcase("../RCompiler-Testcases/semantic-1/basic40/basic40.rx", true);
 // }
 
+TEST(SemanticTest, TestcaseTest_Expr1) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr1/expr1.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr2) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr2/expr2.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr3) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr3/expr3.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr4) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr4/expr4.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr5) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr5/expr5.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr6) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr6/expr6.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr7) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr7/expr7.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr8) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr8/expr8.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr9) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr9/expr9.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr10) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr10/expr10.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr11) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr11/expr11.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr12) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr12/expr12.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr13) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr13/expr13.rx", true);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr14) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr14/expr14.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr15) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr15/expr15.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr16) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr16/expr16.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr17) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr17/expr17.rx", true);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr18) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr18/expr18.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr19) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr19/expr19.rx", true);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr20) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr20/expr20.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr21) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr21/expr21.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr22) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr22/expr22.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr23) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr23/expr23.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr24) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr24/expr24.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr25) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr25/expr25.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr26) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr26/expr26.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr27) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr27/expr27.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr28) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr28/expr28.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr29) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr29/expr29.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr30) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr30/expr30.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr31) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr31/expr31.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr32) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr32/expr32.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr33) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr33/expr33.rx", true);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr34) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr34/expr34.rx", true);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr35) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr35/expr35.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr36) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr36/expr36.rx", true);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr37) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr37/expr37.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr38) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr38/expr38.rx", true);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr39) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr39/expr39.rx", false);
+}
+
+TEST(SemanticTest, TestcaseTest_Expr40) {
+  TestTestcase("../RCompiler-Testcases/semantic-1/expr40/expr40.rx", false);
+}
+
 TEST(SemanticTest, TestcaseTest_Type1) {
   TestTestcase("../RCompiler-Testcases/semantic-1/type1/type1.rx", false);
 }
