@@ -396,9 +396,15 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       if (node->expr1_->type_info_->type_ != kLeafType || node->expr1_->type_info_->type_name_ == "str" || node->expr1_->type_info_->type_name_ == "char") {
         throw Error("ThirdChecker : negation with unexpected type");
       }
-      node->type_info_ = node->expr1_->type_info_;
-      if (!IsSignedIntegerType(node->type_info_->type_name_)) {
-        throw Error("ThirdChecker : negation with unexpected type");
+      node->type_info_ = std::make_shared<Type>(*node->expr1_->type_info_);
+      if (node->op_ == "-") {
+        if (!IsSignedIntegerType(node->type_info_->type_name_)) {
+          throw Error("ThirdChecker : negation with unexpected type");
+        }
+      } else {
+        if (node->type_info_->type_name_ != "bool" && !IsSignedIntegerType(node->type_info_->type_name_)) {
+          throw Error("ThirdChecker : negation with unexpected type");
+        }
       }
       node->type_info_->is_mut_left_ = false;
     } else if (node->type_ == kArithmeticOrLogicExpr) {

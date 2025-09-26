@@ -240,7 +240,7 @@ void SecondChecker::Visit(IfExpressionNode *node) {
     GoDown(node, node->block_expr1_.get());
     if (node->block_expr2_ != nullptr) {
       GoDown(node, node->block_expr2_.get());
-    } else {
+    } else if (node->if_expr_ != nullptr){
       GoDown(node, node->if_expr_.get());
     }
   } catch (Error &) { throw; }

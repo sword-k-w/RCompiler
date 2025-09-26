@@ -356,13 +356,14 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
         break;
       }
       uint32_t power = binding_power[{op.lexeme, true}].first;
+      if (type_ == kExprWithBlock && (op.lexeme == "(" || op.lexeme == "[" || op.lexeme == "{" || op.lexeme == "return"
+        || op.lexeme == "break" || op.lexeme == "continue")) {
+        break;
+      }
       if (context_precedence == power) {
         throw Error("try parsing Expression Node but same binding power");
       }
       if (context_precedence > power) {
-        break;
-      }
-      if (type_ == kExprWithBlock && (op.lexeme == "(" || op.lexeme == "[" || op.lexeme == "{") ) {
         break;
       }
       ++pos;
