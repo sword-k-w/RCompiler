@@ -697,6 +697,9 @@ void SecondChecker::Visit(ConstantItemNode *node) {
       node->expr_->Accept(this);
       node->const_value_ = node->expr_->const_value_;
       SameTypeCheck(node->type_->type_info_.get(), node->const_value_.get());
+      if (node->const_value_->type_ == kLeafType) {
+        node->const_value_->type_name_ = node->type_->type_info_->type_name_;
+      }
     }
   } catch (Error &) { throw; }
 }
