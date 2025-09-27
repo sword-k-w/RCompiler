@@ -231,6 +231,7 @@ void ThirdChecker::Visit(IfExpressionNode *node) {
       if (node->type_info_->type_ != kUnitType && node->type_info_->type_ != kNeverType) {
         throw Error("ThirdChecker : if expr but type not match");
       }
+      node->type_info_->type_ = kUnitType;
     }
   } catch (Error &) { throw; }
 }
