@@ -279,6 +279,29 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       node->path_expr_->Accept(this);
       ASTNode *target = nullptr;
       if (node->path_expr_->path_expr_segment2_ != nullptr) {
+        if (node->path_expr_->path_expr_segment1_->self_lower_ != nullptr) {
+          throw Error("ThirdChecker : unexpected self");
+        }
+        if (node->path_expr_->path_expr_segment1_->self_upper_ != nullptr) {
+          if (current_Self_.empty()) {
+            throw Error("ThirdChecker : no struct but Self");
+          }
+          auto struct_node = current_Self_.top();
+          auto it = struct_node->impl_.find(node->path_expr_->path_expr_segment2_->identifier_->val_);
+          if (it == struct_node->impl_.end()) {
+            throw Error("ThirdChecker : cannot resolve path expr");
+          }
+          target = it->second;
+          auto const_item = dynamic_cast<ConstantItemNode *>(target);
+          if (const_item != nullptr) {
+            node->type_info_ = const_item->const_value_->GetType();
+          } else {
+            node->type_info_ = std::make_shared<Type>();
+            node->type_info_->type_ = kFunctionCallType;
+            node->type_info_->source_ = target;
+          }
+          return;
+        }
         if (node->path_expr_->path_expr_segment1_->identifier_->val_ == "String") {
           if (node->path_expr_->path_expr_segment2_->identifier_->val_ != "from") {
             throw Error("ThirdChecker : unknown function");
