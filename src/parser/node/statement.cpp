@@ -35,13 +35,24 @@ LetStatementNode::LetStatementNode(const std::vector<Token> &tokens, uint32_t &p
 
 ExpressionStatementNode::ExpressionStatementNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Expression Statement") {
   try {
-    expr_ = std::make_shared<ExpressionNode>(tokens, pos, length);
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme == ";") {
+    uint32_t tmp = pos;
+    try {
+      expr_without_block_ = std::make_shared<ExpressionWithoutBlockNode>(tokens, pos, length);
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme != ";") {
+        throw Error("no semicolon");
+      }
       semicolon_ = true;
       ++pos;
-    } else if (expr_->Type() != kExprWithBlock) {
-      throw Error("try parsing Expression Statement Node but no ;");
+    } catch (...) {
+      pos = tmp;
+      expr_without_block_ = nullptr;
+      expr_with_block_ = std::make_shared<ExpressionWithBlockNode>(tokens, pos, length);
+      CheckLength(pos, length);
+      if (tokens[pos].lexeme == ";") {
+        semicolon_ = true;
+        ++pos;
+      }
     }
   } catch (Error &) { throw; }
 }

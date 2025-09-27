@@ -779,8 +779,13 @@ void SecondChecker::Visit(LetStatementNode *node) {
 
 void SecondChecker::Visit(ExpressionStatementNode *node) {
   try {
-    node->expr_->need_calculate_ = false;
-    node->expr_->Accept(this);
+    if (node->expr_without_block_ != nullptr) {
+      node->expr_without_block_->need_calculate_ = false;
+      node->expr_without_block_->Accept(this);
+    } else {
+      node->expr_with_block_->need_calculate_ = false;
+      node->expr_with_block_->Accept(this);
+    }
   } catch (Error &) { throw; }
 }
 

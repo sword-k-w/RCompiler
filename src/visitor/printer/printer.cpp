@@ -940,7 +940,11 @@ void Printer::Visit(ExpressionStatementNode *node) {
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   prefixes_.emplace(next);
   is_lasts_.emplace(!node->semicolon_);
-  node->expr_->Accept(this);
+  if (node->expr_without_block_ != nullptr) {
+    node->expr_without_block_->Accept(this);
+  } else {
+    node->expr_with_block_->Accept(this);
+  }
   if (node->semicolon_) {
     os_ << next << "└──;\n";
   }

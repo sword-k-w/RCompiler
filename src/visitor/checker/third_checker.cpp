@@ -958,8 +958,13 @@ void ThirdChecker::Visit(LetStatementNode *node) {
 
 void ThirdChecker::Visit(ExpressionStatementNode *node) {
   try {
-    node->expr_->Accept(this);
-    node->type_info_ = node->expr_->type_info_;
+    if (node->expr_without_block_ != nullptr) {
+      node->expr_without_block_->Accept(this);
+      node->type_info_ = node->expr_without_block_->type_info_;
+    } else {
+      node->expr_with_block_->Accept(this);
+      node->type_info_ = node->expr_with_block_->type_info_;
+    }
   } catch (Error &) { throw; }
 }
 
@@ -991,8 +996,8 @@ void ThirdChecker::Visit(StatementsNode *node) {
         node->type_info_ = tail_statement->expr_statement_->type_info_;
         return;
       }
-      if (tail_statement->expr_statement_->expr_->type_info_->type_ == kNeverType) {
-        node->type_info_ = tail_statement->expr_statement_->expr_->type_info_;
+      if (tail_statement->expr_statement_->type_info_->type_ == kNeverType) {
+        node->type_info_ = tail_statement->expr_statement_->type_info_;
         return;
       }
     }

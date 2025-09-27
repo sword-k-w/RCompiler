@@ -449,7 +449,11 @@ void FirstChecker::Visit(LetStatementNode *node) {
 
 void FirstChecker::Visit(ExpressionStatementNode *node) {
   try {
-    OldScope(node, node->expr_.get());
+    if (node->expr_without_block_ != nullptr) {
+      OldScope(node, node->expr_without_block_.get());
+    } else {
+      OldScope(node, node->expr_with_block_.get());
+    }
   } catch (Error &) { throw; }
 }
 

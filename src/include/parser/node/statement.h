@@ -30,7 +30,8 @@ public:
   ExpressionStatementNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
   void Accept(VisitorBase *) override;
 private:
-  std::shared_ptr<ExpressionNode> expr_;
+  std::shared_ptr<ExpressionWithoutBlockNode> expr_without_block_;
+  std::shared_ptr<ExpressionWithBlockNode> expr_with_block_;
   bool semicolon_ = false;
 };
 
