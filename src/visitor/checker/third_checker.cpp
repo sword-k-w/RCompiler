@@ -556,13 +556,8 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       node->type_info_ = std::make_shared<Type>(*node->expr1_->type_info_);
       node->type_info_->is_mut_left_ = false;
       if (node->op_ == "<<=" || node->op_ == ">>=") {
-        if (node->expr1_->const_value_->type_name_ == "bool" || node->expr2_->const_value_->type_name_ == "bool") {
+        if (node->expr1_->type_info_->type_name_ == "bool" || node->expr2_->type_info_->type_name_ == "bool") {
           throw Error("ThirdChecker : shift but str or bool");
-        }
-        if (IsSignedIntegerType(node->expr2_->const_value_->type_name_)) {
-          if (static_cast<int32_t>(node->expr2_->const_value_->u32_value_) < 0) {
-            throw Error("ThirdChecker : const negative shift");
-          }
         }
         return;
       }
@@ -625,6 +620,7 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           if (current_function_.size() != 1 || current_function_.top()->identifier_->val_ != "main") {
             throw Error("ThirdChecker : exit but not in main");
           }
+          ++exit_cnt_;
         } else if (builtin_function->function_name_ == "print" || builtin_function->function_name_ == "println") {
           if (node->call_params_ == nullptr || node->call_params_->exprs_.size() != 1) {
             throw Error("ThirdChecker : print/println but parameter count is not 1");
@@ -905,6 +901,24 @@ void ThirdChecker::Visit(FunctionNode *node) {
     node->block_expr_->Accept(this);
     SameTypeCheck(node->block_expr_->type_info_.get(), node->type_info_.get());
     current_function_.pop();
+    if (node->identifier_->val_ == "main") {
+      if (exit_cnt_ > 0) {
+        ExpressionWithoutBlockNode *target = nullptr;
+        if (node->block_expr_->statements_->expr_without_block_ != nullptr) {
+          target = node->block_expr_->statements_->expr_without_block_.get();
+        } else {
+          auto last_statement = node->block_expr_->statements_->statement_s_.back();
+          if (last_statement->expr_statement_ == nullptr
+          || last_statement->expr_statement_->expr_without_block_ == nullptr) {
+            throw Error("ThirdChecker : exit, but not the last of main");
+          }
+          target = last_statement->expr_statement_->expr_without_block_.get();
+        }
+        if (target->expr_->type_ != kCallExpr || target->expr_->expr1_->path_expr_->path_expr_segment1_->identifier_->val_ != "exit") {
+          throw Error("ThirdChecker : exit, but not the last of main");
+        }
+      }
+    }
   } catch (Error &) { throw; }
 }
 

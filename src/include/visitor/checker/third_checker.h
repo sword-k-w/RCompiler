@@ -74,4 +74,5 @@ private:
 
   std::vector<std::shared_ptr<BuiltinFunctionNode>> builtin_;
   bool main_exist_ = false;
+  uint32_t exit_cnt_ = 0;
 };
