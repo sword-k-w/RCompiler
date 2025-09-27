@@ -288,30 +288,30 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
     } else if (tokens[pos].lexeme == "*") {
       type_ = kDereferenceExpr;
       ++pos;
-      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{"*", false}].second);
     } else if (tokens[pos].lexeme == "-" || tokens[pos].lexeme == "!") {
       type_ = kNegationExpr;
       op_ = tokens[pos].lexeme;
       ++pos;
-      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos - 1].lexeme, false}].second);
     } else if (tokens[pos].lexeme == "return") {
       type_ = kReturnExpr;
       ++pos;
       if (pos < length && tokens[pos].lexeme == ";") {
         return;
       }
-      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{"return", false}].second);
     } else if (tokens[pos].lexeme == "break") {
       type_ = kBreakExpr;
       ++pos;
       if (pos < length && tokens[pos].lexeme == ";") {
         return;
       }
-      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{"break", false}].second);
     } else if (tokens[pos].lexeme == "(") {
       type_ = kGroupedExpr;
       ++pos;
-      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{tokens[pos].lexeme, false}].second);
+      expr1_ = std::make_shared<ExpressionNode>(tokens, pos, length, binding_power[{"(", false}].second);
       CheckLength(pos, length);
       if (tokens[pos].lexeme != ")") {
         throw Error("try parsing Grouped Expression but no )");

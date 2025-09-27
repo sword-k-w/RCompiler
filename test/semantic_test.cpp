@@ -16,9 +16,9 @@ void TestCode(const std::string &s, bool expect_result) {
   Parser b(tokens);
   try {
     auto root = b.Run<CrateNode>();
-    Printer printer(std::cerr);
-    printer.Prepare();
-    printer.Visit(root.get());
+    // Printer printer(std::cerr);
+    // printer.Prepare();
+    // printer.Visit(root.get());
     FirstChecker fc;
     fc.Run(root.get());
     SecondChecker sc;
