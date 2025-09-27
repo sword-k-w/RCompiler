@@ -199,10 +199,18 @@ void ThirdChecker::Visit(LoopExpressionNode *node) {
     current_loop_.emplace(node);
     if (node->infinite_loop_expr_ != nullptr) {
       node->infinite_loop_expr_->Accept(this);
-      node->type_info_ = node->infinite_loop_expr_->type_info_;
+      if (!node->assigned_) {
+        node->type_info_ = node->infinite_loop_expr_->type_info_;
+      } else {
+        SameTypeCheck(node->type_info_.get(), node->infinite_loop_expr_->type_info_.get());
+      }
     } else {
       node->predicate_loop_expr_->Accept(this);
-      node->type_info_ = node->predicate_loop_expr_->type_info_;
+      if (!node->assigned_) {
+        node->type_info_ = node->predicate_loop_expr_->type_info_;
+      } else {
+        SameTypeCheck(node->type_info_.get(), node->predicate_loop_expr_->type_info_.get());
+      }
     }
     current_loop_.pop();
   } catch (Error &) { throw; }
@@ -772,9 +780,6 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       }
       auto loop = current_loop_.top();
       if (node->expr1_ != nullptr) {
-        if (loop->predicate_loop_expr_ != nullptr) {
-          throw Error("ThirdChecker : break with value from while");
-        }
         node->expr1_->Accept(this);
         if (!loop->assigned_) {
           loop->type_info_ = node->expr1_->type_info_;
@@ -783,7 +788,11 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           SameTypeCheck(loop->type_info_.get(), node->expr1_->type_info_.get());
         }
       } else {
-        if (loop->type_info_->type_ != kUnitType) {
+        if (!loop->assigned_) {
+          loop->type_info_ = std::make_shared<Type>();
+          loop->type_info_->type_ = kUnitType;
+          loop->assigned_ = true;
+        } else if (loop->type_info_->type_ != kUnitType) {
           throw Error("ThirdChecker : conflict type");
         }
       }
