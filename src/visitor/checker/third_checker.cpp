@@ -201,7 +201,7 @@ void ThirdChecker::Visit(LoopExpressionNode *node) {
       node->infinite_loop_expr_->Accept(this);
       if (!node->assigned_) {
         node->type_info_ = node->infinite_loop_expr_->type_info_;
-      } else {
+      } else if (node->infinite_loop_expr_->type_info_->type_ != kUnitType) {
         SameTypeCheck(node->type_info_.get(), node->infinite_loop_expr_->type_info_.get());
       }
     } else {
@@ -783,7 +783,7 @@ void ThirdChecker::Visit(ExpressionNode *node) {
         node->expr1_->Accept(this);
         if (!loop->assigned_) {
           loop->type_info_ = node->expr1_->type_info_;
-          loop->assigned_ = false;
+          loop->assigned_ = true;
         } else {
           SameTypeCheck(loop->type_info_.get(), node->expr1_->type_info_.get());
         }
