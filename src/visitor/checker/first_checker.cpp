@@ -296,20 +296,14 @@ void FirstChecker::Visit(FunctionNode *node) {
 
 void FirstChecker::Visit(ImplementationNode *node) {
   try {
-    if (node->identifier_ != nullptr) {
-      OldScope(node, node->identifier_.get());
-    }
     if (node->type_->type_path_ == nullptr || node->type_->type_path_->identifier_ == nullptr) {
       throw Error("FirstChecker : can't impl the type that isn't struct");
-    }
-    if (node->scope_ == nullptr) {
-      std::cerr << "?????\n";
     }
     ASTNode *target = node->scope_->FindTypeName(node->type_->type_path_->identifier_->val_);
     if (target == nullptr) {
       throw Error("FirstChecker : impl the type that is not found");
     }
-    StructNode *struct_node = dynamic_cast<StructNode *>(target);
+    auto struct_node = dynamic_cast<StructNode *>(target);
     if (struct_node == nullptr) {
       throw Error("FirstChecker : can't impl the type that isn't struct");
     }
@@ -326,6 +320,44 @@ void FirstChecker::Visit(ImplementationNode *node) {
       }
       associated_item->in_implement_ = true;
       NewScope(struct_node, associated_item.get(), "?");
+    }
+    if (node->identifier_ != nullptr) {
+      OldScope(node, node->identifier_.get());
+      ASTNode *tmp = node->scope_->FindTypeName(node->identifier_->val_);
+      if (tmp == nullptr) {
+        throw Error("FirstChecker : impl the trait that is not found");
+      }
+      auto trait_node = dynamic_cast<TraitNode *>(tmp);
+      if (trait_node == nullptr) {
+        throw Error("FirstChecker : can't impl non-trait item");
+      }
+      auto items = trait_node->items_;
+      for (auto &associated_item : node->associated_items_) {
+        if (associated_item->function_ != nullptr) {
+          auto it = items.find(associated_item->function_->identifier_->val_);
+          if (it == items.end()) {
+            throw Error("FirstChecker : impl a function that not in trait");
+          }
+          auto function_node = dynamic_cast<FunctionNode *>(it->second);
+          if (function_node == nullptr) {
+            throw Error("FirstChecker : impl a function which is const in trait");
+          }
+          items.erase(it);
+        } else {
+          auto it = items.find(associated_item->constant_item_->identifier_->val_);
+          if (it == items.end()) {
+            throw Error("FirstChecker : impl a const that not in trait");
+          }
+          auto const_item = dynamic_cast<ConstantItemNode *>(it->second);
+          if (const_item == nullptr) {
+            throw Error("FirstChecker : impl a const which is function in trait");
+          }
+          items.erase(it);
+        }
+      }
+      if (!items.empty()) {
+        throw Error("haven't implement trait clone yet!");
+      }
     }
   } catch (Error &) { throw; }
 }

@@ -2,6 +2,7 @@
 #include "common/error.h"
 #include "common/config.h"
 #include <iostream>
+#include <parser/node/function.h>
 
 ArrayValueInfo::ArrayValueInfo(const std::vector<std::shared_ptr<ConstValue>> &type_values, const uint32_t &length) : values_(type_values), length_(length) {}
 

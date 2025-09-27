@@ -67,7 +67,7 @@ leaf expression:
 
 * build scope tree
 * collect the name of items. (using 0/1 BFS to ensure names in same scope are added successively(maybe not necessary now))
-* bind impl to struct
+* bind impl to struct (if trait impl, copy the whole AST substree that is default in trait and is not implemented in impl)
 * check enumeration
 
 ### Second Round
@@ -77,9 +77,10 @@ leaf expression:
 ### Third Round
 
 * type check
+* check trait type
 
 ### not do yet
 
-* trait
+* trait : default copy
 * builtin except exit
 * check exit occur in the tail of main

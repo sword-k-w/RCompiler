@@ -771,7 +771,41 @@ void ThirdChecker::Visit(FunctionNode *node) {
   } catch (Error &) { throw; }
 }
 
-void ThirdChecker::Visit(ImplementationNode *node) {}
+void ThirdChecker::Visit(ImplementationNode *node) {
+  try {
+    if (node->identifier_ != nullptr) {
+      auto trait_node = dynamic_cast<TraitNode *>(node->scope_->FindTypeName(node->identifier_->val_));
+      for (auto &associated_item : node->associated_items_) {
+        if (associated_item->function_ != nullptr) {
+          auto it = trait_node->items_.find(associated_item->function_->identifier_->val_);
+          SameTypeCheck(it->second->type_info_.get(), associated_item->function_->function_return_type_->type_info_.get());
+          auto para1 = dynamic_cast<FunctionNode *>(it->second)->function_parameters_;
+          auto para2 = associated_item->function_->function_parameters_;
+          if (para1->self_param_ != nullptr) {
+            if (para2->self_param_ == nullptr) {
+              throw Error("ThirdChecker : different function parameter");
+            }
+            if (para1->self_param_->shorthand_self_->mut_ != para1->self_param_->shorthand_self_->mut_ || para1->self_param_->shorthand_self_->quote_ != para2->self_param_->shorthand_self_->quote_) {
+              throw Error("ThirdChecker : different function parameter");
+            }
+          } else if (para2->self_param_ != nullptr) {
+            throw Error("ThirdChecker : different function parameter");
+          }
+          uint32_t size = para1->function_params_.size();
+          if (size != para2->function_params_.size()) {
+            throw Error("ThirdChecker : different function parameter");
+          }
+          for (uint32_t i = 0; i < size; ++i) {
+            SameTypeCheck(para1->function_params_[i]->type_->type_info_.get(), para2->function_params_[i]->type_->type_info_.get());
+          }
+        } else {
+          auto it = trait_node->items_.find(associated_item->constant_item_->identifier_->val_);
+          SameTypeCheck(it->second->type_info_.get(), associated_item->constant_item_->type_info_.get());
+        }
+      }
+    }
+  } catch (Error &) { throw; }
+}
 
 void ThirdChecker::Visit(ConstantItemNode *node) {}
 
@@ -791,6 +825,8 @@ void ThirdChecker::Visit(ItemNode *node) {
       node->function_->Accept(this);
     } else if (node->struct_ != nullptr) {
       node->struct_->Accept(this);
+    } else if (node->implementation_ != nullptr) {
+      node->implementation_->Accept(this);
     } // ignore all other items
   } catch (Error &) { throw; }
 }
