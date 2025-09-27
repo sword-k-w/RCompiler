@@ -200,7 +200,8 @@ void ThirdChecker::Visit(LoopExpressionNode *node) {
     if (node->infinite_loop_expr_ != nullptr) {
       node->infinite_loop_expr_->Accept(this);
       if (!node->assigned_) {
-        node->type_info_ = node->infinite_loop_expr_->type_info_;
+        node->type_info_ = std::make_shared<Type>();
+        node->type_info_->type_ = kNeverType;
       } else if (node->infinite_loop_expr_->type_info_->type_ != kUnitType) {
         SameTypeCheck(node->type_info_.get(), node->infinite_loop_expr_->type_info_.get());
       }
@@ -224,9 +225,15 @@ void ThirdChecker::Visit(IfExpressionNode *node) {
     if (node->block_expr2_ != nullptr) {
       node->block_expr2_->Accept(this);
       SameTypeCheck(node->type_info_.get(), node->block_expr2_->type_info_.get());
+      if (node->block_expr2_->type_info_->type_ != kNeverType) {
+        node->type_info_ = node->block_expr2_->type_info_;
+      }
     } else if (node->if_expr_ != nullptr) {
       node->if_expr_->Accept(this);
       SameTypeCheck(node->type_info_.get(), node->if_expr_->type_info_.get());
+      if (node->if_expr_->type_info_->type_ != kNeverType) {
+        node->type_info_ = node->if_expr_->type_info_;
+      }
     } else {
       if (node->type_info_->type_ != kUnitType && node->type_info_->type_ != kNeverType) {
         throw Error("ThirdChecker : if expr but type not match");
