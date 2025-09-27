@@ -63,3 +63,12 @@ bool IsBuiltinFunction(const std::string &name) {
   }
   return false;
 }
+
+bool IsBuiltinMethod(const std::string &name) {
+  for (uint32_t i = 0; i < 5; ++i) {
+    if (kBuiltinMethod[i] == name) {
+      return true;
+    }
+  }
+  return false;
+}

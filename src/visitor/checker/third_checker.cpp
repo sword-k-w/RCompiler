@@ -263,6 +263,16 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       node->path_expr_->Accept(this);
       ASTNode *target = nullptr;
       if (node->path_expr_->path_expr_segment2_ != nullptr) {
+        if (node->path_expr_->path_expr_segment1_->identifier_->val_ == "String") {
+          if (node->path_expr_->path_expr_segment2_->identifier_->val_ != "from") {
+            throw Error("ThirdChecker : unknown function");
+          }
+          node->type_info_ = std::make_shared<Type>();
+          node->type_info_->type_ = kFunctionCallType;
+          builtin_.emplace_back(std::make_shared<BuiltinFunctionNode>("from"));
+          node->type_info_->source_ = builtin_.back().get();
+          return;
+        }
         ASTNode *tmp = node->scope_->FindTypeName(node->path_expr_->path_expr_segment1_->identifier_->val_);
         auto *struct_node = dynamic_cast<StructNode *>(tmp);
         if (struct_node != nullptr) {
@@ -402,7 +412,7 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       node->type_info_ = node->expr1_->type_info_->pointer_type_;
     } else if (node->type_ == kNegationExpr) {
       node->expr1_->Accept(this);
-      if (node->expr1_->type_info_->type_ != kLeafType || node->expr1_->type_info_->type_name_ == "str" || node->expr1_->type_info_->type_name_ == "char") {
+      if (node->expr1_->type_info_->type_ != kLeafType || node->expr1_->type_info_->type_name_ == "str" || node->expr1_->type_info_->type_name_ == "char" || node->expr1_->type_info_->type_name_ == "String") {
         throw Error("ThirdChecker : negation with unexpected type");
       }
       node->type_info_ = std::make_shared<Type>(*node->expr1_->type_info_);
@@ -472,6 +482,9 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       }
       if (node->expr1_->type_info_->type_name_ == "str" || node->type_no_bounds_->type_info_->type_name_ == "str") {
         throw Error("ThirdChecker : type cast expr but str");
+      }
+      if (node->expr1_->type_info_->type_name_ == "String" || node->type_no_bounds_->type_info_->type_name_ == "String") {
+        throw Error("ThirdChecker : type cast expr but String");
       }
       if (node->type_no_bounds_->type_info_->type_name_ == "char") {
         throw Error("ThirdChecker : type cast expr but char");
@@ -549,7 +562,9 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           if (node->call_params_ != nullptr) {
             throw Error("ThirdChecker : getString but parameter is not empty");
           }
-          throw Error("can't support String now");
+          node->type_info_ = std::make_shared<Type>();
+          node->type_info_->type_ = kLeafType;
+          node->type_info_->type_name_ = "String";
           return;
         }
         if (builtin_function->function_name_ == "getInt") {
@@ -585,6 +600,18 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           if (!ExpectI32(node->call_params_->exprs_[0]->type_info_.get())) {
             throw Error("ThirdChecker : printInt/printlnInt but not i32");
           }
+        } else {
+          assert(builtin_function->function_name_ == "from");
+          if (node->call_params_ == nullptr || node->call_params_->exprs_.size() != 1) {
+            throw Error("ThirdChecker : from but parameter count is not 1");
+          }
+          if (!ExpectStr(node->call_params_->exprs_[0]->type_info_.get())) {
+            throw Error("ThirdChecker : from but not &str");
+          }
+          node->type_info_ = std::make_shared<Type>();
+          node->type_info_->type_ = kLeafType;
+          node->type_info_->type_name_ = "String";
+          return;
         }
         node->type_info_ = std::make_shared<Type>();
         node->type_info_->type_ = kUnitType;
@@ -620,6 +647,76 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       }
       auto [type, dep] = AutoDereference(node->expr1_->type_info_.get());
       if (type->type_ != kStructType) {
+        if (ExpectU32(type) || ExpectUsize(type)) {
+          if (node->path_expr_segment_->identifier_->val_ != "to_string") {
+            throw Error("ThirdChecker : unknown method for u32/usize");
+          }
+          if (node->call_params_ != nullptr) {
+            throw Error("ThirdChecker : to_string but with parameter");
+          }
+          node->type_info_ = std::make_shared<Type>();
+          node->type_info_->type_ = kLeafType;
+          node->type_info_->type_name_ = "String";
+          return;
+        }
+        if (type->type_ == kLeafType && type->type_name_ == "String") {
+          if (node->path_expr_segment_->identifier_->val_ == "as_str") {
+            if (node->call_params_ != nullptr) {
+              throw Error("ThirdChecker : as_str but with parameter");
+            }
+            node->type_info_ = std::make_shared<Type>();
+            node->type_info_->type_ = kPointerType;
+            node->type_info_->pointer_type_ = std::make_shared<Type>();
+            node->type_info_->pointer_type_->type_ = kLeafType;
+            node->type_info_->pointer_type_->type_name_ = "str";
+            return;
+          }
+          if (node->path_expr_segment_->identifier_->val_ == "as_mut_str") {
+            if (!type->is_mut_left_) {
+              throw Error("ThirdChecker : not mut but invoke as_mut_str");
+            }
+            if (node->call_params_ != nullptr) {
+              throw Error("ThirdChecker : as_mut_str but with parameter");
+            }
+            node->type_info_ = std::make_shared<Type>();
+            node->type_info_->type_ = kPointerType;
+            node->type_info_->pointer_type_ = std::make_shared<Type>();
+            node->type_info_->pointer_type_->type_ = kLeafType;
+            node->type_info_->pointer_type_->is_mut_left_ = true;
+            node->type_info_->pointer_type_->type_name_ = "str";
+            return;
+          }
+          if (node->path_expr_segment_->identifier_->val_ == "len") {
+            if (node->call_params_ != nullptr) {
+              throw Error("ThirdChecker : len but with parameter");
+            }
+            node->type_info_ = std::make_shared<Type>();
+            node->type_info_->type_ = kLeafType;
+            node->type_info_->type_name_ = "usize";
+            return;
+          }
+          if (node->path_expr_segment_->identifier_->val_ == "append") {
+            if (node->call_params_ == nullptr || node->call_params_->exprs_.size() != 1 || !ExpectStr(node->call_params_->exprs_[1]->type_info_.get())) {
+              throw Error("ThirdChecker : append but parameter is not &str");
+            }
+            node->type_info_ = std::make_shared<Type>();
+            node->type_info_->type_ = kUnitType;
+            return;
+          }
+          throw Error("ThirdChecker : unknown method for String");
+        }
+        if (type->type_ == kLeafType && type->type_name_ == "str" || type->type_ == kArrayType) {
+          if (node->path_expr_segment_->identifier_->val_ != "len") {
+            throw Error("ThirdChecker : unknown method");
+          }
+          if (node->call_params_ != nullptr) {
+            throw Error("ThirdChecker : len but with parameter");
+          }
+          node->type_info_ = std::make_shared<Type>();
+          node->type_info_->type_ = kLeafType;
+          node->type_info_->type_name_ = "usize";
+          return;
+        }
         throw Error("ThirdChecker : method call expr but not struct");
       }
       auto struct_node = dynamic_cast<StructNode *>(type->source_);

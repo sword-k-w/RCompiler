@@ -376,7 +376,7 @@ void SecondChecker::Visit(ExpressionNode *node) {
       GoDown(node, node->expr1_.get());
       if (node->need_calculate_) {
         node->const_value_ = std::make_shared<ConstValue>(*node->expr1_->const_value_);
-        if (node->const_value_->type_ != kLeafType || node->const_value_->type_name_ == "str" || node->const_value_->type_name_ == "char") {
+        if (node->const_value_->type_ != kLeafType || node->const_value_->type_name_ == "str" || node->const_value_->type_name_ == "char" || node->const_value_->type_name_ == "String") {
           throw Error("SecondChecker : negation with unexpected type");
         }
         if (node->op_ == "-") {
@@ -1128,7 +1128,7 @@ void SecondChecker::Visit(TypeNoBoundsNode *node) {
       }
       node->type_info_ = std::make_shared<Type>();
       bool flag = false;
-      for (uint32_t i = 0; i < 7; ++i) {
+      for (uint32_t i = 0; i < 8; ++i) {
         if (node->type_path_->identifier_->val_ == kBuiltinType[i]) {
           node->type_info_->type_ = kLeafType;
           node->type_info_->type_name_ = kBuiltinType[i];

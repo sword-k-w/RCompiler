@@ -98,6 +98,9 @@ void TypeCast(Type *type, ConstValue *value) {
     if (type->type_name_ == "str" || value->type_name_ == "str") {
       throw Error("SecondChecker : can't cast a str type");
     }
+    if (type->type_name_ == "String" || value->type_name_ == "String") {
+      throw Error("SecondChecker : can't cast a String type");
+    }
     if (type->type_name_ == "char") {
       throw Error("SecondChecker : can't cast into char type");
     }

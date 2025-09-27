@@ -72,7 +72,7 @@ constexpr std::string_view kRESERVERD_KEYWORDS[14] = {
 
 bool IsKeyword(const std::string_view &);
 
-constexpr std::string_view kBuiltinType[7] = {"i32", "u32", "isize", "usize", "char", "str", "bool"};
+constexpr std::string_view kBuiltinType[8] = {"i32", "u32", "isize", "usize", "char", "str", "bool", "String"};
 
 bool IsIntegerType(const std::string &);
 
@@ -83,5 +83,9 @@ std::string MergeLeafType(const std::string &, const std::string &);
 constexpr std::string_view kBuiltinFunction[7] = {"exit", "print", "println", "printInt", "printlnInt", "getString", "getInt"};
 
 bool IsBuiltinFunction(const std::string &);
+
+constexpr std::string_view kBuiltinMethod[5] = {"to_string", "as_str", "as_mut_str", "len", "append"};
+
+bool IsBuiltinMethod(const std::string &);
 
 #endif //CONFIG_H
