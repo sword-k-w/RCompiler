@@ -82,4 +82,3 @@ leaf expression:
 ### not do yet
 
 * trait : default copy
-* check exit occur in the tail of main
