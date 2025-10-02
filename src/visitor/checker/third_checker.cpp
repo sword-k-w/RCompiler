@@ -425,9 +425,6 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       }
       node->continue_expr_->Accept(this);
       node->type_info_ = node->continue_expr_->type_info_;
-    } else if (node->type_ == kUnderscoreExpr) {
-      node->type_info_ = std::make_shared<Type>();
-      node->type_info_->type_ = kUnitType;
     } else if (node->type_ == kBorrowExpr) {
       node->expr1_->Accept(this);
       if (node->expr1_->type_info_->type_ == kUnitType || node->expr1_->type_info_->type_ == kNeverType || node->expr1_->type_info_->type_ == kFunctionCallType) {
@@ -1086,8 +1083,6 @@ void ThirdChecker::Visit(FalseNode *node) {}
 void ThirdChecker::Visit(SelfLowerNode *node) {}
 
 void ThirdChecker::Visit(SelfUpperNode *node) {}
-
-void ThirdChecker::Visit(UnderscoreExpressionNode *node) {}
 
 void ThirdChecker::Visit(ContinueExpressionNode *node) {
   node->type_info_ = std::make_shared<Type>();

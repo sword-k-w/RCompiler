@@ -240,7 +240,7 @@ private:
 };
 
 enum ExpressionType {
-  kLiteralExpr, kPathExpr, kArrayExpr, kStructExpr, kContinueExpr, kUnderscoreExpr, kBorrowExpr,
+  kLiteralExpr, kPathExpr, kArrayExpr, kStructExpr, kContinueExpr, kBorrowExpr,
   kDereferenceExpr, kNegationExpr, kArithmeticOrLogicExpr, kComparisonExpr, kLazyBooleanExpr,
   kTypeCastExpr, kAssignmentExpr, kCompoundAssignmentExpr, kGroupedExpr, kIndexExpr, kCallExpr,
   kMethodCallExpr, kFieldExpr, kBreakExpr, kReturnExpr, kExprWithBlock
@@ -274,7 +274,6 @@ private:
   std::shared_ptr<ArrayExpressionNode> array_expr_;
   std::shared_ptr<StructExpressionNode> struct_expr_;
   std::shared_ptr<ContinueExpressionNode> continue_expr_;
-  std::shared_ptr<UnderscoreExpressionNode> underscore_expr_;
   std::shared_ptr<ExpressionWithBlockNode> expr_with_block_;
 };
 

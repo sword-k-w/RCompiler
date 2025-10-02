@@ -357,11 +357,6 @@ void SecondChecker::Visit(ExpressionNode *node) {
         throw Error("SecondChecker : const expr but continue");
       }
       GoDown(node, node->continue_expr_.get());
-    } else if (node->type_ == kUnderscoreExpr) {
-      if (node->need_calculate_) {
-        throw Error("SecondChecker : const expr but underscore");
-      }
-      GoDown(node, node->underscore_expr_.get());
     } else if (node->type_ == kBorrowExpr) {
       if (node->need_calculate_) {
         throw Error("SecondChecker : const expr but borrow");
@@ -760,8 +755,6 @@ void SecondChecker::Visit(PatternWithoutRangeNode *node) {
   try {
     if (node->identifier_pattern_ != nullptr) {
       GoDown(node, node->identifier_pattern_.get());
-    } else if (node->wildcard_pattern_ != nullptr) {
-      GoDown(node, node->wildcard_pattern_.get());
     } else {
       GoDown(node, node->reference_pattern_.get());
     }
@@ -1077,8 +1070,6 @@ void SecondChecker::Visit(FalseNode *node) {
 void SecondChecker::Visit(SelfLowerNode *node) {}
 
 void SecondChecker::Visit(SelfUpperNode *node) {}
-
-void SecondChecker::Visit(UnderscoreExpressionNode *node) {}
 
 void SecondChecker::Visit(ContinueExpressionNode *node) {}
 

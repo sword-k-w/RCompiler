@@ -120,17 +120,6 @@ SelfUpperNode::SelfUpperNode(const std::vector<Token> &tokens, uint32_t &pos, co
   } catch (Error &) { throw; }
 }
 
-UnderscoreExpressionNode::UnderscoreExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Inferred Type") {
-  try {
-    CheckLength(pos, length);
-    if (tokens[pos].lexeme != "_") {
-      throw Error("expect _");
-    }
-    val_ = tokens[pos].lexeme;
-    ++pos;
-  } catch (Error &) { throw; }
-}
-
 ContinueExpressionNode::ContinueExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Continue Expression") {
   try {
     CheckLength(pos, length);

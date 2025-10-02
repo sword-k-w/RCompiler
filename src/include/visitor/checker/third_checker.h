@@ -60,7 +60,6 @@ public:
   void Visit(FalseNode *) override;
   void Visit(SelfLowerNode *) override;
   void Visit(SelfUpperNode *) override;
-  void Visit(UnderscoreExpressionNode *) override;
   void Visit(ContinueExpressionNode *) override;
   void Visit(TraitNode *) override;
   void Visit(ReferenceTypeNode *) override;

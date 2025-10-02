@@ -47,6 +47,5 @@ public:
   void Accept(VisitorBase *) override;
 private:
   std::shared_ptr<IdentifierPatternNode> identifier_pattern_;
-  std::shared_ptr<WildcardPatternNode> wildcard_pattern_;
   std::shared_ptr<ReferencePatternNode> reference_pattern_;
 };

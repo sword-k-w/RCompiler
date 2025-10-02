@@ -206,8 +206,6 @@ void FirstChecker::Visit(ExpressionNode *node) {
       OldScope(node, node->struct_expr_.get());
     } else if (node->type_ == kContinueExpr) {
       OldScope(node, node->continue_expr_.get());
-    } else if (node->type_ == kUnderscoreExpr) {
-      OldScope(node, node->underscore_expr_.get());
     } else if (node->type_ == kBorrowExpr || node->type_ == kDereferenceExpr || node->type_ == kNegationExpr
       || node->type_ == kGroupedExpr || node->type_ == kBreakExpr || node->type_ == kReturnExpr) {
       if (node->expr1_ != nullptr) {
@@ -431,8 +429,6 @@ void FirstChecker::Visit(PatternWithoutRangeNode *node) {
   try {
     if (node->identifier_pattern_ != nullptr) {
       OldScope(node, node->identifier_pattern_.get());
-    } else if (node->wildcard_pattern_ != nullptr) {
-      OldScope(node, node->wildcard_pattern_.get());
     } else {
       OldScope(node, node->reference_pattern_.get());
     }
@@ -528,8 +524,6 @@ void FirstChecker::Visit(FalseNode *node) {}
 void FirstChecker::Visit(SelfLowerNode *node) {}
 
 void FirstChecker::Visit(SelfUpperNode *node) {}
-
-void FirstChecker::Visit(UnderscoreExpressionNode *node) {}
 
 void FirstChecker::Visit(ContinueExpressionNode *node) {}
 

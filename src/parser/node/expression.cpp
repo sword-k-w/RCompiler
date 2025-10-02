@@ -343,9 +343,6 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
     } else if (tokens[pos].lexeme == "continue") {
       type_ = kContinueExpr;
       continue_expr_ = std::make_shared<ContinueExpressionNode>(tokens, pos, length);
-    } else if (tokens[pos].lexeme == "_") {
-      type_ = kUnderscoreExpr;
-      underscore_expr_ = std::make_shared<UnderscoreExpressionNode>(tokens, pos, length);
     } else {
       throw Error("try parsing Expression Node but unexpected token");
     }
@@ -428,8 +425,6 @@ void Print(ExpressionType type, std::ostream &os) {
     os << "Struct Expr";
   } else if (type == kContinueExpr) {
     os << "Continue Expr";
-  } else if (type == kUnderscoreExpr) {
-    os << "Underscore Expr";
   } else if (type == kBorrowExpr) {
     os << "Borrow Expr";
   } else if (type == kDereferenceExpr) {

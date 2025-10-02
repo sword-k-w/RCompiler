@@ -149,19 +149,6 @@ private:
   std::string val_;
 };
 
-class UnderscoreExpressionNode : public ASTNode {
-  friend class Printer;
-  friend class FirstChecker;
-  friend class SecondChecker;
-  friend class ThirdChecker;
-public:
-  UnderscoreExpressionNode() = delete;
-  UnderscoreExpressionNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
-  void Accept(VisitorBase *) override;
-private:
-  std::string val_;
-};
-
 class ContinueExpressionNode : public ASTNode {
   friend class Printer;
   friend class FirstChecker;

@@ -472,10 +472,6 @@ void Printer::Visit(ExpressionNode *node) {
     prefixes_.emplace(next);
     is_lasts_.emplace(true);
     node->continue_expr_->Accept(this);
-  } else if (node->type_ == kUnderscoreExpr) {
-    prefixes_.emplace(next);
-    is_lasts_.emplace(true);
-    node->underscore_expr_->Accept(this);
   } else if (node->type_ == kBorrowExpr) {
     os_ << next << "├──" << node->op_ << '\n';
     if (node->mut_) {
@@ -898,8 +894,6 @@ void Printer::Visit(PatternWithoutRangeNode *node) {
   is_lasts_.emplace(true);
   if (node->identifier_pattern_ != nullptr) {
     node->identifier_pattern_->Accept(this);
-  } else if (node->wildcard_pattern_ != nullptr) {
-    node->wildcard_pattern_->Accept(this);
   } else {
     node->reference_pattern_->Accept(this);
   }
@@ -1197,18 +1191,6 @@ void Printer::Visit(SelfUpperNode *node) {
   os_ << prefixes_.top();
   os_ << (is_lasts_.top() ? "└──" : "├──");
   os_ << "Self Upper\n";
-
-  std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
-  os_ << next << "└──" << node->val_ << '\n';
-
-  prefixes_.pop();
-  is_lasts_.pop();
-}
-
-void Printer::Visit(UnderscoreExpressionNode *node) {
-  os_ << prefixes_.top();
-  os_ << (is_lasts_.top() ? "└──" : "├──");
-  os_ << "Underscore Expression\n";
 
   std::string next = prefixes_.top() + (is_lasts_.top() ?  "    " : "│   ");
   os_ << next << "└──" << node->val_ << '\n';

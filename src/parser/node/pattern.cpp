@@ -40,9 +40,7 @@ ReferencePatternNode::ReferencePatternNode(const std::vector<Token> &tokens, uin
 PatternWithoutRangeNode::PatternWithoutRangeNode(const std::vector<Token> &tokens, uint32_t &pos, const uint32_t &length) : ASTNode("Pattern Without Range") {
   try {
     CheckLength(pos, length);
-    if (tokens[pos].lexeme == "_") {
-      wildcard_pattern_ = std::make_shared<WildcardPatternNode>(tokens, pos, length);
-    } else if (tokens[pos].lexeme == "&" || tokens[pos].lexeme == "&&") {
+    if (tokens[pos].lexeme == "&" || tokens[pos].lexeme == "&&") {
       reference_pattern_ = std::make_shared<ReferencePatternNode>(tokens, pos, length);
     } else {
       identifier_pattern_ = std::make_shared<IdentifierPatternNode>(tokens, pos, length);

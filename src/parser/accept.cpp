@@ -273,11 +273,6 @@ void SelfUpperNode::Accept(VisitorBase * ptr) {
     ptr->Visit(this);  
   } catch (Error &) { throw; }
 }
-void UnderscoreExpressionNode::Accept(VisitorBase * ptr) {
-  try {
-    ptr->Visit(this);  
-  } catch (Error &) { throw; }
-}
 void ContinueExpressionNode::Accept(VisitorBase * ptr) {
   try {
     ptr->Visit(this);  

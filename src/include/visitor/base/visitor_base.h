@@ -57,7 +57,6 @@ public:
   virtual void Visit(FalseNode *) = 0;
   virtual void Visit(SelfLowerNode *) = 0;
   virtual void Visit(SelfUpperNode *) = 0;
-  virtual void Visit(UnderscoreExpressionNode *) = 0;
   virtual void Visit(ContinueExpressionNode *) = 0;
   virtual void Visit(TraitNode *) = 0;
   virtual void Visit(ReferenceTypeNode *) = 0;
