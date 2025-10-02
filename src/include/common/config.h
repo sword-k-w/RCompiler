@@ -78,6 +78,8 @@ bool IsIntegerType(const std::string &);
 
 bool IsSignedIntegerType(const std::string &);
 
+bool IsUnsignedIntegerType(const std::string &);
+
 std::string MergeLeafType(const std::string &, const std::string &);
 
 constexpr std::string_view kBuiltinFunction[7] = {"exit", "print", "println", "printInt", "printlnInt", "getString", "getInt"};

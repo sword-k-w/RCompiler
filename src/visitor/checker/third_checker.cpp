@@ -663,6 +663,12 @@ void ThirdChecker::Visit(ExpressionNode *node) {
         }
         uint32_t size = node->call_params_->exprs_.size();
         for (uint32_t i = 0; i < size; ++i) {
+          if (IsSignedIntegerType(function_node->function_parameters_->function_params_[i]->type_->type_info_->type_name_)
+            && IsUnsignedIntegerType(node->call_params_->exprs_[i]->type_info_->type_name_)
+            && node->call_params_->exprs_[i]->literal_expr_ != nullptr
+            && (node->call_params_->exprs_[i]->literal_expr_->const_value_->u32_value_ >> 31)) {
+            throw Error("ThirdChecker : signed integer overflow");
+          }
           SameTypeCheck(node->call_params_->exprs_[i]->type_info_.get(), function_node->function_parameters_->function_params_[i]->type_->type_info_.get());
         }
       }
