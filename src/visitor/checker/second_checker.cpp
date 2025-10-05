@@ -991,7 +991,7 @@ void SecondChecker::Visit(IntegerLiteralNode *node) {
     } else {
       uint64_t base = 10;
       auto it = node->val_.begin();
-      if (*it == 0) {
+      if (*it == '0') {
         if (*std::next(it) == 'b') {
           base = 2;
           ++it;
@@ -1021,7 +1021,7 @@ void SecondChecker::Visit(IntegerLiteralNode *node) {
             break;
           }
         } else {
-          if (!(*it >= '0' && *it <= '9' || *it >= 'A' && *it <= 'F')) {
+          if (!(*it >= '0' && *it <= '9' || *it >= 'A' && *it <= 'F' || *it >= 'a' && *it <= 'f')) {
             break;
           }
         }
