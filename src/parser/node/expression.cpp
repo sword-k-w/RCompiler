@@ -354,7 +354,7 @@ ExpressionNode::ExpressionNode(const std::vector<Token> &tokens, uint32_t &pos, 
       }
       uint32_t power = binding_power[{op.lexeme, true}].first;
       if (type_ == kExprWithBlock && (op.lexeme == "(" || op.lexeme == "[" || op.lexeme == "{" || op.lexeme == "return"
-        || op.lexeme == "break" || op.lexeme == "continue")) {
+        || op.lexeme == "break" || op.lexeme == "continue" || op.lexeme == "*")) {
         break;
       }
       if (context_precedence == power) {
