@@ -905,21 +905,22 @@ void ThirdChecker::Visit(FunctionNode *node) {
     SameTypeCheck(node->block_expr_->type_info_.get(), node->type_info_.get());
     current_function_.pop();
     if (node->identifier_->val_ == "main") {
-      if (exit_cnt_ > 0) {
-        ExpressionWithoutBlockNode *target = nullptr;
-        if (node->block_expr_->statements_->expr_without_block_ != nullptr) {
-          target = node->block_expr_->statements_->expr_without_block_.get();
-        } else {
-          auto last_statement = node->block_expr_->statements_->statement_s_.back();
-          if (last_statement->expr_statement_ == nullptr
-          || last_statement->expr_statement_->expr_without_block_ == nullptr) {
-            throw Error("ThirdChecker : exit, but not the last of main");
-          }
-          target = last_statement->expr_statement_->expr_without_block_.get();
-        }
-        if (target->expr_->type_ != kCallExpr || target->expr_->expr1_->path_expr_->path_expr_segment1_->identifier_->val_ != "exit") {
+      if (exit_cnt_ != 1) {
+        throw Error("ThirdChecker : must exit in main");
+      }
+      ExpressionWithoutBlockNode *target = nullptr;
+      if (node->block_expr_->statements_->expr_without_block_ != nullptr) {
+        target = node->block_expr_->statements_->expr_without_block_.get();
+      } else {
+        auto last_statement = node->block_expr_->statements_->statement_s_.back();
+        if (last_statement->expr_statement_ == nullptr
+        || last_statement->expr_statement_->expr_without_block_ == nullptr) {
           throw Error("ThirdChecker : exit, but not the last of main");
         }
+        target = last_statement->expr_statement_->expr_without_block_.get();
+      }
+      if (target->expr_->type_ != kCallExpr || target->expr_->expr1_->path_expr_->path_expr_segment1_->identifier_->val_ != "exit") {
+        throw Error("ThirdChecker : exit, but not the last of main");
       }
     }
   } catch (Error &) { throw; }

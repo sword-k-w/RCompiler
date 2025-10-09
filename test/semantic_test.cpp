@@ -11,10 +11,10 @@
 #include "semantic/scope/scope.h"
 
 void TestCode(const std::string &s, bool expect_result) {
-  Lexer a(s);
-  auto tokens = a.Run();
-  Parser b(tokens);
   try {
+    Lexer a(s);
+    auto tokens = a.Run();
+    Parser b(tokens);
     auto root = b.Run<CrateNode>();
     // Printer printer(std::cerr);
     // printer.Prepare();

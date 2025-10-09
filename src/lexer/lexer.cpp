@@ -1,4 +1,5 @@
 #include "lexer/lexer.h"
+#include "common/error.h"
 
 Lexer::Lexer(const std::string &input) : input_(input), length_(input.size()) {}
 
@@ -22,8 +23,10 @@ auto Lexer::Run() -> std::vector<Token> const {
           }
         }
         if (index == kTokenTypeCount) {
-          std::cerr << "error!\n";
-          return {};
+          for (auto &[x, y] : res) {
+            std::cout << y << '\n';
+          }
+          throw Error("lexer failed!");
         }
         res.push_back({kTokenTypes[index], input_.substr(pos, max_pos - pos)});
         pos = max_pos;
