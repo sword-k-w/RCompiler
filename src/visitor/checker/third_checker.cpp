@@ -374,40 +374,29 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           return;
         }
         target = node->scope_->FindValueName(val);
-        auto *struct_node = dynamic_cast<StructNode *>(target);
-        if (struct_node != nullptr) {
-          if (struct_node->struct_fields_ != nullptr) {
-            throw Error("ThirdChecker : expect unit-like struct");
-          }
-          node->type_info_ = std::make_shared<Type>();
-          node->type_info_->type_ = kStructType;
-          node->type_info_->source_ = target;
-          node->type_info_->type_name_ = struct_node->identifier_->val_;
+        auto *const_item = dynamic_cast<ConstantItemNode *>(target);
+        if (const_item != nullptr) {
+          node->type_info_ = const_item->const_value_->GetType();
         } else {
-          auto *const_item = dynamic_cast<ConstantItemNode *>(target);
-          if (const_item != nullptr) {
-            node->type_info_ = const_item->const_value_->GetType();
+          auto *identifier_pattern = dynamic_cast<IdentifierPatternNode *>(target);
+          if (identifier_pattern != nullptr) {
+            node->type_info_ = identifier_pattern->type_info_;
           } else {
-            auto *identifier_pattern = dynamic_cast<IdentifierPatternNode *>(target);
-            if (identifier_pattern != nullptr) {
-              node->type_info_ = identifier_pattern->type_info_;
+            auto *function_node = dynamic_cast<FunctionNode *>(target);
+            if (function_node != nullptr) {
+              if (function_node->function_parameters_ != nullptr && function_node->function_parameters_->self_param_ != nullptr) {
+                throw Error("ThirdChecker : invoke method in the way of associated function");
+              }
+              node->type_info_ = std::make_shared<Type>();
+              node->type_info_->type_ = kFunctionCallType;
+              node->type_info_->source_ = target;
             } else {
-              auto *function_node = dynamic_cast<FunctionNode *>(target);
-              if (function_node != nullptr) {
-                if (function_node->function_parameters_ != nullptr && function_node->function_parameters_->self_param_ != nullptr) {
-                  throw Error("ThirdChecker : invoke method in the way of associated function");
-                }
-                node->type_info_ = std::make_shared<Type>();
-                node->type_info_->type_ = kFunctionCallType;
-                node->type_info_->source_ = target;
+              auto *self_param = dynamic_cast<SelfParamNode *>(target);
+              if (self_param != nullptr) {
+                node->type_info_ = std::make_shared<Type>(*self_param->type_info_);
+                node->type_info_->is_mut_left_ = self_param->shorthand_self_->mut_;
               } else {
-                auto *self_param = dynamic_cast<SelfParamNode *>(target);
-                if (self_param != nullptr) {
-                  node->type_info_ = std::make_shared<Type>(*self_param->type_info_);
-                  node->type_info_->is_mut_left_ = self_param->shorthand_self_->mut_;
-                } else {
-                  throw Error("ThirdChecker : unexpected path");
-                }
+                throw Error("ThirdChecker : unexpected path");
               }
             }
           }
@@ -811,6 +800,9 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       auto loop = current_loop_.top();
       if (node->expr1_ != nullptr) {
         node->expr1_->Accept(this);
+        if (node->expr1_->type_info_->type_ == kNeverType) {
+          throw Error("ThirdChecker : break never type");
+        }
         if (!loop->assigned_) {
           loop->type_info_ = node->expr1_->type_info_;
           loop->assigned_ = true;
