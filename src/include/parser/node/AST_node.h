@@ -6,7 +6,6 @@
 #include <memory>
 #include "semantic/scope/scope.h"
 #include "visitor/base/visitor_base.h"
-#include "semantic/symbol/symbol.h"
 
 class ASTNode {
   friend class FirstChecker;
@@ -20,7 +19,6 @@ public:
   virtual ~ASTNode() = default;
 protected:
   std::shared_ptr<Scope> scope_;
-  SymbolType symbol_type_;
   std::shared_ptr<ConstValue> const_value_;
   std::shared_ptr<Type> type_info_;
   bool need_calculate_ = false;

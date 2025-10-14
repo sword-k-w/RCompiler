@@ -38,9 +38,9 @@ void TestTestcase(const std::string &s, bool expect_result) {
   TestCode(input, expect_result);
 }
 
-TEST(SemanticTest, TmpTest) {
-  TestTestcase("../my_data/tmp.txt", false);
-}
+// TEST(SemanticTest, TmpTest) {
+//   TestTestcase("../my_data/tmp.txt", false);
+// }
 
 TEST(SemanticTest, TestcaseTest_Array1) {
   TestTestcase("../RCompiler-Testcases/semantic-1/array1/array1.rx", true);

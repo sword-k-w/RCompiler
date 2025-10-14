@@ -33,7 +33,6 @@ void FirstChecker::Visit(EnumVariantsNode *node) {
 
 void FirstChecker::Visit(EnumerationNode *node) {
   try {
-    node->symbol_type_ = kType;
     node->scope_->AddTypeName(node->identifier_->val_, node);
     node->scope_->AddValueName(node->identifier_->val_, node, false);
     OldScope(node, node->identifier_.get());
@@ -273,7 +272,6 @@ void FirstChecker::Visit(FunctionReturnTypeNode *node) {
 
 void FirstChecker::Visit(FunctionNode *node) {
   try {
-    node->symbol_type_ = kFunction;
     node->scope_->AddValueName(node->identifier_->val_, node, false);
     OldScope(node, node->identifier_.get());
     if (node->function_parameters_ != nullptr) {
@@ -362,7 +360,6 @@ void FirstChecker::Visit(ImplementationNode *node) {
 
 void FirstChecker::Visit(ConstantItemNode *node) {
   try {
-    node->symbol_type_ = kConst;
     node->scope_->AddValueName(node->identifier_->val_, node, false);
     OldScope(node, node->identifier_.get());
     OldScope(node, node->expr_.get());
@@ -493,7 +490,6 @@ void FirstChecker::Visit(StructFieldsNode *node) {
 
 void FirstChecker::Visit(StructNode *node) {
   try {
-    node->symbol_type_ = kType;
     node->scope_->AddTypeName(node->identifier_->val_, node);
     node->scope_->AddValueName(node->identifier_->val_, node, false);
     OldScope(node, node->identifier_.get());
@@ -529,7 +525,6 @@ void FirstChecker::Visit(ContinueExpressionNode *node) {}
 
 void FirstChecker::Visit(TraitNode *node) {
   try {
-    node->symbol_type_ = kTrait;
     node->scope_->AddTypeName(node->identifier_->val_, node);
     OldScope(node, node->identifier_.get());
     for (auto &associated_item : node->asscociated_items_) {
