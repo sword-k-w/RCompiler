@@ -39,7 +39,7 @@ void TestTestcase(const std::string &s, bool expect_result) {
 }
 
 // TEST(SemanticTest, TmpTest) {
-//   TestTestcase("../my_data/tmp.txt", false);
+//   TestTestcase("../my_data/tmp.txt", true);
 // }
 
 TEST(SemanticTest, TestcaseTest_Array1) {
