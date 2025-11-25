@@ -127,7 +127,7 @@ TEST(SemanticTest, TestcaseTest_Basic4) {
 }
 
 TEST(SemanticTest, TestcaseTest_Basic5) {
-  TestTestcase("../testcases/semantic-1/src/basic5/basic5.rx", false);
+  TestTestcase("../testcases/semantic-1/src/basic5/basic5.rx", true);
 }
 
 TEST(SemanticTest, TestcaseTest_Basic6) {
@@ -147,7 +147,7 @@ TEST(SemanticTest, TestcaseTest_Basic9) {
 }
 
 TEST(SemanticTest, TestcaseTest_Basic10) {
-  TestTestcase("../testcases/semantic-1/src/basic10/basic10.rx", false);
+  TestTestcase("../testcases/semantic-1/src/basic10/basic10.rx", true);
 }
 
 TEST(SemanticTest, TestcaseTest_Basic11) {
