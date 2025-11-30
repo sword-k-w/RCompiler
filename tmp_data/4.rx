@@ -1,0 +1,9 @@
+fn update(idx: usize) {
+    if (idx == 0) {
+        return;
+    }
+}
+
+fn main() {
+    exit(0);
+}

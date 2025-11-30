@@ -12,7 +12,7 @@ void IRPrinter::Visit(IRStructNode *node) {
 }
 
 void IRPrinter::Visit(IRArithmeticInstructionNode *node) {
-  os_ << node->result_ << " = ";
+  os_ << "  " << node->result_ << " = ";
   if (node->op_ == "+") {
     os_ << "add";
   } else if (node->op_ == "-") {
@@ -37,11 +37,11 @@ void IRPrinter::Visit(IRArithmeticInstructionNode *node) {
     std::cerr << "Error! : unexpected op " << node->op_ << '\n';
     exit(-1);
   }
-  os_ << " " << node->type_ << node->operand1_ << ", " << node->operand2_ << '\n';
+  os_ << " " << node->type_ << " " << node->operand1_ << ", " << node->operand2_ << '\n';
 }
 
 void IRPrinter::Visit(IRNegationInstructionNode *node) {
-  os_ << node->result_ << " = ";
+  os_ << "  " << node->result_ << " = ";
   if (node->is_minus_) {
     os_ << "sub " << node->type_ << " 0, " << node->operand_ << '\n';
   } else {
@@ -54,11 +54,11 @@ void IRPrinter::Visit(IRNegationInstructionNode *node) {
 }
 
 void IRPrinter::Visit(IRBranchInstructionNode *node) {
-  os_ << "br i1 " << node->condition_ << ", label " << node->true_branch_ << ", label " << node->false_branch_ << '\n';
+  os_ << "  br i1 " << node->condition_ << ", label " << node->true_branch_ << ", label " << node->false_branch_ << '\n';
 }
 
 void IRPrinter::Visit(IRJumpInstructionNode *node) {
-  os_ << "br label " << node->destination_ << '\n';
+  os_ << "  br label " << node->destination_ << '\n';
 }
 
 void IRPrinter::Visit(IRReturnInstructionNode *node) {
@@ -71,23 +71,23 @@ void IRPrinter::Visit(IRReturnInstructionNode *node) {
 }
 
 void IRPrinter::Visit(IRAllocateInstructionNode *node) {
-  os_ << node->result_ << " = alloca " << node->type_ << '\n';
+  os_ << "  " << node->result_ << " = alloca " << node->type_ << '\n';
 }
 
 void IRPrinter::Visit(IRLoadInstructionNode *node) {
-  os_ << node->result_ << " = load " << node->type_ << ", ptr " << node->pointer_ << '\n';
+  os_ << "  " << node->result_ << " = load " << node->type_ << ", ptr " << node->pointer_ << '\n';
 }
 
 void IRPrinter::Visit(IRStoreVariableInstructionNode *node) {
-  os_ << "store " << node->type_ << " " << node->value_ << ", ptr " << node->pointer_ << '\n';
+  os_ << "  store " << node->type_ << " " << node->value_ << ", ptr " << node->pointer_ << '\n';
 }
 
 void IRPrinter::Visit(IRStoreConstInstructionNode *node) {
-  os_ << "store " << node->type_ << " " << node->value_ << ", ptr " << node->pointer_ << '\n';
+  os_ << "  store " << node->type_ << " " << node->value_ << ", ptr " << node->pointer_ << '\n';
 }
 
 void IRPrinter::Visit(IRGetElementPtrInstructionNode *node) {
-  os_ << node->result_ << " = getelementptr " << node->type_ << ", ptr " << node->ptrval_ << ", ";
+  os_ << "  " << node->result_ << " = getelementptr " << node->type_ << ", ptr " << node->ptrval_ << ", ";
   if (node->is_struct_) {
     os_ << "i32 0, ";
   }
@@ -95,11 +95,11 @@ void IRPrinter::Visit(IRGetElementPtrInstructionNode *node) {
 }
 
 void IRPrinter::Visit(IRGetElementPtrPrimeInstructionNode *node) {
-  os_ << node->result_ << " = getelementptr " << node->type_ << ", ptr " << node->ptrval_ << ", i32 " << node->index_ << '\n';
+  os_ << "  " << node->result_ << " = getelementptr " << node->type_ << ", ptr " << node->ptrval_ << ", i32 " << node->index_ << '\n';
 }
 
 void IRPrinter::Visit(IRCompareInstructionNode *node) {
-  os_ << node->result_ << " = icmp ";
+  os_ << "  " << node->result_ << " = icmp ";
   if (node->op_ == IRCompareInstructionNode::kEq) {
     os_ << "eq";
   } else if (node->op_ == IRCompareInstructionNode::kNe) {
@@ -130,7 +130,7 @@ void IRPrinter::Visit(IRArgumentNode *node) {
 
 void IRPrinter::Visit(IRCallInstructionNode *node) {
   if (node->result_type_.empty()) {
-    os_ << "call void";
+    os_ << "  call void";
   } else {
     os_ << node->result_ << " = call " << node->result_type_;
   }

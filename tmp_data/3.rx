@@ -1,0 +1,12 @@
+struct SegT {
+    l: i32
+}
+
+fn new_segt(seg_pool: &mut [SegT; 1]) -> usize {
+    seg_pool[0] = SegT {l: 1};
+    1
+}
+
+fn main() {
+    exit(0);
+}

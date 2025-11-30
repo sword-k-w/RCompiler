@@ -10,8 +10,9 @@
 #include "visitor/checker/third_checker.h"
 #include "visitor/IR_generator/IR_generator.h"
 #include "IR_visitor/printer/IR_printer.h"
+#include <fstream>
 
-void TestCode(const std::string &code) {
+void TestCode(const std::string &code, std::ostream &out) {
   try {
     Lexer lexer(code);
     auto tokens = lexer.Run();
@@ -26,7 +27,7 @@ void TestCode(const std::string &code) {
     auto IR_root = std::make_shared<IRRootNode>();
     IRGenerator gen(IR_root);
     root->Accept(&gen);
-    IRPrinter printer(std::cerr);
+    IRPrinter printer(out);
     IR_root->Accept(&printer);
   } catch (Error &err) {
     std::cerr << err.Info() << '\n';
@@ -39,15 +40,17 @@ TEST(IRTest, DISABLED_TestcaseTest) {
     std::cerr << "Testing testcase" << t << "...\n";
     std::string folder = "../testcases/IR-1/src/comprehensive" + std::to_string(t);
     std::string input = LoadFromFile(folder + "/comprehensive" + std::to_string(t) + ".rx");
-    TestCode(input);
+    std::ofstream out("tmp/" + std::to_string(t) + ".ll");
+    TestCode(input, out);
     std::cerr << '\n';
   }
 }
 
 TEST(IRTest, MyTest) {
-  for (int t = 1; t <= 1; ++t) {
+  for (int t = 1; t <= 4; ++t) {
+    std::cerr << "Testing my test" << t << "...\n";
     std::string input = LoadFromFile("../tmp_data/" + std::to_string(t) + ".rx");
-    TestCode(input);
+    TestCode(input, std::cerr);
     std::cerr << '\n';
   }
 }
