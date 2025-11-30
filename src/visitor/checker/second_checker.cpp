@@ -271,9 +271,7 @@ void SecondChecker::Visit(ExpressionNode *node) {
   try {
     if (node->type_ == kLiteralExpr) {
       GoDown(node, node->literal_expr_.get());
-      if (node->need_calculate_) {
-        node->const_value_ = node->literal_expr_->const_value_;
-      }
+      node->const_value_ = node->literal_expr_->const_value_;
     } else if (node->type_ == kPathExpr) {
       GoDown(node, node->path_expr_.get());
       if (node->need_calculate_) {

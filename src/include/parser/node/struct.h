@@ -10,6 +10,7 @@ class StructFieldNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   StructFieldNode() = delete;
   StructFieldNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -24,6 +25,7 @@ class StructFieldsNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   StructFieldsNode() = delete;
   StructFieldsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -38,6 +40,7 @@ class StructNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   StructNode() = delete;
   StructNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

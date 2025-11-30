@@ -11,6 +11,7 @@ class IdentifierPatternNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   IdentifierPatternNode() = delete;
   IdentifierPatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -26,6 +27,7 @@ class ReferencePatternNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   ReferencePatternNode() = delete;
   ReferencePatternNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -41,6 +43,7 @@ class PatternWithoutRangeNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   PatternWithoutRangeNode() = delete;
   PatternWithoutRangeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

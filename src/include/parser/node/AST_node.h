@@ -17,13 +17,14 @@ public:
   void CheckLength(const uint32_t &, const uint32_t &) const;
   virtual void Accept(VisitorBase *) = 0;
   virtual ~ASTNode() = default;
+  std::string IRName() const;
 protected:
   std::shared_ptr<Scope> scope_;
   std::shared_ptr<ConstValue> const_value_;
   std::shared_ptr<Type> type_info_;
   bool need_calculate_ = false;
 
-  StructNode *outside_struct_;
+  std::string IR_name_;
 private:
   std::shared_ptr<std::string> name_;
 };

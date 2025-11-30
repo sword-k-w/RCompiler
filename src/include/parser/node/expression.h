@@ -13,6 +13,7 @@ class LiteralExpressionNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   LiteralExpressionNode() = delete;
   LiteralExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -33,6 +34,7 @@ class ArrayElementsNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   ArrayElementsNode() = delete;
   ArrayElementsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -48,6 +50,7 @@ class ArrayExpressionNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   ArrayExpressionNode() = delete;
   ArrayExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -61,6 +64,7 @@ class PathInExpressionNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   PathInExpressionNode() = delete;
   PathInExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -75,6 +79,7 @@ class StructExprFieldNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   StructExprFieldNode() = delete;
   StructExprFieldNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -89,6 +94,7 @@ class StructExprFieldsNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   StructExprFieldsNode() = delete;
   StructExprFieldsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -103,6 +109,7 @@ class StructExpressionNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   StructExpressionNode() = delete;
   StructExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -117,6 +124,7 @@ class ExpressionWithoutBlockNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   ExpressionWithoutBlockNode() = delete;
   ExpressionWithoutBlockNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -130,6 +138,7 @@ class BlockExpressionNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   BlockExpressionNode() = delete;
   BlockExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -143,6 +152,7 @@ class InfiniteLoopExpressionNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   InfiniteLoopExpressionNode() = delete;
   InfiniteLoopExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -156,6 +166,7 @@ class ConditionsNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   ConditionsNode() = delete;
   ConditionsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -169,6 +180,7 @@ class PredicateLoopExpressionNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   PredicateLoopExpressionNode() = delete;
   PredicateLoopExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -183,6 +195,7 @@ class LoopExpressionNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   LoopExpressionNode() = delete;
   LoopExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -199,6 +212,7 @@ class IfExpressionNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   IfExpressionNode() = delete;
   IfExpressionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -215,6 +229,7 @@ class ExpressionWithBlockNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   ExpressionWithBlockNode() = delete;
   ExpressionWithBlockNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -230,6 +245,7 @@ class CallParamsNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   CallParamsNode() = delete;
   CallParamsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -253,6 +269,7 @@ class ExpressionNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   ExpressionNode() = delete;
   ExpressionNode(const ExpressionNode &) = default;

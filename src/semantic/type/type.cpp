@@ -3,6 +3,7 @@
 #include "common/config.h"
 #include <iostream>
 #include <parser/node/function.h>
+#include <parser/node/struct.h>
 
 ArrayValueInfo::ArrayValueInfo(const std::vector<std::shared_ptr<ConstValue>> &type_values, const uint32_t &length) : values_(type_values), length_(length) {}
 
@@ -182,4 +183,32 @@ std::pair<Type *, uint32_t> AutoDereference(Type *type) {
   }
   auto tmp = AutoDereference(type->pointer_type_.get());
   return std::make_pair(tmp.first, tmp.second + 1);
+}
+
+std::string GetIRTypeString(Type *type) {
+  if (type->type_ == kLeafType) {
+    if (type->type_name_ == "bool") {
+      return "i1";
+    }
+    return "i32";
+  }
+  if (type->type_ == kEnumType) {
+    return "i32";
+  }
+  if (type->type_ == kArrayType) {
+    return "[" + std::to_string(type->array_type_info_.second)
+      + " x " + GetIRTypeString(type->array_type_info_.first.get()) + "]";
+  }
+  if (type->type_ == kPointerType) {
+    return "ptr";
+  }
+  if (type->type_ == kStructType) {
+    if (type->source_->IRName().empty()) {
+      std::cerr << "Error! : Empty IR Name.\n";
+      exit(-1);
+    }
+    return "%" + type->source_->IRName();
+  }
+  std::cerr << "Error! : Getting IR Type String.\n";
+  exit(-1);
 }

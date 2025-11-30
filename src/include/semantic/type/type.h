@@ -74,3 +74,5 @@ void SameTypeCheck(Type *, ConstValue *);
 void SameTypeCheck(Type *, Type *);
 
 std::pair<Type *, uint32_t> AutoDereference(Type *);
+
+std::string GetIRTypeString(Type *);

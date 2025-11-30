@@ -82,3 +82,23 @@ leaf expression:
 ### not do yet
 
 * trait : default copy
+
+## IR
+
+constant : replace it with value directly
+
+IR code = struct definitions + functions
+
+function = blocks
+
+block = instructions
+
+### Name
+
+- function : foo -> function..foo
+- struct : s -> struct.s
+- method : s.foo -> function..s.foo
+
+### Idea
+
+Each variable/expression, use ptr to store its value. Corresponding IR name is the name of ptr. Left values use their own pointer; right value use temporary pointer.

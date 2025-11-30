@@ -10,3 +10,6 @@ void ASTNode::CheckLength(const uint32_t &pos, const uint32_t &length) const {
   }
 }
 
+std::string ASTNode::IRName() const {
+  return IR_name_;
+}

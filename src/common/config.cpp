@@ -32,7 +32,6 @@ bool IsUnsignedIntegerType(const std::string &name) {
   return name == "$" || name == "u32" || name == "usize";
 }
 
-
 bool IsSignedIntegerType(const std::string &name) {
   return name == "$" || name == "@" || name == "i32" || name == "isize";
 }

@@ -18,6 +18,7 @@ set(COMMON_DIR ./src/common)
 set(VISITOR_DIR ./src/visitor)
 set(SEMANTIC_DIR ./src/semantic)
 set(IR_DIR ./src/IR)
+set(IR_VISITOR_DIR ./src/IR_visitor)
 
 file(GLOB_RECURSE VISITOR_SRCS
     "${VISITOR_DIR}/*.cpp")
@@ -27,6 +28,8 @@ file(GLOB_RECURSE SEMANTIC_SRCS
     "${SEMANTIC_DIR}/*.cpp")
 file(GLOB_RECURSE IR_SRCS
     "${IR_DIR}/*.cpp")
+file(GLOB_RECURSE IR_VISITOR_SRCS
+        "${IR_VISITOR_DIR}/*.cpp")
 
 aux_source_directory(${COMMON_DIR} COMMON_SRCS)
 aux_source_directory(${LEXER_DIR} LEXER_SRCS)
@@ -39,6 +42,8 @@ add_executable(parser_test
         ${LEXER_SRCS}
         ${VISITOR_SRCS}
         ${SEMANTIC_SRCS}
+        ${IR_SRCS}
+        ${IR_VISITOR_SRCS}
 )
 
 add_executable(semantic_test
@@ -49,6 +54,8 @@ add_executable(semantic_test
         ${LEXER_SRCS}
         ${VISITOR_SRCS}
         ${SEMANTIC_SRCS}
+        ${IR_SRCS}
+        ${IR_VISITOR_SRCS}
 )
 
 add_executable(IR_test
@@ -59,7 +66,8 @@ add_executable(IR_test
         ${LEXER_SRCS}
         ${VISITOR_SRCS}
         ${SEMANTIC_SRCS}
-        ${IR_SRCS})
+        ${IR_SRCS}
+        ${IR_VISITOR_SRCS})
 
 target_link_libraries(parser_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 target_link_libraries(semantic_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})

@@ -12,6 +12,7 @@ class ReferenceTypeNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   ReferenceTypeNode() = delete;
   ReferenceTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
@@ -26,6 +27,7 @@ class ArrayTypeNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   ArrayTypeNode() = delete;
   ArrayTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
@@ -40,6 +42,7 @@ class TypeNoBoundsNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   TypeNoBoundsNode() = delete;
   TypeNoBoundsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

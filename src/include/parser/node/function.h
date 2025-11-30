@@ -10,6 +10,7 @@ class ShorthandSelfNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   ShorthandSelfNode() = delete;
   ShorthandSelfNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -25,6 +26,7 @@ class SelfParamNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   SelfParamNode() = delete;
   SelfParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -38,6 +40,7 @@ class FunctionParamNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   FunctionParamNode() = delete;
   FunctionParamNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -52,6 +55,7 @@ class FunctionParametersNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   FunctionParametersNode() = delete;
   FunctionParametersNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -67,6 +71,7 @@ class FunctionReturnTypeNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   FunctionReturnTypeNode() = delete;
   FunctionReturnTypeNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -80,6 +85,7 @@ class FunctionNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   FunctionNode() = delete;
   FunctionNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

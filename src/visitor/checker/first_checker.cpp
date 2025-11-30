@@ -38,10 +38,12 @@ void FirstChecker::Visit(EnumerationNode *node) {
     OldScope(node, node->identifier_.get());
     if (node->enum_variants_ != nullptr) {
       NewScope(node, node->enum_variants_.get(), node->identifier_->val_);
+      uint32_t cnt = 0;
       for (auto &enum_variant : node->enum_variants_->enum_variant_s_) {
-        if (!node->enum_.emplace(enum_variant->val_).second) {
+        if (!node->enum_.emplace(enum_variant->val_, cnt).second) {
           throw Error("FirstChecker : repeated enum member");
         }
+        ++cnt;
       }
     }
   } catch (Error &) { throw; }

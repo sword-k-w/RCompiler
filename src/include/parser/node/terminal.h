@@ -11,6 +11,7 @@ class IdentifierNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   IdentifierNode() = delete;
   IdentifierNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -24,6 +25,7 @@ class CharLiteralNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   CharLiteralNode() = delete;
   CharLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -37,6 +39,7 @@ class StringLiteralNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   StringLiteralNode() = delete;
   StringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -50,6 +53,7 @@ class RawStringLiteralNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   RawStringLiteralNode() = delete;
   RawStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -63,6 +67,7 @@ class CStringLiteralNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   CStringLiteralNode() = delete;
   CStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -76,6 +81,7 @@ class RawCStringLiteralNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   RawCStringLiteralNode() = delete;
   RawCStringLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -89,6 +95,7 @@ class IntegerLiteralNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   IntegerLiteralNode() = delete;
   IntegerLiteralNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -102,6 +109,7 @@ class TrueNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   TrueNode() = delete;
   TrueNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -115,6 +123,7 @@ class FalseNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   FalseNode() = delete;
   FalseNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -128,6 +137,7 @@ class SelfLowerNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   SelfLowerNode() = delete;
   SelfLowerNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
@@ -141,6 +151,7 @@ class SelfUpperNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   SelfUpperNode() = delete;
   SelfUpperNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
@@ -154,6 +165,7 @@ class ContinueExpressionNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   ContinueExpressionNode() = delete;
   ContinueExpressionNode(const std::vector<Token>&, uint32_t&, const uint32_t &);
@@ -167,6 +179,7 @@ class UnitTypeNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   UnitTypeNode() = delete;
   UnitTypeNode(const std::vector<Token>&, uint32_t&, const uint32_t &);

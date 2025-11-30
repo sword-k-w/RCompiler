@@ -5,6 +5,7 @@
 
 class BuiltinFunctionNode : public ASTNode {
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   BuiltinFunctionNode() = delete;
   explicit BuiltinFunctionNode(const std::string &);

@@ -272,10 +272,7 @@ void ThirdChecker::Visit(ExpressionNode *node) {
       node->type_info_ = node->const_value_->GetType();
       return;
     }
-    if (node->type_ == kLiteralExpr) {
-      node->literal_expr_->Accept(this);
-      node->type_info_ = node->literal_expr_->type_info_;
-    } else if (node->type_ == kPathExpr) {
+    if (node->type_ == kPathExpr) {
       node->path_expr_->Accept(this);
       ASTNode *target = nullptr;
       if (node->path_expr_->path_expr_segment2_ != nullptr) {
@@ -294,7 +291,7 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           target = it->second;
           auto const_item = dynamic_cast<ConstantItemNode *>(target);
           if (const_item != nullptr) {
-            node->type_info_ = const_item->const_value_->GetType();
+            node->const_value_ = const_item->const_value_;
           } else {
             node->type_info_ = std::make_shared<Type>();
             node->type_info_->type_ = kFunctionCallType;
@@ -322,7 +319,7 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           target = it->second;
           auto const_item = dynamic_cast<ConstantItemNode *>(target);
           if (const_item != nullptr) {
-            node->type_info_ = const_item->const_value_->GetType();
+            node->const_value_ = const_item->const_value_;
           } else {
             node->type_info_ = std::make_shared<Type>();
             node->type_info_->type_ = kFunctionCallType;
@@ -1031,14 +1028,14 @@ void ThirdChecker::Visit(StatementsNode *node) {
       node->type_info_ = node->expr_without_block_->type_info_;
       return;
     }
-    auto tail_statement = *node->statement_s_.rbegin();
-    if (tail_statement->expr_statement_ != nullptr) {
-      if (tail_statement->expr_statement_->semicolon_ == false) {
-        node->type_info_ = tail_statement->expr_statement_->type_info_;
+    auto trailer_statement = *node->statement_s_.rbegin();
+    if (trailer_statement->expr_statement_ != nullptr) {
+      if (trailer_statement->expr_statement_->semicolon_ == false) {
+        node->type_info_ = trailer_statement->expr_statement_->type_info_;
         return;
       }
-      if (tail_statement->expr_statement_->type_info_->type_ == kNeverType) {
-        node->type_info_ = tail_statement->expr_statement_->type_info_;
+      if (trailer_statement->expr_statement_->type_info_->type_ == kNeverType) {
+        node->type_info_ = trailer_statement->expr_statement_->type_info_;
         return;
       }
     }

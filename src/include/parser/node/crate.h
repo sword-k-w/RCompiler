@@ -11,6 +11,7 @@ class CrateNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   CrateNode() = delete;
   CrateNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

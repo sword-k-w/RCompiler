@@ -8,10 +8,11 @@
 #include <set>
 
 class EnumVariantsNode : public ASTNode {
-    friend class Printer;
+  friend class Printer;
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   EnumVariantsNode() = delete;
   EnumVariantsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -26,6 +27,7 @@ class EnumerationNode : public ASTNode {
   friend class FirstChecker;
   friend class SecondChecker;
   friend class ThirdChecker;
+  friend class IRGenerator;
 public:
   EnumerationNode() = delete;
   EnumerationNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -34,6 +36,6 @@ private:
   std::shared_ptr<IdentifierNode> identifier_;
   std::shared_ptr<EnumVariantsNode> enum_variants_;
 
-  std::set<std::string> enum_;
+  std::map<std::string, uint32_t> enum_;
 };
 
