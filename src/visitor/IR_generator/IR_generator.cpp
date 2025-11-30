@@ -443,14 +443,17 @@ void IRGenerator::Visit(ExpressionNode *node) {
     }
     auto function_node = dynamic_cast<FunctionNode *>(dynamic_cast<StructNode *>(struct_type->source_)
       ->impl_.find(node->path_expr_segment_->identifier_->val_)->second);
-    if (node->type_info_->type_ != kUnitType) {
-      node->IR_name_ = name_allocator_.Allocate("%tmp.");
-    }
     if (function_node->IR_name_.empty()) {
       std::cerr << "Error! : I don't wanna deal with this.\n";
       exit(-1);
     }
-    auto IR_call = std::make_shared<IRCallInstructionNode>(node->IR_name_, GetIRTypeString(node->type_info_.get()), function_node->IR_name_);
+    std::shared_ptr<IRCallInstructionNode> IR_call;
+    if (node->type_info_->type_ != kUnitType) {
+      node->IR_name_ = name_allocator_.Allocate("%tmp.");
+      IR_call = std::make_shared<IRCallInstructionNode>(node->IR_name_, GetIRTypeString(node->type_info_.get()), function_node->IR_name_);
+    } else {
+      IR_call = std::make_shared<IRCallInstructionNode>("", "", function_node->IR_name_);
+    }
     if (function_node->function_parameters_->self_param_->shorthand_self_->quote_) {
       IR_call->AddArgument(std::make_shared<IRArgumentNode>("ptr", struct_pointer));
     } else {

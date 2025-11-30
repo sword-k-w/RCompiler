@@ -35,19 +35,19 @@ void TestCode(const std::string &code, std::ostream &out) {
   }
 }
 
-TEST(IRTest, DISABLED_TestcaseTest) {
-  for (int t = 1; t <= 50; ++t) {
-    std::cerr << "Testing testcase" << t << "...\n";
-    std::string folder = "../testcases/IR-1/src/comprehensive" + std::to_string(t);
-    std::string input = LoadFromFile(folder + "/comprehensive" + std::to_string(t) + ".rx");
-    std::ofstream out("tmp/" + std::to_string(t) + ".ll");
-    TestCode(input, out);
-    std::cerr << '\n';
-  }
-}
+// TEST(IRTest, TestcaseTest) {
+//   for (int t = 1; t <= 50; ++t) {
+//     std::cerr << "Testing testcase" << t << "...\n";
+//     std::string folder = "../testcases/IR-1/src/comprehensive" + std::to_string(t);
+//     std::string input = LoadFromFile(folder + "/comprehensive" + std::to_string(t) + ".rx");
+//     std::ofstream out("tmp/" + std::to_string(t) + ".ll");
+//     TestCode(input, out);
+//     std::cerr << '\n';
+//   }
+// }
 
 TEST(IRTest, MyTest) {
-  for (int t = 1; t <= 5; ++t) {
+  for (int t = 1; t <= 6; ++t) {
     std::cerr << "Testing my test" << t << "...\n";
     std::string input = LoadFromFile("../tmp_data/" + std::to_string(t) + ".rx");
     TestCode(input, std::cerr);

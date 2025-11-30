@@ -1,0 +1,14 @@
+struct Node {
+    ans: i32,
+}
+
+impl Node {
+    fn clear(&mut self) {
+    }
+}
+
+fn main() {
+    let mut node: Node = Node { ans: 0};
+    node.clear();
+    exit(0);
+}
