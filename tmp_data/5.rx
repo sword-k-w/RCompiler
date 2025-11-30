@@ -1,0 +1,9 @@
+const LOG_MAXN: usize = 10;
+
+fn prepare() {
+    let i: usize = LOG_MAXN;
+}
+
+fn main() {
+    exit(0);
+}

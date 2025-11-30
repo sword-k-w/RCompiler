@@ -292,6 +292,7 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           auto const_item = dynamic_cast<ConstantItemNode *>(target);
           if (const_item != nullptr) {
             node->const_value_ = const_item->const_value_;
+            node->type_info_ = node->const_value_->GetType();
           } else {
             node->type_info_ = std::make_shared<Type>();
             node->type_info_->type_ = kFunctionCallType;
@@ -320,6 +321,7 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           auto const_item = dynamic_cast<ConstantItemNode *>(target);
           if (const_item != nullptr) {
             node->const_value_ = const_item->const_value_;
+            node->type_info_ = node->const_value_->GetType();
           } else {
             node->type_info_ = std::make_shared<Type>();
             node->type_info_->type_ = kFunctionCallType;
@@ -348,7 +350,8 @@ void ThirdChecker::Visit(ExpressionNode *node) {
               if (const_item->expr_ == nullptr) {
                 throw Error("ThirdChecker : want trait const value but no default value");
               }
-              node->type_info_ = const_item->const_value_->GetType();
+              node->const_value_ = const_item->const_value_;
+              node->type_info_ = node->const_value_->GetType();
             } else {
               throw Error("ThirdChecker : unexpected path");
             }
@@ -373,7 +376,8 @@ void ThirdChecker::Visit(ExpressionNode *node) {
         target = node->scope_->FindValueName(val);
         auto *const_item = dynamic_cast<ConstantItemNode *>(target);
         if (const_item != nullptr) {
-          node->type_info_ = const_item->const_value_->GetType();
+          node->const_value_ = const_item->const_value_;
+          node->type_info_ = node->const_value_->GetType();
         } else {
           auto *identifier_pattern = dynamic_cast<IdentifierPatternNode *>(target);
           if (identifier_pattern != nullptr) {

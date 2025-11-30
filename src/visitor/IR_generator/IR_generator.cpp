@@ -478,8 +478,12 @@ void IRGenerator::Visit(ExpressionNode *node) {
   } else if (node->type_ == kBreakExpr) {
     cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(loop_end_block_.top()->GetID()));
   } else if (node->type_ == kReturnExpr) {
-    node->expr1_->Accept(this);
-    Return(node->type_info_.get(), node->expr1_->IR_name_);
+    if (node->expr1_ != nullptr) {
+      node->expr1_->Accept(this);
+      Return(node->expr1_->type_info_.get(), node->expr1_->IR_name_);
+    } else {
+      cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
+    }
   } else {
     if (node->type_ != kExprWithBlock) {
       std::cerr << "Error! : expect expr with block!";
