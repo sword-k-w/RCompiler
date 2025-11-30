@@ -127,7 +127,7 @@ void IRGenerator::Visit(IfExpressionNode *node) {
     cur_block_ = end_block;
   } else {
     auto false_block = std::make_shared<IRBlockNode>(cur_tag_cnt_);
-    cur_function_->AddBlock(end_block);
+    cur_function_->AddBlock(false_block);
     ++cur_tag_cnt_;
     cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, true_block->GetID(), false_block->GetID()));
     cur_block_ = true_block;
@@ -223,7 +223,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
       for (uint32_t i = 0; i < size; ++i) {
         auto son_expr = node->array_expr_->array_elements_->exprs_[i];
         son_expr->Accept(this);
-        std::string tmp = name_allocator_.Allocate("tmp.");
+        std::string tmp = name_allocator_.Allocate("%tmp.");
         cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
           tmp, IR_inside_type, node->IR_name_, false, i));
         Copy(tmp, son_expr->IR_name_, inside_type.get());
@@ -239,7 +239,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
       auto son_expr = node->struct_expr_->struct_expr_fields_->struct_expr_field_s_[i]->expr_;
       auto inside_type = struct_node->struct_fields_->struct_field_s_[i]->type_->type_info_.get();
       son_expr->Accept(this);
-      std::string tmp = name_allocator_.Allocate("tmp.");
+      std::string tmp = name_allocator_.Allocate("%tmp.");
       cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
         tmp, GetIRTypeString(inside_type), node->IR_name_, true, i));
       Copy(tmp, son_expr->IR_name_, inside_type);
