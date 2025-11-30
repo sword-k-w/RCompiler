@@ -35,22 +35,26 @@ void TestCode(const std::string &code, std::ostream &out) {
   }
 }
 
-// TEST(IRTest, TestcaseTest) {
-//   for (int t = 1; t <= 50; ++t) {
-//     std::cerr << "Testing testcase" << t << "...\n";
-//     std::string folder = "../testcases/IR-1/src/comprehensive" + std::to_string(t);
-//     std::string input = LoadFromFile(folder + "/comprehensive" + std::to_string(t) + ".rx");
-//     std::ofstream out("tmp/" + std::to_string(t) + ".ll");
-//     TestCode(input, out);
-//     std::cerr << '\n';
-//   }
-// }
-
-TEST(IRTest, MyTest) {
-  for (int t = 1; t <= 7; ++t) {
-    std::cerr << "Testing my test" << t << "...\n";
-    std::string input = LoadFromFile("../tmp_data/" + std::to_string(t) + ".rx");
-    TestCode(input, std::cerr);
+TEST(IRTest, TestcaseTest) {
+  for (int t = 1; t <= 50; ++t) {
+    std::cerr << "Testing testcase" << t << "...\n";
+    std::string folder = "../testcases/IR-1/src/comprehensive" + std::to_string(t);
+    std::string input = LoadFromFile(folder + "/comprehensive" + std::to_string(t) + ".rx");
+    std::string output_file = "../tmp/" + std::to_string(t) + ".ll";
+    std::ofstream out(output_file);
+    if (!out.is_open()) {
+      throw std::runtime_error("Failed to open file for writing: " + output_file);
+    }
+    TestCode(input, out);
     std::cerr << '\n';
   }
 }
+
+// TEST(IRTest, MyTest) {
+//   for (int t = 1; t <= 8; ++t) {
+//     std::cerr << "Testing my test" << t << "...\n";
+//     std::string input = LoadFromFile("../tmp_data/" + std::to_string(t) + ".rx");
+//     TestCode(input, std::cerr);
+//     std::cerr << '\n';
+//   }
+// }

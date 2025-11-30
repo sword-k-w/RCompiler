@@ -409,10 +409,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
       function_name = builtin_function->function_name_;
     } else {
       auto function_node = dynamic_cast<FunctionNode *>(node->expr1_->type_info_->source_);
-      if (function_node->IR_name_.empty()) {
-        std::cerr << "Error! : I don't wanna deal with this.\n";
-        exit(-1);
-      }
+      function_node->IR_name_ = name_allocator_.Allocate("function.." + function_node->identifier_->val_);
       function_name = function_node->IR_name_;
     }
     std::shared_ptr<IRCallInstructionNode> IR_call;
@@ -444,8 +441,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
     auto function_node = dynamic_cast<FunctionNode *>(dynamic_cast<StructNode *>(struct_type->source_)
       ->impl_.find(node->path_expr_segment_->identifier_->val_)->second);
     if (function_node->IR_name_.empty()) {
-      std::cerr << "Error! : I don't wanna deal with this.\n";
-      exit(-1);
+      function_node->IR_name_ = name_allocator_.Allocate("function.." + function_node->identifier_->val_);
     }
     std::shared_ptr<IRCallInstructionNode> IR_call;
     if (node->type_info_->type_ != kUnitType) {
@@ -514,11 +510,7 @@ void IRGenerator::Visit(FunctionNode *node) {
   if (node->identifier_->val_ == "main") {
     node->IR_name_ = "main";
   } else if (node->IR_name_.empty()) {
-    if (current_Self_.empty()) {
-      node->IR_name_ = name_allocator_.Allocate("function.." + node->identifier_->val_);
-    } else {
-      node->IR_name_ = name_allocator_.Allocate("function.." + current_Self_.top()->identifier_->val_ + "." + node->identifier_->val_);
-    }
+    node->IR_name_ = name_allocator_.Allocate("function.." + node->identifier_->val_);
   }
   std::string IR_type = "void";
   if (node->function_return_type_ != nullptr) {
@@ -615,9 +607,6 @@ void IRGenerator::Visit(StructNode *node) {
   for (auto &[name, item] : node->impl_) {
     auto func = dynamic_cast<FunctionNode *>(item);
     if (func != nullptr) {
-      if (func->IR_name_.empty()) {
-        func->IR_name_ = name_allocator_.Allocate("function.." + node->identifier_->val_ + "." + func->identifier_->val_);
-      }
       func->Accept(this);
     }
   }
