@@ -140,7 +140,9 @@ void IRPrinter::Visit(IRCallInstructionNode *node) {
     node->arguments_[i]->Accept(this);
     os_ << ", ";
   }
-  (*node->arguments_.rbegin())->Accept(this);
+  if (!node->arguments_.empty()) {
+    (*node->arguments_.rbegin())->Accept(this);
+  }
   os_ << ")\n";
 }
 
