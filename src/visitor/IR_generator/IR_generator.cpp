@@ -247,7 +247,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
   } else if (node->type_ == kBorrowExpr) {
     node->IR_name_ = name_allocator_.Allocate("%tmp.");
     node->expr1_->Accept(this);
-    Borrow(node->IR_name_, node->expr1_->IR_name_, node->expr1_->type_info_.get());
+    Borrow(node->IR_name_, node->expr1_->IR_name_, node->type_info_.get());
   } else if (node->type_ == kDereferenceExpr) {
     node->IR_name_ = name_allocator_.Allocate("%tmp.");
     node->expr1_->Accept(this);

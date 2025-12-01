@@ -51,7 +51,7 @@ void TestCode(const std::string &code, std::ostream &out) {
 // }
 
 TEST(IRTest, MyTest) {
-  for (int t = 8; t <= 12; ++t) {
+  for (int t = 8; t <= 13; ++t) {
     std::cerr << "Testing my test" << t << "...\n";
     std::string input = LoadFromFile("tmp_data/" + std::to_string(t) + ".rx");
     std::string output_file = "tmp_data/" + std::to_string(t) + ".ll";
