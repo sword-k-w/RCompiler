@@ -241,7 +241,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
       son_expr->Accept(this);
       std::string tmp = name_allocator_.Allocate("%tmp.");
       cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-        tmp, GetIRTypeString(inside_type), node->IR_name_, true, i));
+        tmp, IR_type, node->IR_name_, true, i));
       Copy(tmp, son_expr->IR_name_, inside_type);
     }
   } else if (node->type_ == kBorrowExpr) {
