@@ -31,7 +31,7 @@ void IRGenerator::Visit(BlockExpressionNode *node) {
     }
     if (statements->expr_without_block_ != nullptr) {
       statements->expr_without_block_->expr_->Accept(this);
-      node->IR_name_ = statements->expr_without_block_->IR_name_;
+      node->IR_name_ = statements->expr_without_block_->expr_->IR_name_;
     } else {
       auto trailer_statement = *statements->statement_s_.rbegin();
       if (trailer_statement->expr_statement_ != nullptr
@@ -413,7 +413,9 @@ void IRGenerator::Visit(ExpressionNode *node) {
       }
     } else {
       auto function_node = dynamic_cast<FunctionNode *>(node->expr1_->type_info_->source_);
-      function_node->IR_name_ = name_allocator_.Allocate("function.." + function_node->identifier_->val_);
+      if (function_node->IR_name_.empty()) {
+        function_node->IR_name_ = name_allocator_.Allocate("function.." + function_node->identifier_->val_);
+      }
       function_name = function_node->IR_name_;
     }
     std::shared_ptr<IRCallInstructionNode> IR_call;
