@@ -56,11 +56,11 @@ void IRPrinter::Visit(IRNegationInstructionNode *node) {
 }
 
 void IRPrinter::Visit(IRBranchInstructionNode *node) {
-  os_ << "  br i1 " << node->condition_ << ", label " << node->true_branch_ << ", label " << node->false_branch_ << '\n';
+  os_ << "  br i1 " << node->condition_ << ", label %" << node->true_branch_ << ", label %" << node->false_branch_ << '\n';
 }
 
 void IRPrinter::Visit(IRJumpInstructionNode *node) {
-  os_ << "  br label " << node->destination_ << '\n';
+  os_ << "  br label %" << node->destination_ << '\n';
 }
 
 void IRPrinter::Visit(IRReturnInstructionNode *node) {

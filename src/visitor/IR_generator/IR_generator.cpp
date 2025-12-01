@@ -648,7 +648,10 @@ void IRGenerator::Return(Type *type, const std::string &name) {
   if (type->type_ == kUnitType) {
     cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
   } else {
-    cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>(GetIRTypeString(type), name));
+    std::string tmp = name_allocator_.Allocate("%tmp.");
+    std::string IR_type = GetIRTypeString(type);
+    cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp, IR_type, name));
+    cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>(IR_type, tmp));
   }
 }
 
