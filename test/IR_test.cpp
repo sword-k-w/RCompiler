@@ -27,7 +27,7 @@ void TestCode(const std::string &code, std::ostream &out) {
     auto IR_root = std::make_shared<IRRootNode>();
     IRGenerator gen(IR_root);
     root->Accept(&gen);
-    IRPrinter printer("../builtin.ll", out);
+    IRPrinter printer("builtin.ll", out);
     IR_root->Accept(&printer);
   } catch (Error &err) {
     std::cerr << err.Info() << '\n';
@@ -53,8 +53,8 @@ void TestCode(const std::string &code, std::ostream &out) {
 TEST(IRTest, MyTest) {
   for (int t = 8; t <= 9; ++t) {
     std::cerr << "Testing my test" << t << "...\n";
-    std::string input = LoadFromFile("../tmp_data/" + std::to_string(t) + ".rx");
-    std::string output_file = "../tmp_data/" + std::to_string(t) + ".ll";
+    std::string input = LoadFromFile("tmp_data/" + std::to_string(t) + ".rx");
+    std::string output_file = "tmp_data/" + std::to_string(t) + ".ll";
     std::ofstream out(output_file);
     if (!out.is_open()) {
       throw std::runtime_error("Failed to open file for writing: " + output_file);

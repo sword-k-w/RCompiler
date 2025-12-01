@@ -149,6 +149,9 @@ void IRPrinter::Visit(IRCallInstructionNode *node) {
 }
 
 void IRPrinter::Visit(IRBlockNode *node) {
+  if (node->instructions_.empty()) {
+    node->AddInstruction(std::make_shared<IRJumpInstructionNode>(node->id_)); // meaningless but dangerous, just to avoid empty block
+  }
   os_ << node->id_ << ":\n";
   for (auto &instruction : node->instructions_) {
     instruction->Accept(this);
