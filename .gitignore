@@ -3,3 +3,4 @@ cmake-build-debug/**
 my_data/**
 redundance.md
 tmp/**
+tmp_data/**

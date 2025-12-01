@@ -60,7 +60,14 @@ void IRStructNode::AddMember(const std::string &member) {
 IRBlockNode::IRBlockNode(const uint32_t &id) : id_(id) {}
 
 void IRBlockNode::AddInstruction(std::shared_ptr<IRInstructionNode> instruction) {
-  instructions_.emplace_back(instruction);
+  if (!end_) {
+    instructions_.emplace_back(instruction);
+    if (dynamic_cast<IRJumpInstructionNode *>(instruction.get()) != nullptr
+      || dynamic_cast<IRReturnInstructionNode *>(instruction.get()) != nullptr
+      || dynamic_cast<IRBranchInstructionNode *>(instruction.get()) != nullptr) {
+      end_ = true;
+    }
+  }
 }
 
 uint32_t IRBlockNode::GetID() const { return id_; }

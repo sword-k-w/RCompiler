@@ -218,6 +218,7 @@ public:
 private:
   uint32_t id_;
   std::vector<std::shared_ptr<IRInstructionNode>> instructions_;
+  bool end_{false};
 };
 
 class IRParameterNode : public IRNode {

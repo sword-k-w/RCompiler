@@ -407,6 +407,10 @@ void IRGenerator::Visit(ExpressionNode *node) {
     auto builtin_function = dynamic_cast<BuiltinFunctionNode *>(node->expr1_->type_info_->source_);
     if (builtin_function != nullptr) {
       function_name = builtin_function->function_name_;
+      if (function_name == "exit") {
+        cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>("i32", "0"));
+        return;
+      }
     } else {
       auto function_node = dynamic_cast<FunctionNode *>(node->expr1_->type_info_->source_);
       function_node->IR_name_ = name_allocator_.Allocate("function.." + function_node->identifier_->val_);
@@ -515,6 +519,9 @@ void IRGenerator::Visit(FunctionNode *node) {
   std::string IR_type = "void";
   if (node->function_return_type_ != nullptr) {
     IR_type = GetIRTypeString(node->function_return_type_->type_info_.get());
+  }
+  if (node->identifier_->val_ == "main") {
+    IR_type = "i32";
   }
   cur_function_ = std::make_shared<IRFunctionNode>(IR_type, node->IR_name_);
   root_->AddFunction(cur_function_);

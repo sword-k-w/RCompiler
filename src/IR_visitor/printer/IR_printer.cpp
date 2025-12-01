@@ -1,6 +1,8 @@
 #include "IR_visitor/printer/IR_printer.h"
 
-IRPrinter::IRPrinter(std::ostream &os) : os_(os) {}
+#include "data_loader/data_loader.h"
+
+IRPrinter::IRPrinter(const std::string &builtin_file, std::ostream &os) : builtin_(LoadFromFile(builtin_file)), os_(os) {}
 
 void IRPrinter::Visit(IRStructNode *node) {
   os_ << "%" << node->name_ << " = type { ";
@@ -175,6 +177,7 @@ void IRPrinter::Visit(IRFunctionNode *node) {
 }
 
 void IRPrinter::Visit(IRRootNode *node) {
+  os_ << builtin_ << '\n';
   for (auto &struct_node : node->structs_) {
     struct_node->Accept(this);
   }
