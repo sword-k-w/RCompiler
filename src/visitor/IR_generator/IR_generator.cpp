@@ -455,9 +455,10 @@ void IRGenerator::Visit(ExpressionNode *node) {
       function_node->IR_name_ = name_allocator_.Allocate("function.." + function_node->identifier_->val_);
     }
     std::shared_ptr<IRCallInstructionNode> IR_call;
+    std::string result;
     if (node->type_info_->type_ != kUnitType) {
-      node->IR_name_ = name_allocator_.Allocate("%tmp.");
-      IR_call = std::make_shared<IRCallInstructionNode>(node->IR_name_, GetIRTypeString(node->type_info_.get()), function_node->IR_name_);
+      result = name_allocator_.Allocate("%tmp.");
+      IR_call = std::make_shared<IRCallInstructionNode>(result, GetIRTypeString(node->type_info_.get()), function_node->IR_name_);
     } else {
       IR_call = std::make_shared<IRCallInstructionNode>("", "", function_node->IR_name_);
     }
@@ -479,6 +480,10 @@ void IRGenerator::Visit(ExpressionNode *node) {
       }
     }
     cur_block_->AddInstruction(IR_call);
+    if (!result.empty()) {
+      node->IR_name_ = name_allocator_.Allocate("%tmp.");
+      Borrow(node->IR_name_, result, node->type_info_.get());
+    }
   } else if (node->type_ == kContinueExpr) {
     if (loop_condition_block_.top() != nullptr) {
       cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(loop_condition_block_.top()->GetID()));
