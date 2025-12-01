@@ -247,7 +247,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
   } else if (node->type_ == kBorrowExpr) {
     node->IR_name_ = name_allocator_.Allocate("%tmp.");
     node->expr1_->Accept(this);
-    Borrow(node->IR_name_, node->expr1_->IR_name_);
+    Borrow(node->IR_name_, node->expr1_->IR_name_, node->expr1_->type_info_.get());
   } else if (node->type_ == kDereferenceExpr) {
     node->IR_name_ = name_allocator_.Allocate("%tmp.");
     node->expr1_->Accept(this);
@@ -417,9 +417,10 @@ void IRGenerator::Visit(ExpressionNode *node) {
       function_name = function_node->IR_name_;
     }
     std::shared_ptr<IRCallInstructionNode> IR_call;
+    std::string result;
     if (node->type_info_->type_ != kUnitType) {
-      node->IR_name_ = name_allocator_.Allocate("%tmp.");
-      IR_call = std::make_shared<IRCallInstructionNode>(node->IR_name_, GetIRTypeString(node->type_info_.get()), function_name);
+      result = name_allocator_.Allocate("%tmp.");
+      IR_call = std::make_shared<IRCallInstructionNode>(result, GetIRTypeString(node->type_info_.get()), function_name);
     } else {
       IR_call = std::make_shared<IRCallInstructionNode>("", "", function_name);
     }
@@ -433,6 +434,10 @@ void IRGenerator::Visit(ExpressionNode *node) {
       }
     }
     cur_block_->AddInstruction(IR_call);
+    if (!result.empty()) {
+      node->IR_name_ = name_allocator_.Allocate("%tmp.");
+      Borrow(node->IR_name_, result, node->type_info_.get());
+    }
   } else if (node->type_ == kMethodCallExpr) {
     node->expr1_->Accept(this);
     std::string struct_pointer = node->expr1_->IR_name_;
@@ -525,25 +530,29 @@ void IRGenerator::Visit(FunctionNode *node) {
   }
   cur_function_ = std::make_shared<IRFunctionNode>(IR_type, node->IR_name_);
   root_->AddFunction(cur_function_);
-  if (node->function_parameters_ != nullptr) {
-    auto self_param = node->function_parameters_->self_param_;
-    if (self_param != nullptr) {
-      self_param->IR_name_ = name_allocator_.Allocate("%" + current_Self_.top()->identifier_->val_ + ".self");
-      cur_function_->AddParameter(std::make_shared<IRParameterNode>(
-        GetIRTypeString(self_param->type_info_.get()), self_param->IR_name_));
-    }
-    for (auto &param : node->function_parameters_->function_params_) {
-      auto pattern = param->pattern_no_top_alt_->identifier_pattern_;
-      pattern->IR_name_ = name_allocator_.Allocate("%" + pattern->identifier_->val_);
-      cur_function_->AddParameter(std::make_shared<IRParameterNode>(
-        GetIRTypeString(pattern->type_info_.get()), pattern->IR_name_));
-    }
-  }
-
   cur_tag_cnt_ = 0;
   cur_block_ = std::make_shared<IRBlockNode>(cur_tag_cnt_);
   cur_function_->AddBlock(cur_block_);
   ++cur_tag_cnt_;
+  if (node->function_parameters_ != nullptr) {
+    auto self_param = node->function_parameters_->self_param_;
+    if (self_param != nullptr) {
+      std::string tmp = name_allocator_.Allocate("%tmp.");
+      self_param->IR_name_ = name_allocator_.Allocate("%" + current_Self_.top()->identifier_->val_ + ".self");
+      cur_function_->AddParameter(std::make_shared<IRParameterNode>(
+        GetIRTypeString(self_param->type_info_.get()), tmp));
+      Borrow(self_param->IR_name_, tmp, self_param->type_info_.get());
+    }
+    for (auto &param : node->function_parameters_->function_params_) {
+      auto pattern = param->pattern_no_top_alt_->identifier_pattern_;
+      std::string tmp = name_allocator_.Allocate("%tmp.");
+      pattern->IR_name_ = name_allocator_.Allocate("%" + pattern->identifier_->val_);
+      cur_function_->AddParameter(std::make_shared<IRParameterNode>(
+        GetIRTypeString(pattern->type_info_.get()), tmp));
+      Borrow(pattern->IR_name_, tmp, pattern->type_info_.get());
+    }
+  }
+
   if (node->block_expr_->statements_ != nullptr) {
     node->block_expr_->statements_->Accept(this);
   } else {
@@ -621,9 +630,9 @@ void IRGenerator::Visit(StructNode *node) {
 }
 
 // name1 = &name2, name1 is not allocated at beginning
-void IRGenerator::Borrow(const std::string &name1, const std::string &name2) {
+void IRGenerator::Borrow(const std::string &name1, const std::string &name2, Type *type) {
   cur_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(name1, "ptr"));
-  cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>("ptr", name2, name1));
+  cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(GetIRTypeString(type), name2, name1));
 }
 
 // name1 = *name2 (semantic)

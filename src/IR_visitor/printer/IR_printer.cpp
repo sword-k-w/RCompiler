@@ -134,7 +134,7 @@ void IRPrinter::Visit(IRCallInstructionNode *node) {
   if (node->result_type_.empty()) {
     os_ << "  call void";
   } else {
-    os_ << node->result_ << " = call " << node->result_type_;
+    os_ << "  " << node->result_ << " = call " << node->result_type_;
   }
   os_ << " @" << node->function_name_ << "(";
   uint32_t size = node->arguments_.size();
