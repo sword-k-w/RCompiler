@@ -382,6 +382,7 @@ void ThirdChecker::Visit(ExpressionNode *node) {
           auto *identifier_pattern = dynamic_cast<IdentifierPatternNode *>(target);
           if (identifier_pattern != nullptr) {
             node->type_info_ = identifier_pattern->type_info_;
+            node->identifier_target_ = identifier_pattern;
           } else {
             auto *function_node = dynamic_cast<FunctionNode *>(target);
             if (function_node != nullptr) {

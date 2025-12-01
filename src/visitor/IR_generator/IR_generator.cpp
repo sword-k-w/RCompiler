@@ -198,8 +198,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
         node->IR_name_));
     } else {
       if (node->path_expr_->path_expr_segment1_->identifier_ != nullptr) {
-        node->IR_name_ = dynamic_cast<IdentifierPatternNode *>(
-          node->scope_->FindValueName(node->path_expr_->path_expr_segment1_->identifier_->val_))->IR_name_;
+        node->IR_name_ = node->identifier_target_->IR_name_;
       } else {
         node->IR_name_ = dynamic_cast<SelfParamNode *>(node->scope_->FindValueName("self"))->IR_name_;
       }
@@ -247,6 +246,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
   } else if (node->type_ == kBorrowExpr) {
     node->IR_name_ = name_allocator_.Allocate("%tmp.");
     node->expr1_->Accept(this);
+    std::cerr << node->IR_name_ << " " << node->expr1_->IR_name_ << '\n';
     Borrow(node->IR_name_, node->expr1_->IR_name_, node->type_info_.get());
   } else if (node->type_ == kDereferenceExpr) {
     node->IR_name_ = name_allocator_.Allocate("%tmp.");

@@ -292,6 +292,8 @@ private:
   std::shared_ptr<StructExpressionNode> struct_expr_;
   std::shared_ptr<ContinueExpressionNode> continue_expr_;
   std::shared_ptr<ExpressionWithBlockNode> expr_with_block_;
+
+  IdentifierPatternNode *identifier_target_;
 };
 
 // true means binary, false means unary
