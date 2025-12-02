@@ -32,7 +32,7 @@ class IRArithmeticInstructionNode : public IRInstructionNode {
 public:
   IRArithmeticInstructionNode() = delete;
   IRArithmeticInstructionNode(const std::string &, const std::string &, const std::string &,
-    const std::string &, const std::string &);
+    const std::string &, const std::string &, const bool &);
   void Accept(IRVisitorBase *) override;
 private:
   std::string result_;
@@ -40,6 +40,7 @@ private:
   std::string type_;
   std::string operand1_;
   std::string operand2_;
+  bool is_unsigned_;
 };
 
 class IRNegationInstructionNode : public IRInstructionNode {

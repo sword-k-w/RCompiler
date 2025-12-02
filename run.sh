@@ -10,7 +10,7 @@ for INDEX in {1..50}; do
   clang-15 -S --target=riscv32-unknown-elf -O0 "tmp/${INDEX}.ll" -o "tmp/${INDEX}.s"
   if [ $? -eq 0 ]; then
     sed -i 's/@plt//g' "tmp/${INDEX}.s"
-    reimu -f="tmp/${INDEX}.s" -i="testcases/IR-1/src/comprehensive${INDEX}/comprehensive${INDEX}.in" -o "tmp/${INDEX}.out" -s=100000000
+    reimu -f="tmp/${INDEX}.s" -i="testcases/IR-1/src/comprehensive${INDEX}/comprehensive${INDEX}.in" -o "tmp/${INDEX}.out" -s=200000000
     if [ $? -eq 0 ]; then
       diff "tmp/${INDEX}.out" "testcases/IR-1/src/comprehensive${INDEX}/comprehensive${INDEX}.out" -Z
       if [ $? -eq 0 ]; then

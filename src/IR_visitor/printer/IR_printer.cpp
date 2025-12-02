@@ -22,9 +22,17 @@ void IRPrinter::Visit(IRArithmeticInstructionNode *node) {
   } else if (node->op_ == "*") {
     os_ << "mul";
   } else if (node->op_ == "/") {
-    os_ << "sdiv";
+    if (node->is_unsigned_) {
+      os_ << "udiv";
+    } else {
+      os_ << "sdiv";
+    }
   } else if (node->op_ == "%") {
-    os_ << "srem";
+    if (node->is_unsigned_) {
+      os_ << "urem";
+    } else {
+      os_ << "srem";
+    }
   } else if (node->op_ == "<<") {
     os_ << "shl";
   } else if (node->op_ == ">>") {

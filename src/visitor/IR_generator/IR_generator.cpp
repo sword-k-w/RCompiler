@@ -275,7 +275,8 @@ void IRGenerator::Visit(ExpressionNode *node) {
     std::string operand2 = name_allocator_.Allocate("%tmp.");
     cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand1, IR_type, node->expr1_->IR_name_));
     cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand2, IR_type, node->expr2_->IR_name_));
-    cur_block_->AddInstruction(std::make_shared<IRArithmeticInstructionNode>(tmp, node->op_, IR_type, operand1, operand2));
+    cur_block_->AddInstruction(std::make_shared<IRArithmeticInstructionNode>(tmp, node->op_, IR_type, operand1, operand2,
+      node->type_info_->type_name_ == "u32" || node->type_info_->type_name_ == "usize"));
     cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type, tmp, node->IR_name_));
   } else if (node->type_ == kComparisonExpr) {
     node->IR_name_ = name_allocator_.Allocate("%tmp.");
@@ -376,7 +377,8 @@ void IRGenerator::Visit(ExpressionNode *node) {
     cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand2, IR_type, node->expr2_->IR_name_));
     std::string reduced_op = node->op_;
     reduced_op.pop_back();
-    cur_block_->AddInstruction(std::make_shared<IRArithmeticInstructionNode>(tmp, reduced_op, IR_type, operand1, operand2));
+    cur_block_->AddInstruction(std::make_shared<IRArithmeticInstructionNode>(tmp, reduced_op, IR_type, operand1, operand2,
+      node->expr2_->type_info_->type_name_ == "u32" || node->expr2_->type_info_->type_name_ == "usize"));
     cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type, tmp, node->expr1_->IR_name_));
   } else if (node->type_ == kIndexExpr) {
     node->IR_name_ = name_allocator_.Allocate("%tmp.");

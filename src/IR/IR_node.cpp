@@ -5,8 +5,8 @@
 IRStructNode::IRStructNode(const std::string &name) : name_(name) {}
 
 IRArithmeticInstructionNode::IRArithmeticInstructionNode(const std::string &result, const std::string &op,
-  const std::string &type, const std::string &operand1, const std::string &operand2) :
-  result_(result), op_(op), type_(type), operand1_(operand1), operand2_(operand2) {}
+  const std::string &type, const std::string &operand1, const std::string &operand2, const bool &is_unsigned) :
+  result_(result), op_(op), type_(type), operand1_(operand1), operand2_(operand2), is_unsigned_(is_unsigned) {}
 
 IRNegationInstructionNode::IRNegationInstructionNode(const std::string &result, const bool &is_minus,
   const std::string &type, const std::string &operand) :
