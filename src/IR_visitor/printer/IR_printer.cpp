@@ -89,15 +89,11 @@ void IRPrinter::Visit(IRStoreConstInstructionNode *node) {
 }
 
 void IRPrinter::Visit(IRGetElementPtrInstructionNode *node) {
-  os_ << "  " << node->result_ << " = getelementptr " << node->type_ << ", ptr " << node->ptrval_ << ", ";
-  if (node->is_struct_) {
-    os_ << "i32 0, ";
-  }
-  os_ << "i32 " << node->index_ << '\n';
+  os_ << "  " << node->result_ << " = getelementptr " << node->type_ << ", ptr " << node->ptrval_ << ", i32 0, i32 " << node->index_ << '\n';
 }
 
 void IRPrinter::Visit(IRGetElementPtrPrimeInstructionNode *node) {
-  os_ << "  " << node->result_ << " = getelementptr " << node->type_ << ", ptr " << node->ptrval_ << ", i32 " << node->index_ << '\n';
+  os_ << "  " << node->result_ << " = getelementptr " << node->type_ << ", ptr " << node->ptrval_ << ", i32 0, i32 " << node->index_ << '\n';
 }
 
 void IRPrinter::Visit(IRCompareInstructionNode *node) {

@@ -33,8 +33,8 @@ IRStoreConstInstructionNode::IRStoreConstInstructionNode(const std::string &type
   const std::string &pointer) : type_(type), value_(value), pointer_(pointer) {}
 
 IRGetElementPtrInstructionNode::IRGetElementPtrInstructionNode(const std::string &result, const std::string &type,
-  const std::string &ptrval, const bool &is_struct, const uint32_t &index) :
-  result_(result), type_(type), ptrval_(ptrval), is_struct_(is_struct), index_(index) {}
+  const std::string &ptrval, const uint32_t &index) :
+  result_(result), type_(type), ptrval_(ptrval), index_(index) {}
 
 IRGetElementPtrPrimeInstructionNode::IRGetElementPtrPrimeInstructionNode(const std::string &result, const std::string &type,
   const std::string &ptrval, const std::string &index) :

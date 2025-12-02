@@ -215,7 +215,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
       for (uint32_t i = 0; i < size; ++i) {
         std::string tmp = name_allocator_.Allocate("%tmp.");
         cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-          tmp, IR_inside_type, node->IR_name_, false, i));
+          tmp, IR_type, node->IR_name_, i));
         Copy(tmp, son_expr->IR_name_, inside_type.get());
       }
     } else {
@@ -224,7 +224,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
         son_expr->Accept(this);
         std::string tmp = name_allocator_.Allocate("%tmp.");
         cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-          tmp, IR_inside_type, node->IR_name_, false, i));
+          tmp, IR_type, node->IR_name_, i));
         Copy(tmp, son_expr->IR_name_, inside_type.get());
       }
     }
@@ -240,13 +240,12 @@ void IRGenerator::Visit(ExpressionNode *node) {
       son_expr->Accept(this);
       std::string tmp = name_allocator_.Allocate("%tmp.");
       cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-        tmp, IR_type, node->IR_name_, true, i));
+        tmp, IR_type, node->IR_name_, i));
       Copy(tmp, son_expr->IR_name_, inside_type);
     }
   } else if (node->type_ == kBorrowExpr) {
     node->IR_name_ = name_allocator_.Allocate("%tmp.");
     node->expr1_->Accept(this);
-    std::cerr << node->IR_name_ << " " << node->expr1_->IR_name_ << '\n';
     Borrow(node->IR_name_, node->expr1_->IR_name_, node->type_info_.get());
   } else if (node->type_ == kDereferenceExpr) {
     node->IR_name_ = name_allocator_.Allocate("%tmp.");
@@ -401,7 +400,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
       }
     }
     cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-      node->IR_name_, GetIRTypeString(struct_type), struct_pointer, true, index));
+      node->IR_name_, GetIRTypeString(struct_type), struct_pointer, index));
   } else if (node->type_ == kCallExpr) {
     std::string function_name;
     auto builtin_function = dynamic_cast<BuiltinFunctionNode *>(node->expr1_->type_info_->source_);
@@ -679,9 +678,9 @@ void IRGenerator::Copy(const std::string &name1, const std::string &name2, Type 
     std::string IR_type = GetIRTypeString(type);
     for (uint32_t i = 0; i < type->array_type_info_.second; ++i) {
       std::string tmp1 = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(tmp1, IR_type, name1, false, i));
+      cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(tmp1, IR_type, name1, i));
       std::string tmp2 = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(tmp2, IR_type, name2, false, i));
+      cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(tmp2, IR_type, name2, i));
       Copy(tmp1, tmp2, type->array_type_info_.first.get());
     }
   } else if (type->type_ == kStructType) {
@@ -690,9 +689,9 @@ void IRGenerator::Copy(const std::string &name1, const std::string &name2, Type 
     uint32_t size = field.size();
     for (uint32_t i = 0; i < size; ++i) {
       std::string tmp1 = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(tmp1, IR_type, name1, true, i));
+      cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(tmp1, IR_type, name1, i));
       std::string tmp2 = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(tmp2, IR_type, name2, true, i));
+      cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(tmp2, IR_type, name2, i));
       Copy(tmp1, tmp2, field[i]->type_->type_info_.get());
     }
   } else {

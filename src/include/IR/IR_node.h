@@ -139,14 +139,12 @@ class IRGetElementPtrInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
 public:
   IRGetElementPtrInstructionNode() = delete;
-  IRGetElementPtrInstructionNode(const std::string &, const std::string &, const std::string &,
-    const bool &, const uint32_t &);
+  IRGetElementPtrInstructionNode(const std::string &, const std::string &, const std::string &, const uint32_t &);
   void Accept(IRVisitorBase *) override;
 private:
   std::string result_;
   std::string type_;
   std::string ptrval_;
-  bool is_struct_;
   uint32_t index_;
 };
 

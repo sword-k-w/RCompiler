@@ -1,11 +1,18 @@
 #!/bin/bash
 
-if [ $# -ne 1 ]; then
-    echo "expect index"
-    exit 1
-fi
+success_count=0
 
-INDEX="$1"
-clang-15 -S -c --target=riscv32-unknown-elf -O0 "tmp_data/${INDEX}.ll" -o "tmp_data/${INDEX}.s"
+for INDEX in {19..19}; do
+  echo "compiling ${INDEX}.ll into assembly..."
+  clang-15 -S --target=riscv32-unknown-elf -O0 "tmp_data/${INDEX}.ll" -o "tmp_data/${INDEX}.s"
+  if [ $? -eq 0 ]; then
+    sed -i 's/@plt//g' "tmp_data/${INDEX}.s"
+    echo "${INDEX} success!"
+    ((success_count++))
+  else
+    echo "${INDEX} failed!"
+  fi
+#  rm "tmp_data/${INDEX}.s"
+done
 
-sed -i 's/@plt//g' "tmp_data/${INDEX}.s"
+echo "${success_count} success out of 50"
