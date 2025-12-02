@@ -144,6 +144,11 @@ void IRPrinter::Visit(IRCallInstructionNode *node) {
   os_ << ")\n";
 }
 
+void IRPrinter::Visit(IRSelectInstructionNode *node) {
+  os_ << "  " << node->result_ << " = select i1 " << node->cond_ << ", i32 1, i32 0\n";
+}
+
+
 void IRPrinter::Visit(IRBlockNode *node) {
   if (node->instructions_.empty()) {
     node->AddInstruction(std::make_shared<IRJumpInstructionNode>(node->id_)); // meaningless but dangerous, just to avoid empty block

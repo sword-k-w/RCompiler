@@ -205,6 +205,17 @@ private:
   std::vector<std::shared_ptr<IRArgumentNode>> arguments_;
 };
 
+class IRSelectInstructionNode : public IRInstructionNode {
+  friend class IRPrinter;
+public:
+  IRSelectInstructionNode() = delete;
+  IRSelectInstructionNode(const std::string &, const std::string &);
+  void Accept(IRVisitorBase *) override;
+private:
+  std::string result_;
+  std::string cond_;
+};
+
 class IRBlockNode : public IRNode {
   friend class IRPrinter;
 public:

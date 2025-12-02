@@ -68,7 +68,7 @@ public:
   void Visit(ArrayTypeNode *) override;
   void Visit(UnitTypeNode *) override;
   void Visit(TypeNoBoundsNode *) override;
-  void Borrow(const std::string &, const std::string &, Type *type);
+  void Borrow(const std::string &, const std::string &, const std::string &type);
   void Dereference(const std::string &, const std::string &);
   void Return(Type *, const std::string &);
   void Copy(const std::string &, const std::string &, Type *);

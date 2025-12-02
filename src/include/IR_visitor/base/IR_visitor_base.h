@@ -19,6 +19,7 @@ public:
   virtual void Visit(IRCompareInstructionNode *) = 0;
   virtual void Visit(IRArgumentNode *) = 0;
   virtual void Visit(IRCallInstructionNode *) = 0;
+  virtual void Visit(IRSelectInstructionNode *) = 0;
   virtual void Visit(IRBlockNode *) = 0;
   virtual void Visit(IRParameterNode *) = 0;
   virtual void Visit(IRFunctionNode *) = 0;

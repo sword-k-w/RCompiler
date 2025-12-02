@@ -49,6 +49,9 @@ IRArgumentNode::IRArgumentNode(const std::string &type, const std::string &value
 IRCallInstructionNode::IRCallInstructionNode(const std::string &result, const std::string &result_type,
   const std::string &function_name) : result_(result), result_type_(result_type), function_name_(function_name) {}
 
+IRSelectInstructionNode::IRSelectInstructionNode(const std::string &result, const std::string &cond) :
+  result_(result), cond_(cond) {}
+
 void IRCallInstructionNode::AddArgument(std::shared_ptr<IRArgumentNode> argument) {
   arguments_.emplace_back(argument);
 }
@@ -143,6 +146,11 @@ void IRArgumentNode::Accept(IRVisitorBase *visitor) {
 void IRCallInstructionNode::Accept(IRVisitorBase *visitor) {
   visitor->Visit(this);
 }
+
+void IRSelectInstructionNode::Accept(IRVisitorBase *visitor) {
+  visitor->Visit(this);
+}
+
 
 void IRBlockNode::Accept(IRVisitorBase *visitor) {
   visitor->Visit(this);
