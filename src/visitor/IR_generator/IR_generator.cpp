@@ -559,9 +559,13 @@ void IRGenerator::Visit(FunctionNode *node) {
     if (self_param != nullptr) {
       std::string tmp = name_allocator_.Allocate("%tmp.");
       self_param->IR_name_ = name_allocator_.Allocate("%" + current_Self_.top()->identifier_->val_ + ".self");
-      std::string IR_type = self_param->shorthand_self_->quote_ ? "ptr" : GetIRTypeString(self_param->type_info_.get());
-      cur_function_->AddParameter(std::make_shared<IRParameterNode>(IR_type, tmp));
-      Borrow(self_param->IR_name_, tmp, IR_type);
+      if (self_param->shorthand_self_->quote_) {
+        cur_function_->AddParameter(std::make_shared<IRParameterNode>("ptr", self_param->IR_name_));
+      } else {
+        std::string IR_type = GetIRTypeString(self_param->type_info_.get());
+        cur_function_->AddParameter(std::make_shared<IRParameterNode>(IR_type, tmp));
+        Borrow(self_param->IR_name_, tmp, IR_type);
+      }
     }
     for (auto &param : node->function_parameters_->function_params_) {
       auto pattern = param->pattern_no_top_alt_->identifier_pattern_;
