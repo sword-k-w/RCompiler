@@ -76,3 +76,6 @@ void SameTypeCheck(Type *, Type *);
 std::pair<Type *, uint32_t> AutoDereference(Type *);
 
 std::string GetIRTypeString(Type *);
+
+// (total size, is bool)
+std::pair<uint32_t, bool> GetTypeSize(Type *);

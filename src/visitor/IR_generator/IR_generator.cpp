@@ -682,40 +682,11 @@ void IRGenerator::Return(Type *type, const std::string &name) {
 // Generate the IR that copy 'name2' (a (temp) variable) to 'name1'. 'type' is their type.
 // name1 is allocated
 void IRGenerator::Copy(const std::string &name1, const std::string &name2, Type *type) {
-  if (type->type_ == kLeafType || type->type_ == kEnumType || type->type_ == kPointerType) {
-    std::string IR_type_name = "i1";
-    if (type->type_ == kPointerType) {
-      IR_type_name = "ptr";
-    } else if (type->type_name_ != "bool") {
-      IR_type_name = "i32";
-    }
-    std::string tmp1 = name_allocator_.Allocate("%tmp.");
-    cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp1, IR_type_name, name2));
-    cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type_name, tmp1, name1));
-  } else if (type->type_ == kArrayType) {
-    std::string IR_type = GetIRTypeString(type);
-    for (uint32_t i = 0; i < type->array_type_info_.second; ++i) {
-      std::string tmp1 = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(tmp1, IR_type, name1, i));
-      std::string tmp2 = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(tmp2, IR_type, name2, i));
-      Copy(tmp1, tmp2, type->array_type_info_.first.get());
-    }
-  } else if (type->type_ == kStructType) {
-    std::string IR_type = GetIRTypeString(type);
-    auto field = dynamic_cast<StructNode *>(type->source_)->struct_fields_->struct_field_s_;
-    uint32_t size = field.size();
-    for (uint32_t i = 0; i < size; ++i) {
-      std::string tmp1 = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(tmp1, IR_type, name1, i));
-      std::string tmp2 = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(tmp2, IR_type, name2, i));
-      Copy(tmp1, tmp2, field[i]->type_->type_info_.get());
-    }
-  } else {
-    std::cerr << "Error: try to copy strange type!\n";
-    exit(-1);
-  }
+  auto IR_call = std::make_shared<IRCallInstructionNode>("", "", "builtin_memcpy");
+  IR_call->AddArgument(std::make_shared<IRArgumentNode>("ptr", name1));
+  IR_call->AddArgument(std::make_shared<IRArgumentNode>("ptr", name2));
+  IR_call->AddArgument(std::make_shared<IRArgumentNode>("i32", std::to_string(GetTypeSize(type).first)));
+  cur_block_->AddInstruction(IR_call);
 }
 
 void IRGenerator::Visit(LiteralExpressionNode *node) {}

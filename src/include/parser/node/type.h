@@ -43,6 +43,7 @@ class TypeNoBoundsNode : public ASTNode {
   friend class SecondChecker;
   friend class ThirdChecker;
   friend class IRGenerator;
+  friend std::pair<uint32_t, bool> GetTypeSize(Type *);
 public:
   TypeNoBoundsNode() = delete;
   TypeNoBoundsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

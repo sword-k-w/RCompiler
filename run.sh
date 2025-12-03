@@ -7,7 +7,7 @@ success_count=0
 
 for INDEX in {1..50}; do
   echo "compiling ${INDEX}.ll into assembly..."
-  clang-15 -S --target=riscv32-unknown-elf -O0 "tmp/${INDEX}.ll" -o "tmp/${INDEX}.s"
+  clang-21 -S --target=riscv32-unknown-elf -O0 "tmp/${INDEX}.ll" -o "tmp/${INDEX}.s"
   if [ $? -eq 0 ]; then
     sed -i 's/@plt//g' "tmp/${INDEX}.s"
     reimu -f="tmp/${INDEX}.s" -i="testcases/IR-1/src/comprehensive${INDEX}/comprehensive${INDEX}.in" -o "tmp/${INDEX}.out" -s=200000000
