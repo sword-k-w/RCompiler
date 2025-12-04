@@ -1,5 +1,5 @@
 #pragma once
-
+#include <memory>
 #include "lexer/lexer.h"
 #include "common/error.h"
 

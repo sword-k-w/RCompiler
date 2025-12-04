@@ -34,6 +34,17 @@ file(GLOB_RECURSE IR_VISITOR_SRCS
 aux_source_directory(${COMMON_DIR} COMMON_SRCS)
 aux_source_directory(${LEXER_DIR} LEXER_SRCS)
 
+add_executable(code
+        test/IR_submit.cpp
+        src/data_loader/data_loader.cpp
+        ${PARSER_SRCS}
+        ${COMMON_SRCS}
+        ${LEXER_SRCS}
+        ${VISITOR_SRCS}
+        ${SEMANTIC_SRCS}
+        ${IR_SRCS}
+        ${IR_VISITOR_SRCS})
+
 add_executable(parser_test
         test/parser_test.cpp
         src/data_loader/data_loader.cpp

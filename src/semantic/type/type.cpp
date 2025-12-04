@@ -235,10 +235,10 @@ std::pair<uint32_t, bool> GetTypeSize(Type *type) {
     for (auto &field : struct_type->struct_fields_->struct_field_s_) {
       auto [inner_size, inner_tag] = GetTypeSize(field->type_->type_info_.get());
       if (!tag && inner_tag) {
-        inner_size = (inner_size + 3) / 4;
+        inner_size = (inner_size + 3) / 4 * 4;
       }
       if (tag && !inner_tag) {
-        size = (size + 3) / 4;
+        size = (size + 3) / 4 * 4;
       }
       tag &= inner_tag;
       size += inner_size;
