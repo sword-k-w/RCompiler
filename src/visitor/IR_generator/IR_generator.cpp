@@ -433,7 +433,11 @@ void IRGenerator::Visit(ExpressionNode *node) {
     }
     std::shared_ptr<IRCallInstructionNode> IR_call;
     std::string result;
-    if (node->type_info_->type_ != kUnitType) {
+    bool pass_result = false;
+    if (node->type_info_->type_ == kArrayType || node->type_info_->type_ == kStructType) {
+      IR_call = std::make_shared<IRCallInstructionNode>("", "", function_name);
+      pass_result = true;
+    } else if (node->type_info_->type_ != kUnitType) {
       result = name_allocator_.Allocate("%tmp.");
       IR_call = std::make_shared<IRCallInstructionNode>(result, GetIRTypeString(node->type_info_.get()), function_name);
     } else {
@@ -447,6 +451,11 @@ void IRGenerator::Visit(ExpressionNode *node) {
         cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp, IR_type, expr->IR_name_));
         IR_call->AddArgument(std::make_shared<IRArgumentNode>(IR_type, tmp));
       }
+    }
+    if (pass_result) {
+      node->IR_name_ = name_allocator_.Allocate("%pass..result");
+      cur_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, GetIRTypeString(node->type_info_.get())));
+      IR_call->AddArgument(std::make_shared<IRArgumentNode>("ptr", node->IR_name_));
     }
     cur_block_->AddInstruction(IR_call);
     if (!result.empty()) {
@@ -469,7 +478,11 @@ void IRGenerator::Visit(ExpressionNode *node) {
     }
     std::shared_ptr<IRCallInstructionNode> IR_call;
     std::string result;
-    if (node->type_info_->type_ != kUnitType) {
+    bool pass_result = false;
+    if (node->type_info_->type_ == kArrayType || node->type_info_->type_ == kStructType) {
+      IR_call = std::make_shared<IRCallInstructionNode>("", "", function_node->IR_name_);
+      pass_result = true;
+    } else if (node->type_info_->type_ != kUnitType) {
       result = name_allocator_.Allocate("%tmp.");
       IR_call = std::make_shared<IRCallInstructionNode>(result, GetIRTypeString(node->type_info_.get()), function_node->IR_name_);
     } else {
@@ -491,6 +504,11 @@ void IRGenerator::Visit(ExpressionNode *node) {
         cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp, IR_type, expr->IR_name_));
         IR_call->AddArgument(std::make_shared<IRArgumentNode>(IR_type, tmp));
       }
+    }
+    if (pass_result) {
+      node->IR_name_ = name_allocator_.Allocate("%pass..result");
+      cur_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, GetIRTypeString(node->type_info_.get())));
+      IR_call->AddArgument(std::make_shared<IRArgumentNode>("ptr", node->IR_name_));
     }
     cur_block_->AddInstruction(IR_call);
     if (!result.empty()) {
@@ -542,11 +560,16 @@ void IRGenerator::Visit(FunctionNode *node) {
     node->IR_name_ = name_allocator_.Allocate("function.." + node->identifier_->val_);
   }
   std::string IR_type = "void";
-  if (node->function_return_type_ != nullptr) {
-    IR_type = GetIRTypeString(node->function_return_type_->type_info_.get());
-  }
+  bool pass_result = false;
   if (node->identifier_->val_ == "main") {
     IR_type = "i32";
+  } else if (node->function_return_type_ != nullptr) {
+    if (node->function_return_type_->type_info_->type_ == kStructType
+      || node->function_return_type_->type_info_->type_ == kArrayType) {
+      pass_result = true;
+    } else {
+      IR_type = GetIRTypeString(node->function_return_type_->type_info_.get());
+    }
   }
   cur_function_ = std::make_shared<IRFunctionNode>(IR_type, node->IR_name_);
   root_->AddFunction(cur_function_);
@@ -575,6 +598,9 @@ void IRGenerator::Visit(FunctionNode *node) {
         GetIRTypeString(pattern->type_info_.get()), tmp));
       Borrow(pattern->IR_name_, tmp, GetIRTypeString(pattern->type_info_.get()));
     }
+  }
+  if (pass_result) {
+    cur_function_->AddParameter(std::make_shared<IRParameterNode>("ptr", "%pass..pointer"));
   }
 
   if (node->block_expr_->statements_ != nullptr) {
@@ -666,6 +692,11 @@ void IRGenerator::Dereference(const std::string &name1, const std::string &name2
 }
 
 void IRGenerator::Return(Type *type, const std::string &name) {
+  if (type->type_ == kArrayType || type->type_ == kStructType) {
+    Copy("%pass..pointer", name, type);
+    cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
+    return;
+  }
   if (type->type_ == kNeverType) {
     return;
   }

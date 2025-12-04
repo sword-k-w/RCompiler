@@ -2,7 +2,7 @@
 
 success_count=0
 
-for INDEX in {29..29}; do
+for INDEX in {30..30}; do
   echo "compiling ${INDEX}.ll into assembly..."
   clang-21 -S --target=riscv32-unknown-elf -O0 "tmp_data/${INDEX}.ll" -o "tmp_data/${INDEX}.s"
   if [ $? -eq 0 ]; then
