@@ -68,11 +68,11 @@ void IRGenerator::Visit(ConditionsNode *node) {
 }
 
 void IRGenerator::Visit(PredicateLoopExpressionNode *node) {
-  auto loop_condition = std::make_shared<IRBlockNode>(cur_tag_cnt_);
-  cur_function_->AddBlock(loop_condition);
-  ++cur_tag_cnt_;
   auto loop_body = std::make_shared<IRBlockNode>(cur_tag_cnt_);
   cur_function_->AddBlock(loop_body);
+  ++cur_tag_cnt_;
+  auto loop_condition = std::make_shared<IRBlockNode>(cur_tag_cnt_);
+  cur_function_->AddBlock(loop_condition);
   ++cur_tag_cnt_;
   auto loop_end = std::make_shared<IRBlockNode>(cur_tag_cnt_);
   cur_function_->AddBlock(loop_end);
@@ -211,12 +211,26 @@ void IRGenerator::Visit(ExpressionNode *node) {
     std::string IR_inside_type = GetIRTypeString(inside_type.get());
     if (node->array_expr_->array_elements_->semicolon_) {
       auto son_expr = node->array_expr_->array_elements_->exprs_[0];
-      son_expr->Accept(this);
-      for (uint32_t i = 0; i < size; ++i) {
-        std::string tmp = name_allocator_.Allocate("%tmp.");
-        cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-          tmp, IR_type, node->IR_name_, i));
-        Copy(tmp, son_expr->IR_name_, inside_type.get());
+      if (son_expr->const_value_ != nullptr && son_expr->const_value_->type_ == kLeafType
+        && son_expr->const_value_->u32_value_ == 0) {
+        auto IR_call = std::make_shared<IRCallInstructionNode>("", "", "builtin_memset");
+        IR_call->AddArgument(std::make_shared<IRArgumentNode>("ptr", node->IR_name_));
+        if (son_expr->const_value_->type_name_ != "bool") {
+          IR_call->AddArgument(std::make_shared<IRArgumentNode>("i32", "0"));
+          IR_call->AddArgument(std::make_shared<IRArgumentNode>("i32", std::to_string(4 * size)));
+        } else {
+          IR_call->AddArgument(std::make_shared<IRArgumentNode>("i1", "0"));
+          IR_call->AddArgument(std::make_shared<IRArgumentNode>("i32", std::to_string(size)));
+        }
+        cur_block_->AddInstruction(IR_call);
+      } else {
+        son_expr->Accept(this);
+        for (uint32_t i = 0; i < size; ++i) {
+          std::string tmp = name_allocator_.Allocate("%tmp.");
+          cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
+            tmp, IR_type, node->IR_name_, i));
+          Copy(tmp, son_expr->IR_name_, inside_type.get());
+        }
       }
     } else {
       for (uint32_t i = 0; i < size; ++i) {
