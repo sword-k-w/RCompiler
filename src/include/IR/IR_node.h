@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <deque>
 
 class IRVisitorBase;
 
@@ -227,7 +228,7 @@ public:
   uint32_t GetID() const;
 private:
   uint32_t id_;
-  std::vector<std::shared_ptr<IRInstructionNode>> instructions_;
+  std::deque<std::shared_ptr<IRInstructionNode>> instructions_;
   bool end_{false};
 };
 

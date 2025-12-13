@@ -51,7 +51,7 @@ TEST(IRTest, TestcaseTest) {
 }
 
 // TEST(IRTest, MyTest) {
-//   for (int t = 31; t <= 31; ++t) {
+//   for (int t = 9; t <= 9; ++t) {
 //     std::cerr << "Testing my test" << t << "...\n";
 //     std::string input = LoadFromFile("tmp_data/" + std::to_string(t) + ".rx");
 //     std::string output_file = "tmp_data/" + std::to_string(t) + ".ll";

@@ -78,6 +78,7 @@ private:
   std::shared_ptr<IRRootNode> root_;
   std::shared_ptr<IRFunctionNode> cur_function_;
   std::shared_ptr<IRBlockNode> cur_block_;
+  std::shared_ptr<IRBlockNode> first_block_;
   NameAllocator name_allocator_;
   uint32_t cur_tag_cnt_{0};
   std::stack<std::shared_ptr<IRBlockNode>> loop_condition_block_;
