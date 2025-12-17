@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 project(RCompiler CXX)
 
-enable_testing()
+#enable_testing()
 
 find_package(GTest REQUIRED)
 
