@@ -1,4 +1,5 @@
 build:
+	makedir build
 	cmake build
 	cmake --build build
 
