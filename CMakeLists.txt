@@ -57,7 +57,7 @@ add_custom_target(run
 )
 
 add_custom_target(clean-all
-        COMMAND rm -f code CMakeCache.txt cmake_install.cmake Makefile
+        COMMAND rm -f code CMakeCache.txt cmake_install.cmake
         COMMAND rm -rf CMakeFiles/
         COMMENT "Cleaning all build files..."
 )
