@@ -4,12 +4,12 @@ project(RCompiler CXX)
 
 #enable_testing()
 
-find_package(GTest REQUIRED)
+#find_package(GTest REQUIRED)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(${GTEST_INCLUDE_DIRS})
+#include_directories(${GTEST_INCLUDE_DIRS})
 include_directories(src/include)
 
 set(LEXER_DIR ./src/lexer)
@@ -45,22 +45,6 @@ add_executable(code
         ${IR_SRCS}
         ${IR_VISITOR_SRCS})
 
-add_custom_target(build
-        DEPENDS code
-        COMMENT "Compiling project..."
-)
-
-add_custom_target(run
-        DEPENDS build
-        COMMAND ./code
-        COMMENT "Running myapp..."
-)
-
-add_custom_target(clean-all
-        COMMAND rm -f code CMakeCache.txt cmake_install.cmake
-        COMMAND rm -rf CMakeFiles/
-        COMMENT "Cleaning all build files..."
-)
 #add_executable(parser_test
 #        test/parser_test.cpp
 #        src/data_loader/data_loader.cpp
