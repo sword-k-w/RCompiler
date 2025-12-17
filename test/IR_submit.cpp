@@ -12,6 +12,8 @@
 #include "IR_visitor/printer/IR_printer.h"
 
 int main() {
+  std::string builtin_code = LoadFromFile("testcases/IR-1/builtin/builtin.c");
+  std::cerr << builtin_code << '\n';
   std::string code = LoadInput();
   Lexer lexer(code);
   auto tokens = lexer.Run();

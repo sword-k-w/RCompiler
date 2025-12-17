@@ -1,0 +1,6 @@
+/home/sword/swordProject/RCompiler/CMakeFiles/code.dir
+/home/sword/swordProject/RCompiler/CMakeFiles/build.dir
+/home/sword/swordProject/RCompiler/CMakeFiles/run.dir
+/home/sword/swordProject/RCompiler/CMakeFiles/test.dir
+/home/sword/swordProject/RCompiler/CMakeFiles/edit_cache.dir
+/home/sword/swordProject/RCompiler/CMakeFiles/rebuild_cache.dir
