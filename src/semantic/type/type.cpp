@@ -187,64 +187,71 @@ std::pair<Type *, uint32_t> AutoDereference(Type *type) {
 }
 
 std::string GetIRTypeString(Type *type) {
-  if (type->type_ == kLeafType) {
-    if (type->type_name_ == "bool") {
-      return "i1";
+  try {
+    if (type->type_ == kLeafType) {
+      if (type->type_name_ == "bool") {
+        return "i1";
+      }
+      if (type->type_name_ == "char" || type->type_name_ == "String" || type->type_name_ == "str") {
+        throw Error("IR generator : unexpected type");
+      }
+      return "i32";
     }
-    return "i32";
-  }
-  if (type->type_ == kEnumType) {
-    return "i32";
-  }
-  if (type->type_ == kArrayType) {
-    return "[" + std::to_string(type->array_type_info_.second)
-      + " x " + GetIRTypeString(type->array_type_info_.first.get()) + "]";
-  }
-  if (type->type_ == kPointerType) {
-    return "ptr";
-  }
-  if (type->type_ == kStructType) {
-    if (type->source_->IRName().empty()) {
-      std::cerr << "Error! : Empty IR Name.\n";
-      exit(-1);
+    if (type->type_ == kEnumType) {
+      return "i32";
     }
-    return "%" + type->source_->IRName();
-  }
-  std::cerr << "Error! : Getting IR Type String.\n";
-  exit(-1);
+    if (type->type_ == kArrayType) {
+      return "[" + std::to_string(type->array_type_info_.second)
+        + " x " + GetIRTypeString(type->array_type_info_.first.get()) + "]";
+    }
+    if (type->type_ == kPointerType) {
+      return "ptr";
+    }
+    if (type->type_ == kStructType) {
+      if (type->source_->IRName().empty()) {
+        throw Error("IR generator : Empty IR Name.\n");
+      }
+      return "%" + type->source_->IRName();
+    }
+    throw Error("IR generator : Getting IR Type String.\n");
+  } catch (Error &) { throw; }
 }
 
 std::pair<uint32_t, bool> GetTypeSize(Type *type) {
-  if (type->type_ == kLeafType) {
-    if (type->type_name_ == "bool") {
-      return std::make_pair(1, true);
-    }
-    return std::make_pair(4, false);
-  }
-  if (type->type_ == kEnumType || type->type_ == kPointerType) {
-    return std::make_pair(4, false);
-  }
-  if (type->type_ == kArrayType) {
-    auto [size, tag] = GetTypeSize(type->array_type_info_.first.get());
-    return std::make_pair(size * type->array_type_info_.second, tag);
-  }
-  if (type->type_ == kStructType) {
-    auto struct_type = dynamic_cast<StructNode *>(type->source_);
-    uint32_t size = 0;
-    bool tag = true;
-    for (auto &field : struct_type->struct_fields_->struct_field_s_) {
-      auto [inner_size, inner_tag] = GetTypeSize(field->type_->type_info_.get());
-      if (!tag && inner_tag) {
-        inner_size = (inner_size + 3) / 4 * 4;
+  try {
+    if (type->type_ == kLeafType) {
+      if (type->type_name_ == "bool") {
+        return std::make_pair(1, true);
       }
-      if (tag && !inner_tag) {
-        size = (size + 3) / 4 * 4;
+      if (type->type_name_ == "char" || type->type_name_ == "String" || type->type_name_ == "str") {
+        throw Error("IR generator : unexpected type");
       }
-      tag &= inner_tag;
-      size += inner_size;
+      return std::make_pair(4, false);
     }
-    return std::make_pair(size, tag);
-  }
-  std::cerr << "Error! : Getting Type Size.\n";
-  exit(-1);
+    if (type->type_ == kEnumType || type->type_ == kPointerType) {
+      return std::make_pair(4, false);
+    }
+    if (type->type_ == kArrayType) {
+      auto [size, tag] = GetTypeSize(type->array_type_info_.first.get());
+      return std::make_pair(size * type->array_type_info_.second, tag);
+    }
+    if (type->type_ == kStructType) {
+      auto struct_type = dynamic_cast<StructNode *>(type->source_);
+      uint32_t size = 0;
+      bool tag = true;
+      for (auto &field : struct_type->struct_fields_->struct_field_s_) {
+        auto [inner_size, inner_tag] = GetTypeSize(field->type_->type_info_.get());
+        if (!tag && inner_tag) {
+          inner_size = (inner_size + 3) / 4 * 4;
+        }
+        if (tag && !inner_tag) {
+          size = (size + 3) / 4 * 4;
+        }
+        tag &= inner_tag;
+        size += inner_size;
+      }
+      return std::make_pair(size, tag);
+    }
+    throw Error("IR generator : Getting Type Size.");
+  } catch (Error &) { throw; }
 }

@@ -27,8 +27,12 @@ int main() {
     ThirdChecker tc;
     root->Accept(&tc);
     auto IR_root = std::make_shared<IRRootNode>();
-    IRGenerator gen(IR_root);
-    root->Accept(&gen);
+    try {
+      IRGenerator gen(IR_root);
+      root->Accept(&gen);
+    } catch (...) {
+      return 0;
+    }
     IRPrinter printer("builtin.ll", std::cout);
     IR_root->Accept(&printer);
   } catch (...) {

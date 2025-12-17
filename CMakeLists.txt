@@ -3,13 +3,13 @@ cmake_minimum_required(VERSION 3.22)
 project(RCompiler CXX)
 
 #enable_testing()
-
+#
 #find_package(GTest REQUIRED)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-#include_directories(${GTEST_INCLUDE_DIRS})
+include_directories(${GTEST_INCLUDE_DIRS})
 include_directories(src/include)
 
 set(LEXER_DIR ./src/lexer)
@@ -83,7 +83,7 @@ add_executable(code
 #target_link_libraries(parser_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 #target_link_libraries(semantic_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 #target_link_libraries(IR_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
-
+#
 #add_test(NAME parser_test COMMAND parser_test)
 #add_test(NAME semantic_test COMMAND semantic_test)
 #add_test(NAME IR_test COMMAND IR_test)
