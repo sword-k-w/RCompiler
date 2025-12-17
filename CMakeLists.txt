@@ -55,6 +55,12 @@ add_custom_target(run
         COMMAND ./code
         COMMENT "Running myapp..."
 )
+
+add_custom_target(clean-all
+        COMMAND rm -f code CMakeCache.txt cmake_install.cmake Makefile
+        COMMAND rm -rf CMakeFiles/
+        COMMENT "Cleaning all build files..."
+)
 #add_executable(parser_test
 #        test/parser_test.cpp
 #        src/data_loader/data_loader.cpp
@@ -94,6 +100,6 @@ add_custom_target(run
 #target_link_libraries(semantic_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 #target_link_libraries(IR_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 
-add_test(NAME parser_test COMMAND parser_test)
-add_test(NAME semantic_test COMMAND semantic_test)
-add_test(NAME IR_test COMMAND IR_test)
+#add_test(NAME parser_test COMMAND parser_test)
+#add_test(NAME semantic_test COMMAND semantic_test)
+#add_test(NAME IR_test COMMAND IR_test)
