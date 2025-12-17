@@ -14,21 +14,25 @@
 int main() {
   std::string builtin_code = LoadFromFile("testcases/IR-1/builtin/builtin.c");
   std::cerr << builtin_code << '\n';
-  std::string code = LoadInput();
-  Lexer lexer(code);
-  auto tokens = lexer.Run();
-  Parser parser(tokens);
-  auto root = parser.Run<CrateNode>();
-  FirstChecker fc;
-  fc.Run(root.get());
-  SecondChecker sc;
-  root->Accept(&sc);
-  ThirdChecker tc;
-  root->Accept(&tc);
-  auto IR_root = std::make_shared<IRRootNode>();
-  IRGenerator gen(IR_root);
-  root->Accept(&gen);
-  IRPrinter printer("builtin.ll", std::cout);
-  IR_root->Accept(&printer);
+  try {
+    std::string code = LoadInput();
+    Lexer lexer(code);
+    auto tokens = lexer.Run();
+    Parser parser(tokens);
+    auto root = parser.Run<CrateNode>();
+    FirstChecker fc;
+    fc.Run(root.get());
+    SecondChecker sc;
+    root->Accept(&sc);
+    ThirdChecker tc;
+    root->Accept(&tc);
+    auto IR_root = std::make_shared<IRRootNode>();
+    IRGenerator gen(IR_root);
+    root->Accept(&gen);
+    IRPrinter printer("builtin.ll", std::cout);
+    IR_root->Accept(&printer);
+  } catch (...) {
+    return -1;
+  }
   return 0;
 }
