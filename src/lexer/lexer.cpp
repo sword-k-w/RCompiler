@@ -23,9 +23,6 @@ auto Lexer::Run() -> std::vector<Token> const {
           }
         }
         if (index == kTokenTypeCount) {
-          for (auto &[x, y] : res) {
-            std::cout << y << '\n';
-          }
           throw Error("lexer failed!");
         }
         res.push_back({kTokenTypes[index], input_.substr(pos, max_pos - pos)});
