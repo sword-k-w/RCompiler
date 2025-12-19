@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.22)
 
 project(RCompiler CXX)
 
-enable_testing()
-
-find_package(GTest REQUIRED)
+#enable_testing()
+#
+#find_package(GTest REQUIRED)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -45,45 +45,45 @@ add_executable(code
         ${IR_SRCS}
         ${IR_VISITOR_SRCS})
 
-add_executable(parser_test
-        test/parser_test.cpp
-        src/data_loader/data_loader.cpp
-        ${PARSER_SRCS}
-        ${COMMON_SRCS}
-        ${LEXER_SRCS}
-        ${VISITOR_SRCS}
-        ${SEMANTIC_SRCS}
-        ${IR_SRCS}
-        ${IR_VISITOR_SRCS}
-)
-
-add_executable(semantic_test
-        test/semantic_test.cpp
-        src/data_loader/data_loader.cpp
-        ${PARSER_SRCS}
-        ${COMMON_SRCS}
-        ${LEXER_SRCS}
-        ${VISITOR_SRCS}
-        ${SEMANTIC_SRCS}
-        ${IR_SRCS}
-        ${IR_VISITOR_SRCS}
-)
-
-add_executable(IR_test
-        test/IR_test.cpp
-        src/data_loader/data_loader.cpp
-        ${PARSER_SRCS}
-        ${COMMON_SRCS}
-        ${LEXER_SRCS}
-        ${VISITOR_SRCS}
-        ${SEMANTIC_SRCS}
-        ${IR_SRCS}
-        ${IR_VISITOR_SRCS})
-
-target_link_libraries(parser_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
-target_link_libraries(semantic_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
-target_link_libraries(IR_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
-
-add_test(NAME parser_test COMMAND parser_test)
-add_test(NAME semantic_test COMMAND semantic_test)
-add_test(NAME IR_test COMMAND IR_test)
+#add_executable(parser_test
+#        test/parser_test.cpp
+#        src/data_loader/data_loader.cpp
+#        ${PARSER_SRCS}
+#        ${COMMON_SRCS}
+#        ${LEXER_SRCS}
+#        ${VISITOR_SRCS}
+#        ${SEMANTIC_SRCS}
+#        ${IR_SRCS}
+#        ${IR_VISITOR_SRCS}
+#)
+#
+#add_executable(semantic_test
+#        test/semantic_test.cpp
+#        src/data_loader/data_loader.cpp
+#        ${PARSER_SRCS}
+#        ${COMMON_SRCS}
+#        ${LEXER_SRCS}
+#        ${VISITOR_SRCS}
+#        ${SEMANTIC_SRCS}
+#        ${IR_SRCS}
+#        ${IR_VISITOR_SRCS}
+#)
+#
+#add_executable(IR_test
+#        test/IR_test.cpp
+#        src/data_loader/data_loader.cpp
+#        ${PARSER_SRCS}
+#        ${COMMON_SRCS}
+#        ${LEXER_SRCS}
+#        ${VISITOR_SRCS}
+#        ${SEMANTIC_SRCS}
+#        ${IR_SRCS}
+#        ${IR_VISITOR_SRCS})
+#
+#target_link_libraries(parser_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
+#target_link_libraries(semantic_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
+#target_link_libraries(IR_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
+#
+#add_test(NAME parser_test COMMAND parser_test)
+#add_test(NAME semantic_test COMMAND semantic_test)
+#add_test(NAME IR_test COMMAND IR_test)

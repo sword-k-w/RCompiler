@@ -189,7 +189,7 @@ void IRPrinter::Visit(IRFunctionNode *node) {
 }
 
 void IRPrinter::Visit(IRRootNode *node) {
-  os_ << builtin_ << '\n';
+  // os_ << builtin_ << '\n';
   for (auto &struct_node : node->structs_) {
     struct_node->Accept(this);
   }
