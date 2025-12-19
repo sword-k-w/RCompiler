@@ -153,7 +153,6 @@ void IRSelectInstructionNode::Accept(IRVisitorBase *visitor) {
   visitor->Visit(this);
 }
 
-
 void IRBlockNode::Accept(IRVisitorBase *visitor) {
   visitor->Visit(this);
 }
@@ -169,7 +168,6 @@ void IRFunctionNode::AddParameter(std::shared_ptr<IRParameterNode> parameter) {
 void IRFunctionNode::AddBlock(std::shared_ptr<IRBlockNode> block) {
   blocks_.emplace_back(block);
 }
-
 
 void IRFunctionNode::Accept(IRVisitorBase *visitor) {
   visitor->Visit(this);
