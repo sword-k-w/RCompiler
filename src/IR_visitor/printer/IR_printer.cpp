@@ -193,7 +193,7 @@ void IRPrinter::Visit(IRRootNode *node) {
   os_ << "declare i32 @getInt()\n";
   os_ << "declare void @printlnInt(i32)\n";
   os_ << "declare void @printInt(i32)\n";
-  os_ << builtin_ << '\n';
+  // os_ << builtin_ << '\n';
   for (auto &struct_node : node->structs_) {
     struct_node->Accept(this);
   }
