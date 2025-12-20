@@ -190,6 +190,7 @@ void IRPrinter::Visit(IRFunctionNode *node) {
 
 void IRPrinter::Visit(IRRootNode *node) {
   os_ << "declare void @builtin_memcpy(ptr, ptr, i32)\n";
+  os_ << "declare void @builtin_memset(ptr, i32, i32)\n";
   os_ << "declare i32 @getInt()\n";
   os_ << "declare void @printlnInt(i32)\n";
   os_ << "declare void @printInt(i32)\n";
