@@ -7,6 +7,7 @@ class IRPrinter : public IRVisitorBase {
 public:
   IRPrinter() = delete;
   IRPrinter(const std::string &, std::ostream &);
+  void Visit(IRArrayNode *) override;
   void Visit(IRStructNode *) override;
   void Visit(IRArithmeticInstructionNode *) override;
   void Visit(IRNegationInstructionNode *) override;

@@ -13,16 +13,30 @@ private:
 
 };
 
+class IRArrayNode : public IRNode {
+  friend class IRPrinter;
+public:
+  IRArrayNode() = default;
+  explicit IRArrayNode(const std::string &);
+  void AddLength(uint32_t);
+  void SetBaseType(const std::string &);
+  void Accept(IRVisitorBase *) override;
+  bool IsEmpty() const;
+private:
+  std::vector<uint32_t> length_;
+  std::string base_type_; // empty means void
+};
+
 class IRStructNode : public IRNode {
   friend class IRPrinter;
 public:
   IRStructNode() = delete;
   explicit IRStructNode(const std::string &);
-  void AddMember(const std::string &);
+  void AddMember(std::shared_ptr<IRArrayNode>);
   void Accept(IRVisitorBase *) override;
 private:
   std::string name_;
-  std::vector<std::string> members_;
+  std::vector<std::shared_ptr<IRArrayNode>> members_;
 };
 
 class IRInstructionNode : public IRNode {
@@ -82,11 +96,11 @@ private:
 class IRReturnInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
 public:
-  IRReturnInstructionNode() = default;
-  IRReturnInstructionNode(const std::string &, const std::string &);
+  IRReturnInstructionNode();
+  IRReturnInstructionNode(std::shared_ptr<IRArrayNode>, const std::string &);
   void Accept(IRVisitorBase *) override;
 private:
-  std::string type_; // empty means void which also means name_ is also empty
+  std::shared_ptr<IRArrayNode> type_; // empty means void which also means name_ is also empty
   std::string name_;
 };
 
@@ -94,22 +108,22 @@ class IRAllocateInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
 public:
   IRAllocateInstructionNode() = delete;
-  IRAllocateInstructionNode(const std::string &, const std::string &);
+  IRAllocateInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>);
   void Accept(IRVisitorBase *) override;
 private:
   std::string result_;
-  std::string type_;
+  std::shared_ptr<IRArrayNode> type_;
 };
 
 class IRLoadInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
 public:
   IRLoadInstructionNode() = delete;
-  IRLoadInstructionNode(const std::string &, const std::string &, const std::string &);
+  IRLoadInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &);
   void Accept(IRVisitorBase *) override;
 private:
   std::string result_;
-  std::string type_;
+  std::shared_ptr<IRArrayNode> type_;
   std::string pointer_;
 };
 
@@ -117,10 +131,10 @@ class IRStoreVariableInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
 public:
   IRStoreVariableInstructionNode() = delete;
-  IRStoreVariableInstructionNode(const std::string &, const std::string &, const std::string &);
+  IRStoreVariableInstructionNode(std::shared_ptr<IRArrayNode>, const std::string &, const std::string &);
   void Accept(IRVisitorBase *) override;
 private:
-  std::string type_;
+  std::shared_ptr<IRArrayNode> type_;
   std::string value_;
   std::string pointer_;
 };
@@ -141,11 +155,11 @@ class IRGetElementPtrInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
 public:
   IRGetElementPtrInstructionNode() = delete;
-  IRGetElementPtrInstructionNode(const std::string &, const std::string &, const std::string &, const uint32_t &);
+  IRGetElementPtrInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &, const uint32_t &);
   void Accept(IRVisitorBase *) override;
 private:
   std::string result_;
-  std::string type_;
+  std::shared_ptr<IRArrayNode> type_;
   std::string ptrval_;
   uint32_t index_;
 };
@@ -155,11 +169,11 @@ class IRGetElementPtrPrimeInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
 public:
   IRGetElementPtrPrimeInstructionNode() = delete;
-  IRGetElementPtrPrimeInstructionNode(const std::string &, const std::string &, const std::string &, const std::string &);
+  IRGetElementPtrPrimeInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &, const std::string &);
   void Accept(IRVisitorBase *) override;
 private:
   std::string result_;
-  std::string type_;
+  std::shared_ptr<IRArrayNode> type_;
   std::string ptrval_;
   std::string index_;
 };
@@ -186,10 +200,10 @@ class IRArgumentNode : public IRInstructionNode {
   friend class IRPrinter;
 public:
   IRArgumentNode() = delete;
-  IRArgumentNode(const std::string &, const std::string &);
+  IRArgumentNode(std::shared_ptr<IRArrayNode>, const std::string &);
   void Accept(IRVisitorBase *) override;
 private:
-  std::string type_;
+  std::shared_ptr<IRArrayNode> type_;
   std::string value_;
 };
 
@@ -197,12 +211,12 @@ class IRCallInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
 public:
   IRCallInstructionNode() = delete;
-  IRCallInstructionNode(const std::string &, const std::string &, const std::string &);
+  IRCallInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &);
   void AddArgument(std::shared_ptr<IRArgumentNode>);
   void Accept(IRVisitorBase *) override;
 private:
   std::string result_;
-  std::string result_type_; // empty means void which also means result_ is also empty
+  std::shared_ptr<IRArrayNode> result_type_; // empty means void which also means result_ is also empty
   std::string function_name_;
   std::vector<std::shared_ptr<IRArgumentNode>> arguments_;
 };
@@ -236,10 +250,10 @@ class IRParameterNode : public IRNode {
   friend class IRPrinter;
 public:
   IRParameterNode() = delete;
-  IRParameterNode(const std::string &, const std::string &);
+  IRParameterNode(std::shared_ptr<IRArrayNode>, const std::string &);
   void Accept(IRVisitorBase *) override;
 private:
-  std::string type_;
+  std::shared_ptr<IRArrayNode> type_;
   std::string name_;
 };
 
@@ -247,12 +261,12 @@ class IRFunctionNode : public IRNode {
   friend class IRPrinter;
 public:
   IRFunctionNode() = delete;
-  IRFunctionNode(const std::string &, const std::string &);
+  IRFunctionNode(std::shared_ptr<IRArrayNode>, const std::string &);
   void AddParameter(std::shared_ptr<IRParameterNode>);
   void AddBlock(std::shared_ptr<IRBlockNode>);
   void Accept(IRVisitorBase *) override;
 private:
-  std::string type_;
+  std::shared_ptr<IRArrayNode> type_;
   std::string name_;
   std::vector<std::shared_ptr<IRParameterNode>> parameters_;
   std::vector<std::shared_ptr<IRBlockNode>> blocks_;

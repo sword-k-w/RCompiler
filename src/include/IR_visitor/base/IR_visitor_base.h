@@ -4,6 +4,7 @@
 
 class IRVisitorBase {
 public:
+  virtual void Visit(IRArrayNode *) = 0;
   virtual void Visit(IRStructNode *) = 0;
   virtual void Visit(IRArithmeticInstructionNode *) = 0;
   virtual void Visit(IRNegationInstructionNode *) = 0;

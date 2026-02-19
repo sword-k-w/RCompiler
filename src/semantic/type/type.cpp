@@ -186,35 +186,34 @@ std::pair<Type *, uint32_t> AutoDereference(Type *type) {
   return std::make_pair(tmp.first, tmp.second + 1);
 }
 
-std::string GetIRTypeString(Type *type) {
-  try {
-    if (type->type_ == kLeafType) {
-      if (type->type_name_ == "bool") {
-        return "i1";
-      }
-      if (type->type_name_ == "char" || type->type_name_ == "String" || type->type_name_ == "str") {
-        throw Error("IR generator : unexpected type");
-      }
-      return "i32";
+std::shared_ptr<IRArrayNode> GetIRTypeNode(Type *type) {
+  auto res = std::make_shared<IRArrayNode>();
+  while (type->type_ == kArrayType) {
+    res->AddLength(type->array_type_info_.second);
+    type = type->array_type_info_.first.get();
+  }
+  if (type->type_ == kLeafType) {
+    if (type->type_name_ == "char" || type->type_name_ == "String" || type->type_name_ == "str") {
+      throw Error("IR generator : unexpected type");
     }
-    if (type->type_ == kEnumType) {
-      return "i32";
+    if (type->type_name_ == "bool") {
+      res->SetBaseType("i1");
+    } else {
+      res->SetBaseType("i32");
     }
-    if (type->type_ == kArrayType) {
-      return "[" + std::to_string(type->array_type_info_.second)
-        + " x " + GetIRTypeString(type->array_type_info_.first.get()) + "]";
+  } else if (type->type_ == kEnumType) {
+    res->SetBaseType("i32");
+  } else if (type->type_ == kPointerType) {
+    res->SetBaseType("ptr");
+  } else if (type->type_ == kStructType) {
+    if (type->source_->IRName().empty()) {
+      throw Error("IR generator : Empty IR Name.\n");
     }
-    if (type->type_ == kPointerType) {
-      return "ptr";
-    }
-    if (type->type_ == kStructType) {
-      if (type->source_->IRName().empty()) {
-        throw Error("IR generator : Empty IR Name.\n");
-      }
-      return "%" + type->source_->IRName();
-    }
+    res->SetBaseType("%" + type->source_->IRName());
+  } else {
     throw Error("IR generator : Getting IR Type String.\n");
-  } catch (Error &) { throw; }
+  }
+  return res;
 }
 
 std::pair<uint32_t, bool> GetTypeSize(Type *type) {

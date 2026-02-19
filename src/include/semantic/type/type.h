@@ -4,6 +4,8 @@
 #include <map>
 #include <memory>
 #include <vector>
+
+#include "IR/IR_node.h"
 #include "parser/class_declaration.h"
 
 // "$" is integer type including i32, u32, isize, usize
@@ -75,7 +77,7 @@ void SameTypeCheck(Type *, Type *);
 
 std::pair<Type *, uint32_t> AutoDereference(Type *);
 
-std::string GetIRTypeString(Type *);
+std::shared_ptr<IRArrayNode> GetIRTypeNode(Type *);
 
 // (total size, is bool)
 std::pair<uint32_t, bool> GetTypeSize(Type *);

@@ -4,13 +4,26 @@
 
 IRPrinter::IRPrinter(const std::string &builtin_file, std::ostream &os) : builtin_(LoadFromFile(builtin_file)), os_(os) {}
 
+void IRPrinter::Visit(IRArrayNode *node) {
+  uint32_t size = node->length_.size();
+  for (auto &length : node->length_) {
+    os_ << "[" << length << " x ";
+  }
+  os_ << node->base_type_;
+  for (uint32_t i = 0; i < size; ++i) {
+    os_ << "]";
+  }
+}
+
 void IRPrinter::Visit(IRStructNode *node) {
   os_ << "%" << node->name_ << " = type { ";
   uint32_t size = node->members_.size();
   for (uint32_t i = 0; i + 1 < size; ++i) {
-    os_ << node->members_[i] << ", ";
+    node->members_[i]->Accept(this);
+    os_ << ", ";
   }
-  os_ << *node->members_.rbegin() << " }\n";
+  (*node->members_.rbegin())->Accept(this);
+  os_ << " }\n";
 }
 
 void IRPrinter::Visit(IRArithmeticInstructionNode *node) {
@@ -73,23 +86,30 @@ void IRPrinter::Visit(IRJumpInstructionNode *node) {
 
 void IRPrinter::Visit(IRReturnInstructionNode *node) {
   os_ << "  ret ";
-  if (node->type_.empty()) {
+  if (node->type_->IsEmpty()) {
     os_ << "void\n";
   } else {
-    os_ << node->type_ << " " << node->name_ << '\n';
+    node->type_->Accept(this);
+    os_ << " " << node->name_ << '\n';
   }
 }
 
 void IRPrinter::Visit(IRAllocateInstructionNode *node) {
-  os_ << "  " << node->result_ << " = alloca " << node->type_ << '\n';
+  os_ << "  " << node->result_ << " = alloca ";
+  node->type_->Accept(this);
+  os_ << '\n';
 }
 
 void IRPrinter::Visit(IRLoadInstructionNode *node) {
-  os_ << "  " << node->result_ << " = load " << node->type_ << ", ptr " << node->pointer_ << '\n';
+  os_ << "  " << node->result_ << " = load ";
+  node->type_->Accept(this);
+  os_ << ", ptr " << node->pointer_ << '\n';
 }
 
 void IRPrinter::Visit(IRStoreVariableInstructionNode *node) {
-  os_ << "  store " << node->type_ << " " << node->value_ << ", ptr " << node->pointer_ << '\n';
+  os_ << "  store ";
+  node->type_->Accept(this);
+  os_ << " " << node->value_ << ", ptr " << node->pointer_ << '\n';
 }
 
 void IRPrinter::Visit(IRStoreConstInstructionNode *node) {
@@ -97,11 +117,15 @@ void IRPrinter::Visit(IRStoreConstInstructionNode *node) {
 }
 
 void IRPrinter::Visit(IRGetElementPtrInstructionNode *node) {
-  os_ << "  " << node->result_ << " = getelementptr " << node->type_ << ", ptr " << node->ptrval_ << ", i32 0, i32 " << node->index_ << '\n';
+  os_ << "  " << node->result_ << " = getelementptr ";
+  node->type_->Accept(this);
+  os_ << ", ptr " << node->ptrval_ << ", i32 0, i32 " << node->index_ << '\n';
 }
 
 void IRPrinter::Visit(IRGetElementPtrPrimeInstructionNode *node) {
-  os_ << "  " << node->result_ << " = getelementptr " << node->type_ << ", ptr " << node->ptrval_ << ", i32 0, i32 " << node->index_ << '\n';
+  os_ << "  " << node->result_ << " = getelementptr ";
+  node->type_->Accept(this);
+  os_ << ", ptr " << node->ptrval_ << ", i32 0, i32 " << node->index_ << '\n';
 }
 
 void IRPrinter::Visit(IRCompareInstructionNode *node) {
@@ -131,14 +155,16 @@ void IRPrinter::Visit(IRCompareInstructionNode *node) {
 }
 
 void IRPrinter::Visit(IRArgumentNode *node) {
-  os_ << node->type_ << " " << node->value_;
+  node->type_->Accept(this);
+  os_ << " " << node->value_;
 }
 
 void IRPrinter::Visit(IRCallInstructionNode *node) {
-  if (node->result_type_.empty()) {
+  if (node->result_type_->IsEmpty()) {
     os_ << "  call void";
   } else {
-    os_ << "  " << node->result_ << " = call " << node->result_type_;
+    os_ << "  " << node->result_ << " = call ";
+    node->result_type_->Accept(this);
   }
   os_ << " @" << node->function_name_ << "(";
   uint32_t size = node->arguments_.size();
@@ -156,7 +182,6 @@ void IRPrinter::Visit(IRSelectInstructionNode *node) {
   os_ << "  " << node->result_ << " = select i1 " << node->cond_ << ", i32 1, i32 0\n";
 }
 
-
 void IRPrinter::Visit(IRBlockNode *node) {
   if (node->instructions_.empty()) {
     node->AddInstruction(std::make_shared<IRJumpInstructionNode>(node->id_)); // meaningless but dangerous, just to avoid empty block
@@ -168,11 +193,18 @@ void IRPrinter::Visit(IRBlockNode *node) {
 }
 
 void IRPrinter::Visit(IRParameterNode *node) {
-  os_ << node->type_ << " " << node->name_;
+  node->type_->Accept(this);
+  os_ << " " << node->name_;
 }
 
 void IRPrinter::Visit(IRFunctionNode *node) {
-  os_ << "define " << node->type_ << " @" << node->name_ << "(";
+  os_ << "define ";
+  if (node->type_->IsEmpty()) {
+    os_ << "void";
+  } else {
+    node->type_->Accept(this);
+  }
+  os_ << " @" << node->name_ << "(";
   uint32_t size = node->parameters_.size();
   for (uint32_t i = 0; i + 1 < size; ++i) {
     node->parameters_[i]->Accept(this);

@@ -2,6 +2,20 @@
 
 #include <IR_visitor/base/IR_visitor_base.h>
 
+IRArrayNode::IRArrayNode(const std::string &base_type) : base_type_(base_type) {}
+
+void IRArrayNode::AddLength(uint32_t length) {
+  length_.emplace_back(length);
+}
+
+void IRArrayNode::SetBaseType(const std::string &base_type) {
+  base_type_ = base_type;
+}
+
+bool IRArrayNode::IsEmpty() const {
+  return base_type_.empty();
+}
+
 IRStructNode::IRStructNode(const std::string &name) : name_(name) {}
 
 IRArithmeticInstructionNode::IRArithmeticInstructionNode(const std::string &result, const std::string &op,
@@ -17,26 +31,28 @@ IRBranchInstructionNode::IRBranchInstructionNode(const std::string &condition, c
 
 IRJumpInstructionNode::IRJumpInstructionNode(const uint32_t &destination) : destination_(destination) {}
 
-IRReturnInstructionNode::IRReturnInstructionNode(const std::string &type, const std::string &name) :
+IRReturnInstructionNode::IRReturnInstructionNode() : type_(std::make_shared<IRArrayNode>()) {}
+
+IRReturnInstructionNode::IRReturnInstructionNode(std::shared_ptr<IRArrayNode> type, const std::string &name) :
   type_(type), name_(name) {}
 
-IRAllocateInstructionNode::IRAllocateInstructionNode(const std::string &result, const std::string &type) :
+IRAllocateInstructionNode::IRAllocateInstructionNode(const std::string &result, std::shared_ptr<IRArrayNode> type) :
   result_(result), type_(type) {}
 
-IRLoadInstructionNode::IRLoadInstructionNode(const std::string &result, const std::string &type,
+IRLoadInstructionNode::IRLoadInstructionNode(const std::string &result, std::shared_ptr<IRArrayNode> type,
   const std::string &pointer) : result_(result), type_(type), pointer_(pointer) {}
 
-IRStoreVariableInstructionNode::IRStoreVariableInstructionNode(const std::string &type, const std::string &value,
+IRStoreVariableInstructionNode::IRStoreVariableInstructionNode(std::shared_ptr<IRArrayNode> type, const std::string &value,
   const std::string &pointer) : type_(type), value_(value), pointer_(pointer) {}
 
 IRStoreConstInstructionNode::IRStoreConstInstructionNode(const std::string &type, const int32_t &value,
   const std::string &pointer) : type_(type), value_(value), pointer_(pointer) {}
 
-IRGetElementPtrInstructionNode::IRGetElementPtrInstructionNode(const std::string &result, const std::string &type,
+IRGetElementPtrInstructionNode::IRGetElementPtrInstructionNode(const std::string &result, std::shared_ptr<IRArrayNode> type,
   const std::string &ptrval, const uint32_t &index) :
   result_(result), type_(type), ptrval_(ptrval), index_(index) {}
 
-IRGetElementPtrPrimeInstructionNode::IRGetElementPtrPrimeInstructionNode(const std::string &result, const std::string &type,
+IRGetElementPtrPrimeInstructionNode::IRGetElementPtrPrimeInstructionNode(const std::string &result, std::shared_ptr<IRArrayNode> type,
   const std::string &ptrval, const std::string &index) :
   result_(result), type_(type), ptrval_(ptrval), index_(index) {}
 
@@ -44,9 +60,9 @@ IRCompareInstructionNode::IRCompareInstructionNode(const std::string &result, co
   const std::string &type, const std::string &operand1, const std::string &operand2) :
   result_(result), op_(op), type_(type), operand1_(operand1), operand2_(operand2) {}
 
-IRArgumentNode::IRArgumentNode(const std::string &type, const std::string &value) : type_(type), value_(value) {}
+IRArgumentNode::IRArgumentNode(std::shared_ptr<IRArrayNode> type, const std::string &value) : type_(type), value_(value) {}
 
-IRCallInstructionNode::IRCallInstructionNode(const std::string &result, const std::string &result_type,
+IRCallInstructionNode::IRCallInstructionNode(const std::string &result, std::shared_ptr<IRArrayNode> result_type,
   const std::string &function_name) : result_(result), result_type_(result_type), function_name_(function_name) {}
 
 IRSelectInstructionNode::IRSelectInstructionNode(const std::string &result, const std::string &cond) :
@@ -56,7 +72,7 @@ void IRCallInstructionNode::AddArgument(std::shared_ptr<IRArgumentNode> argument
   arguments_.emplace_back(argument);
 }
 
-void IRStructNode::AddMember(const std::string &member) {
+void IRStructNode::AddMember(std::shared_ptr<IRArrayNode> member) {
   members_.emplace_back(member);
 }
 
@@ -77,9 +93,9 @@ void IRBlockNode::AddInstruction(std::shared_ptr<IRInstructionNode> instruction)
 
 uint32_t IRBlockNode::GetID() const { return id_; }
 
-IRParameterNode::IRParameterNode(const std::string &type, const std::string &name) : type_(type), name_(name) {}
+IRParameterNode::IRParameterNode(std::shared_ptr<IRArrayNode> type, const std::string &name) : type_(type), name_(name) {}
 
-IRFunctionNode::IRFunctionNode(const std::string &type, const std::string &name) : type_(type), name_(name) {}
+IRFunctionNode::IRFunctionNode(std::shared_ptr<IRArrayNode> type, const std::string &name) : type_(type), name_(name) {}
 
 void IRRootNode::AddStruct(std::shared_ptr<IRStructNode> struct_node) {
   structs_.emplace_back(struct_node);
@@ -87,6 +103,10 @@ void IRRootNode::AddStruct(std::shared_ptr<IRStructNode> struct_node) {
 
 void IRRootNode::AddFunction(std::shared_ptr<IRFunctionNode> function_node) {
   functions_.emplace_back(function_node);
+}
+
+void IRArrayNode::Accept(IRVisitorBase *visitor) {
+  visitor->Visit(this);
 }
 
 void IRStructNode::Accept(IRVisitorBase *visitor) {

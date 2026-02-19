@@ -41,7 +41,7 @@ void IRGenerator::Visit(BlockExpressionNode *node) {
         if (trailer_statement->expr_statement_ != nullptr
           && trailer_statement->expr_statement_->semicolon_ == false) {
           node->IR_name_ = trailer_statement->expr_statement_->expr_with_block_->IR_name_;
-          }
+        }
       }
     }
   } catch (Error &) { throw; }
@@ -94,7 +94,8 @@ void IRGenerator::Visit(PredicateLoopExpressionNode *node) {
     cur_block_ = loop_condition;
     node->conditions_->Accept(this);
     std::string cond = name_allocator_.Allocate("%tmp.");
-    cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, "i1", node->conditions_->IR_name_));
+    cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, std::make_shared<IRArrayNode>("i1"),
+      node->conditions_->IR_name_));
     cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, loop_body->GetID(), loop_end->GetID()));
     cur_block_ = loop_body;
     node->block_expr_->Accept(this);
@@ -122,11 +123,12 @@ void IRGenerator::Visit(IfExpressionNode *node) {
   try {
     if (node->type_info_->type_ != kUnitType && node->type_info_->type_ != kNeverType) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
-      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, GetIRTypeString(node->type_info_.get())));
+      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, GetIRTypeNode(node->type_info_.get())));
     }
     node->conditions_->Accept(this);
     std::string cond = name_allocator_.Allocate("%tmp.");
-    cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, "i1", node->conditions_->IR_name_));
+    cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, std::make_shared<IRArrayNode>("i1"),
+      node->conditions_->IR_name_));
     auto true_block = std::make_shared<IRBlockNode>(cur_tag_cnt_);
     cur_function_->AddBlock(true_block);
     ++cur_tag_cnt_;
@@ -194,7 +196,8 @@ void IRGenerator::Visit(ExpressionNode *node) {
       if (node->type_info_->type_name_ != "bool") {
         IR_type = "i32";
       }
-      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
+      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_,
+        std::make_shared<IRArrayNode>(IR_type)));
       cur_block_->AddInstruction(std::make_shared<IRStoreConstInstructionNode>(
         IR_type, node->const_value_->u32_value_, node->IR_name_));
       return;
@@ -205,10 +208,10 @@ void IRGenerator::Visit(ExpressionNode *node) {
           throw Error("IR generator : there should be enum!");
         }
         node->IR_name_ = name_allocator_.Allocate("%tmp.");
-        std::string IR_type = "i32";
-        first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
+        first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_,
+          std::make_shared<IRArrayNode>("i32")));
         cur_block_->AddInstruction(std::make_shared<IRStoreConstInstructionNode>(
-          IR_type,
+          "i32",
           dynamic_cast<EnumerationNode *>(node->type_info_->source_)
             ->enum_[node->path_expr_->path_expr_segment2_->identifier_->val_],
           node->IR_name_));
@@ -221,22 +224,21 @@ void IRGenerator::Visit(ExpressionNode *node) {
       }
     } else if (node->type_ == kArrayExpr) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
-      std::string IR_type = GetIRTypeString(node->type_info_.get());
+      auto IR_type = GetIRTypeNode(node->type_info_.get());
       first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
       auto &[inside_type, size] = node->type_info_->array_type_info_;
-      std::string IR_inside_type = GetIRTypeString(inside_type.get());
       if (node->array_expr_->array_elements_->semicolon_) {
         auto son_expr = node->array_expr_->array_elements_->exprs_[0];
         if (son_expr->const_value_ != nullptr && son_expr->const_value_->type_ == kLeafType
           && son_expr->const_value_->u32_value_ == 0) {
-          auto IR_call = std::make_shared<IRCallInstructionNode>("", "", "builtin_memset");
-          IR_call->AddArgument(std::make_shared<IRArgumentNode>("ptr", node->IR_name_));
+          auto IR_call = std::make_shared<IRCallInstructionNode>("", std::make_shared<IRArrayNode>(), "builtin_memset");
+          IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("ptr"), node->IR_name_));
           if (son_expr->const_value_->type_name_ != "bool") {
-            IR_call->AddArgument(std::make_shared<IRArgumentNode>("i32", "0"));
-            IR_call->AddArgument(std::make_shared<IRArgumentNode>("i32", std::to_string(4 * size)));
+            IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("i32"), "0"));
+            IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("i32"), std::to_string(4 * size)));
           } else {
-            IR_call->AddArgument(std::make_shared<IRArgumentNode>("i1", "0"));
-            IR_call->AddArgument(std::make_shared<IRArgumentNode>("i32", std::to_string(size)));
+            IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("i1"), "0"));
+            IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("i32"), std::to_string(size)));
           }
           cur_block_->AddInstruction(IR_call);
         } else {
@@ -260,7 +262,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
       }
     } else if (node->type_ == kStructExpr) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
-      std::string IR_type = GetIRTypeString(node->type_info_.get());
+      auto IR_type = GetIRTypeNode(node->type_info_.get());
       first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
       auto struct_node = dynamic_cast<StructNode *>(node->type_info_->source_);
       uint32_t size = struct_node->field_.size();
@@ -276,7 +278,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
     } else if (node->type_ == kBorrowExpr) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
       node->expr1_->Accept(this);
-      Borrow(node->IR_name_, node->expr1_->IR_name_, GetIRTypeString(node->type_info_.get()));
+      Borrow(node->IR_name_, node->expr1_->IR_name_, GetIRTypeNode(node->type_info_.get()));
     } else if (node->type_ == kDereferenceExpr) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
       node->expr1_->Accept(this);
@@ -284,13 +286,17 @@ void IRGenerator::Visit(ExpressionNode *node) {
     } else if (node->type_ == kNegationExpr) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
       node->expr1_->Accept(this);
-      std::string IR_type = GetIRTypeString(node->type_info_.get());
-      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
+      std::string IR_type = "i32";
+      if (node->type_info_->type_name_ == "bool") {
+        IR_type = "i1";
+      }
+      auto IR_type_node = std::make_shared<IRArrayNode>(IR_type);
+      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type_node));
       std::string tmp = name_allocator_.Allocate("%tmp.");
       std::string operand = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand, IR_type, node->expr1_->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand, IR_type_node, node->expr1_->IR_name_));
       cur_block_->AddInstruction(std::make_shared<IRNegationInstructionNode>(tmp, node->op_ == "-", IR_type, operand));
-      cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type, tmp, node->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type_node, tmp, node->IR_name_));
     } else if (node->type_ == kArithmeticOrLogicExpr) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
       node->expr1_->Accept(this);
@@ -299,30 +305,32 @@ void IRGenerator::Visit(ExpressionNode *node) {
       if (node->type_info_->type_name_ == "bool") {
         IR_type = "i1";
       }
-      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
+      auto IR_type_node = std::make_shared<IRArrayNode>(IR_type);
+      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type_node));
       std::string tmp = name_allocator_.Allocate("%tmp.");
       std::string operand1 = name_allocator_.Allocate("%tmp.");
       std::string operand2 = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand1, IR_type, node->expr1_->IR_name_));
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand2, IR_type, node->expr2_->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand1, IR_type_node, node->expr1_->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand2, IR_type_node, node->expr2_->IR_name_));
       cur_block_->AddInstruction(std::make_shared<IRArithmeticInstructionNode>(tmp, node->op_, IR_type, operand1, operand2,
         node->type_info_->type_name_ == "u32" || node->type_info_->type_name_ == "usize"));
-      cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type, tmp, node->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type_node, tmp, node->IR_name_));
     } else if (node->type_ == kComparisonExpr) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
       node->expr1_->Accept(this);
       node->expr2_->Accept(this);
-      std::string IR_type = "i1";
+      auto IR_type = std::make_shared<IRArrayNode>("i1");
       std::string son_type = "i32";
       if (node->expr1_->type_info_->type_name_ == "bool") {
         son_type = "i1";
       }
+      auto son_type_node = std::make_shared<IRArrayNode>(son_type);
       first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
       std::string tmp = name_allocator_.Allocate("%tmp.");
       std::string operand1 = name_allocator_.Allocate("%tmp.");
       std::string operand2 = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand1, son_type, node->expr1_->IR_name_));
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand2, son_type, node->expr2_->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand1, son_type_node, node->expr1_->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand2, son_type_node, node->expr2_->IR_name_));
       if (node->op_ == "==") {
         cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
           tmp, IRCompareInstructionNode::Operator::kEq, son_type, operand1, operand2));
@@ -352,7 +360,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
       cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type, tmp, node->IR_name_));
     } else if (node->type_ == kLazyBooleanExpr) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
-      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, "i1"));
+      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, std::make_shared<IRArrayNode>("i1")));
       node->expr1_->Accept(this);
       auto extra_block = std::make_shared<IRBlockNode>(cur_tag_cnt_);
       cur_function_->AddBlock(extra_block);
@@ -361,7 +369,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
       cur_function_->AddBlock(end_block);
       ++cur_tag_cnt_;
       std::string cond = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, "i1", node->expr1_->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, std::make_shared<IRArrayNode>("i1"), node->expr1_->IR_name_));
       Copy(node->IR_name_, node->expr1_->IR_name_, node->type_info_.get());
       if (node->op_ == "&&") {
         cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, extra_block->GetID(), end_block->GetID()));
@@ -379,9 +387,9 @@ void IRGenerator::Visit(ExpressionNode *node) {
         node->IR_name_ = name_allocator_.Allocate("%tmp.");
         std::string tmp1 = name_allocator_.Allocate("%tmp.");
         std::string tmp2 = name_allocator_.Allocate("%tmp.");
-        cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp1, "i1", node->expr1_->IR_name_));
+        cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp1, std::make_shared<IRArrayNode>("i1"), node->expr1_->IR_name_));
         cur_block_->AddInstruction(std::make_shared<IRSelectInstructionNode>(tmp2, tmp1));
-        Borrow(node->IR_name_, tmp2, "i32");
+        Borrow(node->IR_name_, tmp2, std::make_shared<IRArrayNode>("i32"));
       } else {
         node->IR_name_ = node->expr1_->IR_name_;
       }
@@ -400,16 +408,17 @@ void IRGenerator::Visit(ExpressionNode *node) {
       if (node->expr1_->type_info_->type_name_ == "bool") {
         IR_type = "i1";
       }
+      auto IR_type_node = std::make_shared<IRArrayNode>(IR_type);
       std::string tmp = name_allocator_.Allocate("%tmp.");
       std::string operand1 = name_allocator_.Allocate("%tmp.");
       std::string operand2 = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand1, IR_type, node->expr1_->IR_name_));
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand2, IR_type, node->expr2_->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand1, IR_type_node, node->expr1_->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand2, IR_type_node, node->expr2_->IR_name_));
       std::string reduced_op = node->op_;
       reduced_op.pop_back();
       cur_block_->AddInstruction(std::make_shared<IRArithmeticInstructionNode>(tmp, reduced_op, IR_type, operand1, operand2,
         node->expr2_->type_info_->type_name_ == "u32" || node->expr2_->type_info_->type_name_ == "usize"));
-      cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type, tmp, node->expr1_->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type_node, tmp, node->expr1_->IR_name_));
     } else if (node->type_ == kIndexExpr) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
       node->expr1_->Accept(this);
@@ -422,9 +431,9 @@ void IRGenerator::Visit(ExpressionNode *node) {
         Dereference(array_pointer, node->expr1_->IR_name_);
       }
       std::string tmp = name_allocator_.Allocate("%tmp."); // index
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp, "i32", node->expr2_->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp, std::make_shared<IRArrayNode>("i32"), node->expr2_->IR_name_));
       cur_block_->AddInstruction(std::make_shared<IRGetElementPtrPrimeInstructionNode>(
-        node->IR_name_, GetIRTypeString(array_type), array_pointer, tmp));
+        node->IR_name_, GetIRTypeNode(array_type), array_pointer, tmp));
     } else if (node->type_ == kFieldExpr) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
       node->expr1_->Accept(this);
@@ -444,14 +453,14 @@ void IRGenerator::Visit(ExpressionNode *node) {
         }
       }
       cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-        node->IR_name_, GetIRTypeString(struct_type), struct_pointer, index));
+        node->IR_name_, GetIRTypeNode(struct_type), struct_pointer, index));
     } else if (node->type_ == kCallExpr) {
       std::string function_name;
       auto builtin_function = dynamic_cast<BuiltinFunctionNode *>(node->expr1_->type_info_->source_);
       if (builtin_function != nullptr) {
         function_name = builtin_function->function_name_;
         if (function_name == "exit") {
-          cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>("i32", "0"));
+          cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>(std::make_shared<IRArrayNode>("i32"), "0"));
           return;
         }
       } else {
@@ -465,32 +474,32 @@ void IRGenerator::Visit(ExpressionNode *node) {
       std::string result;
       bool pass_result = false;
       if (node->type_info_->type_ == kArrayType || node->type_info_->type_ == kStructType) {
-        IR_call = std::make_shared<IRCallInstructionNode>("", "", function_name);
+        IR_call = std::make_shared<IRCallInstructionNode>("", std::make_shared<IRArrayNode>(), function_name);
         pass_result = true;
       } else if (node->type_info_->type_ != kUnitType) {
         result = name_allocator_.Allocate("%tmp.");
-        IR_call = std::make_shared<IRCallInstructionNode>(result, GetIRTypeString(node->type_info_.get()), function_name);
+        IR_call = std::make_shared<IRCallInstructionNode>(result, GetIRTypeNode(node->type_info_.get()), function_name);
       } else {
-        IR_call = std::make_shared<IRCallInstructionNode>("", "", function_name);
+        IR_call = std::make_shared<IRCallInstructionNode>("", std::make_shared<IRArrayNode>(), function_name);
       }
       if (node->call_params_ != nullptr) {
         for (auto &expr : node->call_params_->exprs_) {
           expr->Accept(this);
           std::string tmp = name_allocator_.Allocate("%tmp.");
-          std::string IR_type = GetIRTypeString(expr->type_info_.get());
+          auto IR_type = GetIRTypeNode(expr->type_info_.get());
           cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp, IR_type, expr->IR_name_));
           IR_call->AddArgument(std::make_shared<IRArgumentNode>(IR_type, tmp));
         }
       }
       if (pass_result) {
         node->IR_name_ = name_allocator_.Allocate("%pass..result");
-        first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, GetIRTypeString(node->type_info_.get())));
-        IR_call->AddArgument(std::make_shared<IRArgumentNode>("ptr", node->IR_name_));
+        first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, GetIRTypeNode(node->type_info_.get())));
+        IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("ptr"), node->IR_name_));
       }
       cur_block_->AddInstruction(IR_call);
       if (!result.empty()) {
         node->IR_name_ = name_allocator_.Allocate("%tmp.");
-        Borrow(node->IR_name_, result, GetIRTypeString(node->type_info_.get()));
+        Borrow(node->IR_name_, result, GetIRTypeNode(node->type_info_.get()));
       }
     } else if (node->type_ == kMethodCallExpr) {
       node->expr1_->Accept(this);
@@ -513,19 +522,19 @@ void IRGenerator::Visit(ExpressionNode *node) {
       std::string result;
       bool pass_result = false;
       if (node->type_info_->type_ == kArrayType || node->type_info_->type_ == kStructType) {
-        IR_call = std::make_shared<IRCallInstructionNode>("", "", function_node->IR_name_);
+        IR_call = std::make_shared<IRCallInstructionNode>("", std::make_shared<IRArrayNode>(), function_node->IR_name_);
         pass_result = true;
       } else if (node->type_info_->type_ != kUnitType) {
         result = name_allocator_.Allocate("%tmp.");
-        IR_call = std::make_shared<IRCallInstructionNode>(result, GetIRTypeString(node->type_info_.get()), function_node->IR_name_);
+        IR_call = std::make_shared<IRCallInstructionNode>(result, GetIRTypeNode(node->type_info_.get()), function_node->IR_name_);
       } else {
-        IR_call = std::make_shared<IRCallInstructionNode>("", "", function_node->IR_name_);
+        IR_call = std::make_shared<IRCallInstructionNode>("", std::make_shared<IRArrayNode>(), function_node->IR_name_);
       }
       if (function_node->function_parameters_->self_param_->shorthand_self_->quote_) {
-        IR_call->AddArgument(std::make_shared<IRArgumentNode>("ptr", struct_pointer));
+        IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("ptr"), struct_pointer));
       } else {
         std::string tmp = name_allocator_.Allocate("%tmp.");
-        std::string IR_type = GetIRTypeString(struct_type);
+        auto IR_type = GetIRTypeNode(struct_type);
         cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp, IR_type, struct_pointer));
         IR_call->AddArgument(std::make_shared<IRArgumentNode>(IR_type, tmp));
       }
@@ -533,20 +542,20 @@ void IRGenerator::Visit(ExpressionNode *node) {
         for (auto &expr : node->call_params_->exprs_) {
           expr->Accept(this);
           std::string tmp = name_allocator_.Allocate("%tmp.");
-          std::string IR_type = GetIRTypeString(expr->type_info_.get());
+          auto IR_type = GetIRTypeNode(expr->type_info_.get());
           cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp, IR_type, expr->IR_name_));
           IR_call->AddArgument(std::make_shared<IRArgumentNode>(IR_type, tmp));
         }
       }
       if (pass_result) {
         node->IR_name_ = name_allocator_.Allocate("%pass..result");
-        first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, GetIRTypeString(node->type_info_.get())));
-        IR_call->AddArgument(std::make_shared<IRArgumentNode>("ptr", node->IR_name_));
+        first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, GetIRTypeNode(node->type_info_.get())));
+        IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("ptr"), node->IR_name_));
       }
       cur_block_->AddInstruction(IR_call);
       if (!result.empty()) {
         node->IR_name_ = name_allocator_.Allocate("%tmp.");
-        Borrow(node->IR_name_, result, GetIRTypeString(node->type_info_.get()));
+        Borrow(node->IR_name_, result, GetIRTypeNode(node->type_info_.get()));
       }
     } else if (node->type_ == kContinueExpr) {
       if (loop_condition_block_.top() != nullptr) {
@@ -593,16 +602,16 @@ void IRGenerator::Visit(FunctionNode *node) {
     } else if (node->IR_name_.empty()) {
       node->IR_name_ = name_allocator_.Allocate("function.." + node->identifier_->val_);
     }
-    std::string IR_type = "void";
+    auto IR_type = std::make_shared<IRArrayNode>();
     bool pass_result = false;
     if (node->identifier_->val_ == "main") {
-      IR_type = "i32";
+      IR_type->SetBaseType("i32");
     } else if (node->function_return_type_ != nullptr) {
       if (node->function_return_type_->type_info_->type_ == kStructType
         || node->function_return_type_->type_info_->type_ == kArrayType) {
         pass_result = true;
       } else {
-        IR_type = GetIRTypeString(node->function_return_type_->type_info_.get());
+        IR_type = GetIRTypeNode(node->function_return_type_->type_info_.get());
       }
     }
     cur_function_ = std::make_shared<IRFunctionNode>(IR_type, node->IR_name_);
@@ -618,9 +627,9 @@ void IRGenerator::Visit(FunctionNode *node) {
         std::string tmp = name_allocator_.Allocate("%tmp.");
         self_param->IR_name_ = name_allocator_.Allocate("%" + current_Self_.top()->identifier_->val_ + ".self");
         if (self_param->shorthand_self_->quote_) {
-          cur_function_->AddParameter(std::make_shared<IRParameterNode>("ptr", self_param->IR_name_));
+          cur_function_->AddParameter(std::make_shared<IRParameterNode>(std::make_shared<IRArrayNode>("ptr"), self_param->IR_name_));
         } else {
-          std::string IR_type = GetIRTypeString(self_param->type_info_.get());
+          auto IR_type = GetIRTypeNode(self_param->type_info_.get());
           cur_function_->AddParameter(std::make_shared<IRParameterNode>(IR_type, tmp));
           Borrow(self_param->IR_name_, tmp, IR_type);
         }
@@ -630,12 +639,12 @@ void IRGenerator::Visit(FunctionNode *node) {
         std::string tmp = name_allocator_.Allocate("%tmp.");
         pattern->IR_name_ = name_allocator_.Allocate("%" + pattern->identifier_->val_);
         cur_function_->AddParameter(std::make_shared<IRParameterNode>(
-          GetIRTypeString(pattern->type_info_.get()), tmp));
-        Borrow(pattern->IR_name_, tmp, GetIRTypeString(pattern->type_info_.get()));
+          GetIRTypeNode(pattern->type_info_.get()), tmp));
+        Borrow(pattern->IR_name_, tmp, GetIRTypeNode(pattern->type_info_.get()));
       }
     }
     if (pass_result) {
-      cur_function_->AddParameter(std::make_shared<IRParameterNode>("ptr", "%pass..pointer"));
+      cur_function_->AddParameter(std::make_shared<IRParameterNode>(std::make_shared<IRArrayNode>("ptr"), "%pass..pointer"));
     }
 
     if (node->block_expr_->statements_ != nullptr) {
@@ -659,7 +668,7 @@ void IRGenerator::Visit(ItemNode *node) {
 void IRGenerator::Visit(LetStatementNode *node) {
   try {
     node->expr_->Accept(this);
-    std::string IR_type = GetIRTypeString(node->type_->type_info_.get());
+    auto IR_type = GetIRTypeNode(node->type_->type_info_.get());
     auto pattern = node->pattern_no_top_alt_->identifier_pattern_;
     pattern->IR_name_ = name_allocator_.Allocate("%" + pattern->identifier_->val_);
     first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(pattern->IR_name_, IR_type));
@@ -712,7 +721,7 @@ void IRGenerator::Visit(StructNode *node) {
     node->IR_name_ = name_allocator_.Allocate("struct.." + node->identifier_->val_);
     auto IR_struct = std::make_shared<IRStructNode>(node->IR_name_);
     for (auto &struct_field : node->struct_fields_->struct_field_s_) {
-      IR_struct->AddMember(GetIRTypeString(struct_field->type_->type_info_.get()));
+      IR_struct->AddMember(GetIRTypeNode(struct_field->type_->type_info_.get()));
     }
     root_->AddStruct(IR_struct);
 
@@ -728,7 +737,7 @@ void IRGenerator::Visit(StructNode *node) {
 }
 
 // name1 = &name2, name1 is not allocated at beginning
-void IRGenerator::Borrow(const std::string &name1, const std::string &name2, const std::string &type) {
+void IRGenerator::Borrow(const std::string &name1, const std::string &name2, std::shared_ptr<IRArrayNode> type) {
   try {
     first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(name1, type));
     cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(type, name2, name1));
@@ -738,7 +747,7 @@ void IRGenerator::Borrow(const std::string &name1, const std::string &name2, con
 // name1 = *name2 (semantic)
 // don't use it to implement %1(i32) = *%2(ptr)
 void IRGenerator::Dereference(const std::string &name1, const std::string &name2) {
-  cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(name1, "ptr", name2));
+  cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(name1, std::make_shared<IRArrayNode>("ptr"), name2));
 }
 
 void IRGenerator::Return(Type *type, const std::string &name) {
@@ -755,7 +764,7 @@ void IRGenerator::Return(Type *type, const std::string &name) {
       cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
     } else {
       std::string tmp = name_allocator_.Allocate("%tmp.");
-      std::string IR_type = GetIRTypeString(type);
+      auto IR_type = GetIRTypeNode(type);
       cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp, IR_type, name));
       cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>(IR_type, tmp));
     }
@@ -766,10 +775,10 @@ void IRGenerator::Return(Type *type, const std::string &name) {
 // name1 is allocated
 void IRGenerator::Copy(const std::string &name1, const std::string &name2, Type *type) {
   try {
-    auto IR_call = std::make_shared<IRCallInstructionNode>("", "", "builtin_memcpy");
-    IR_call->AddArgument(std::make_shared<IRArgumentNode>("ptr", name1));
-    IR_call->AddArgument(std::make_shared<IRArgumentNode>("ptr", name2));
-    IR_call->AddArgument(std::make_shared<IRArgumentNode>("i32", std::to_string(GetTypeSize(type).first)));
+    auto IR_call = std::make_shared<IRCallInstructionNode>("", std::make_shared<IRArrayNode>(), "builtin_memcpy");
+    IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("ptr"), name1));
+    IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("ptr"), name2));
+    IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("i32"), std::to_string(GetTypeSize(type).first)));
     cur_block_->AddInstruction(IR_call);
   } catch (Error &) { throw; }
 }
