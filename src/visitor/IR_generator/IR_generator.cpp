@@ -15,6 +15,7 @@
 #include "parser/node/path.h"
 #include "parser/node/statement.h"
 #include "semantic/builtin/builtin_node.h"
+#include "IR/struct_map.h"
 
 IRGenerator::IRGenerator(std::shared_ptr<IRRootNode> root) : root_(root) {}
 
@@ -720,6 +721,7 @@ void IRGenerator::Visit(StructNode *node) {
   try {
     node->IR_name_ = name_allocator_.Allocate("struct.." + node->identifier_->val_);
     auto IR_struct = std::make_shared<IRStructNode>(node->IR_name_);
+    StructMap::Instance().Add(node->IR_name_, IR_struct.get());
     for (auto &struct_field : node->struct_fields_->struct_field_s_) {
       IR_struct->AddMember(GetIRTypeNode(struct_field->type_->type_info_.get()));
     }

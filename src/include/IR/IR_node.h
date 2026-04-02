@@ -3,6 +3,11 @@
 #include <vector>
 #include <memory>
 #include <deque>
+#include <map>
+
+enum StorageType {
+  kRegister, kMemory
+};
 
 class IRVisitorBase;
 
@@ -15,6 +20,9 @@ private:
 
 class IRArrayNode : public IRNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRArrayNode() = default;
   explicit IRArrayNode(const std::string &);
@@ -25,10 +33,16 @@ public:
 private:
   std::vector<uint32_t> length_;
   std::string base_type_; // empty means void
+
+  uint32_t allocated_size_;
+  uint32_t align_;
 };
 
 class IRStructNode : public IRNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRStructNode() = delete;
   explicit IRStructNode(const std::string &);
@@ -37,13 +51,22 @@ public:
 private:
   std::string name_;
   std::vector<std::shared_ptr<IRArrayNode>> members_;
+
+  uint32_t allocated_size_;
+  uint32_t align_;
 };
 
 class IRInstructionNode : public IRNode {
+protected:
+  StorageType storage_type_;
+  uint32_t address_;
 };
 
 class IRArithmeticInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRArithmeticInstructionNode() = delete;
   IRArithmeticInstructionNode(const std::string &, const std::string &, const std::string &,
@@ -60,6 +83,9 @@ private:
 
 class IRNegationInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRNegationInstructionNode() = delete;
   IRNegationInstructionNode(const std::string &, const bool &, const std::string &, const std::string &);
@@ -73,6 +99,9 @@ private:
 
 class IRBranchInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRBranchInstructionNode() = delete;
   IRBranchInstructionNode(const std::string &, const uint32_t &, const uint32_t &);
@@ -85,6 +114,9 @@ private:
 
 class IRJumpInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRJumpInstructionNode() = delete;
   explicit IRJumpInstructionNode(const uint32_t &);
@@ -95,6 +127,9 @@ private:
 
 class IRReturnInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRReturnInstructionNode();
   IRReturnInstructionNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -106,6 +141,9 @@ private:
 
 class IRAllocateInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRAllocateInstructionNode() = delete;
   IRAllocateInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>);
@@ -113,10 +151,16 @@ public:
 private:
   std::string result_;
   std::shared_ptr<IRArrayNode> type_;
+
+  StorageType inner_storage_type_;
+  uint32_t inner_address_;
 };
 
 class IRLoadInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRLoadInstructionNode() = delete;
   IRLoadInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &);
@@ -129,6 +173,9 @@ private:
 
 class IRStoreVariableInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRStoreVariableInstructionNode() = delete;
   IRStoreVariableInstructionNode(std::shared_ptr<IRArrayNode>, const std::string &, const std::string &);
@@ -141,6 +188,9 @@ private:
 
 class IRStoreConstInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRStoreConstInstructionNode() = delete;
   IRStoreConstInstructionNode(const std::string &, const int32_t &, const std::string &);
@@ -153,6 +203,9 @@ private:
 
 class IRGetElementPtrInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRGetElementPtrInstructionNode() = delete;
   IRGetElementPtrInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &, const uint32_t &);
@@ -167,6 +220,9 @@ private:
 // the index is variable now
 class IRGetElementPtrPrimeInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRGetElementPtrPrimeInstructionNode() = delete;
   IRGetElementPtrPrimeInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &, const std::string &);
@@ -180,6 +236,9 @@ private:
 
 class IRCompareInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   enum Operator {
     kEq, kNe, kUgt, kUge, kUlt, kUle, kSgt, kSge, kSlt, kSle
@@ -198,6 +257,9 @@ private:
 
 class IRArgumentNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRArgumentNode() = delete;
   IRArgumentNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -209,6 +271,9 @@ private:
 
 class IRCallInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRCallInstructionNode() = delete;
   IRCallInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &);
@@ -219,10 +284,16 @@ private:
   std::shared_ptr<IRArrayNode> result_type_; // empty means void which also means result_ is also empty
   std::string function_name_;
   std::vector<std::shared_ptr<IRArgumentNode>> arguments_;
+
+  StorageType storage_type_;
+  uint32_t address_;
 };
 
 class IRSelectInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRSelectInstructionNode() = delete;
   IRSelectInstructionNode(const std::string &, const std::string &);
@@ -234,6 +305,9 @@ private:
 
 class IRBlockNode : public IRNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRBlockNode() = delete;
   explicit IRBlockNode(const uint32_t &);
@@ -248,6 +322,9 @@ private:
 
 class IRParameterNode : public IRNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRParameterNode() = delete;
   IRParameterNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -255,10 +332,16 @@ public:
 private:
   std::shared_ptr<IRArrayNode> type_;
   std::string name_;
+
+  StorageType storage_type_ = kMemory;
+  uint32_t address_ = 0;
 };
 
 class IRFunctionNode : public IRNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRFunctionNode() = delete;
   IRFunctionNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -270,10 +353,16 @@ private:
   std::string name_;
   std::vector<std::shared_ptr<IRParameterNode>> parameters_;
   std::vector<std::shared_ptr<IRBlockNode>> blocks_;
+
+  uint32_t stack_size_ = 0;
+  std::map<std::string, IRNode *> variables_;
 };
 
 class IRRootNode : public IRNode {
   friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
 public:
   IRRootNode() = default;
   void AddStruct(std::shared_ptr<IRStructNode>);
