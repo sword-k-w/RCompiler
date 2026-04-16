@@ -6,6 +6,8 @@ uint32_t Align4(uint32_t x) {
   return (x + 3) / 4 * 4;
 }
 
+void MemoryAllocator::Visit(IRArrayNode *node) {}
+
 void MemoryAllocator::Visit(IRStructNode *node) {}
 
 void MemoryAllocator::Visit(IRArithmeticInstructionNode *node) {
@@ -53,20 +55,13 @@ void MemoryAllocator::Visit(IRStoreConstInstructionNode *node) {}
 
 void MemoryAllocator::Visit(IRGetElementPtrInstructionNode *node) {
   node->storage_type_ = kMemory;
-  if (!node->type_->length_.empty()) {
-    *current_stack_ += Align4(node->type_->allocated_size_ / node->type_->length_[0]);
-    node->address_ = *current_stack_;
-  } else {
-    auto struct_node = StructMap::Instance().Query(node->type_->base_type_);
-    *current_stack_ += Align4(struct_node->members_[node->index_]->allocated_size_);
-    node->address_ = *current_stack_;
-  }
+  *current_stack_ += 4;
+  node->address_ = *current_stack_;
 }
 
 void MemoryAllocator::Visit(IRGetElementPtrPrimeInstructionNode *node) {
   node->storage_type_ = kMemory;
-  assert(!node->type_->length_.empty());
-  *current_stack_ += Align4(node->type_->allocated_size_ / node->type_->length_[0]);
+  *current_stack_ += 4;
   node->address_ = *current_stack_;
 }
 
@@ -111,7 +106,7 @@ void MemoryAllocator::Visit(IRParameterNode *node) {
 }
 
 void MemoryAllocator::Visit(IRFunctionNode *node) {
-  node->stack_size_ += 48; // save s0~s11
+  node->stack_size_ += 48 + 36; // save s0~s11, and reserve space to save a0~a7, ra
   current_stack_ = &node->stack_size_;
   current_parameter_register_ = 10;
   for (auto &parameter : node->parameters_) {

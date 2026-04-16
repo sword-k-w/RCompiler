@@ -17,4 +17,5 @@ public:
   }
   void Add(const std::string &, IRStructNode *);
   IRStructNode *Query(const std::string &);
+  void Print();
 };

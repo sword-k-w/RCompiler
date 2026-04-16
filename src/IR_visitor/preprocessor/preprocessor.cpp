@@ -1,8 +1,12 @@
 #include "IR_visitor/preprocessor/preprocessor.h"
 #include "IR/struct_map.h"
 #include "IR_visitor/memory_allocator/memory_allocator.h"
+#include <iostream>
 
 void Preprocessor::Visit(IRArrayNode *node) {
+  if (node->IsEmpty()) {
+    return;
+  }
   if (node->base_type_ == "i32" || node->base_type_ == "ptr") {
     node->align_ = 4;
     node->allocated_size_ = 4;
@@ -55,7 +59,9 @@ void Preprocessor::Visit(IRBranchInstructionNode *node) {}
 void Preprocessor::Visit(IRJumpInstructionNode *node) {}
 
 void Preprocessor::Visit(IRReturnInstructionNode *node) {
-  node->type_->Accept(this);
+  if (!node->type_->IsEmpty()) {
+    node->type_->Accept(this);
+  }
 }
 
 void Preprocessor::Visit(IRAllocateInstructionNode *node) {
@@ -118,7 +124,9 @@ void Preprocessor::Visit(IRParameterNode *node) {
 }
 
 void Preprocessor::Visit(IRFunctionNode *node) {
-  node->type_->Accept(this);
+  if (!node->type_->IsEmpty()) {
+    node->type_->Accept(this);
+  }
   current_variables_ = &node->variables_;
   for (auto parameter : node->parameters_) {
     parameter->Accept(this);

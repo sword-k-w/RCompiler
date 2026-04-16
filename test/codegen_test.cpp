@@ -10,7 +10,11 @@
 #include "visitor/checker/third_checker.h"
 #include "visitor/IR_generator/IR_generator.h"
 #include "IR_visitor/printer/IR_printer.h"
+#include "IR_visitor/preprocessor/preprocessor.h"
+#include "IR_visitor/memory_allocator/memory_allocator.h"
+#include "IR_visitor/assembly_generator/assembly_generator.h"
 #include <fstream>
+#include "IR/struct_map.h"
 
 void TestCode(const std::string &code, std::ostream &out) {
   try {
@@ -27,20 +31,25 @@ void TestCode(const std::string &code, std::ostream &out) {
     auto IR_root = std::make_shared<IRRootNode>();
     IRGenerator gen(IR_root);
     root->Accept(&gen);
-    IRPrinter printer("builtin.ll", out);
-    IR_root->Accept(&printer);
+    StructMap::Instance().Print();
+    Preprocessor preprocessor;
+    IR_root->Accept(&preprocessor);
+    MemoryAllocator memory_allocator;
+    IR_root->Accept(&memory_allocator);
+    AssemblyGenerator assembly_generator(LoadFromFile("builtin.s"), out);
+    IR_root->Accept(&assembly_generator);
   } catch (Error &err) {
     std::cerr << err.Info() << '\n';
     EXPECT_EQ(true, false);
   }
 }
 
-TEST(IRTest, TestcaseTest) {
+TEST(CodegenTest, TestcaseTest) {
   for (int t = 1; t <= 50; ++t) {
     std::cerr << "Testing testcase" << t << "...\n";
     std::string folder = "testcases/IR-1/src/comprehensive" + std::to_string(t);
     std::string input = LoadFromFile(folder + "/comprehensive" + std::to_string(t) + ".rx");
-    std::string output_file = "tmp/" + std::to_string(t) + ".ll";
+    std::string output_file = "tmp/" + std::to_string(t) + ".s";
     std::ofstream out(output_file);
     if (!out.is_open()) {
       throw std::runtime_error("Failed to open file for writing: " + output_file);
@@ -50,16 +59,3 @@ TEST(IRTest, TestcaseTest) {
   }
 }
 
-// TEST(IRTest, MyTest) {
-//   for (int t = 34; t <= 34; ++t) {
-//     std::cerr << "Testing my test" << t << "...\n";
-//     std::string input = LoadFromFile("tmp_data/" + std::to_string(t) + ".rx");
-//     std::string output_file = "tmp_data/" + std::to_string(t) + ".ll";
-//     std::ofstream out(output_file);
-//     if (!out.is_open()) {
-//       throw std::runtime_error("Failed to open file for writing: " + output_file);
-//     }
-//     TestCode(input, out);
-//     std::cerr << '\n';
-//   }
-// }

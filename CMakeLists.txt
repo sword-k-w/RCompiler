@@ -19,6 +19,7 @@ set(VISITOR_DIR ./src/visitor)
 set(SEMANTIC_DIR ./src/semantic)
 set(IR_DIR ./src/IR)
 set(IR_VISITOR_DIR ./src/IR_visitor)
+set(CODEGEN_DIR ./src/codegen)
 
 file(GLOB_RECURSE VISITOR_SRCS
     "${VISITOR_DIR}/*.cpp")
@@ -29,7 +30,9 @@ file(GLOB_RECURSE SEMANTIC_SRCS
 file(GLOB_RECURSE IR_SRCS
     "${IR_DIR}/*.cpp")
 file(GLOB_RECURSE IR_VISITOR_SRCS
-        "${IR_VISITOR_DIR}/*.cpp")
+    "${IR_VISITOR_DIR}/*.cpp")
+file(GLOB_RECURSE CODEGEN_SRCS
+    "${CODEGEN_DIR}/*.cpp")
 
 aux_source_directory(${COMMON_DIR} COMMON_SRCS)
 aux_source_directory(${LEXER_DIR} LEXER_SRCS)
@@ -55,6 +58,7 @@ add_executable(parser_test
         ${SEMANTIC_SRCS}
         ${IR_SRCS}
         ${IR_VISITOR_SRCS}
+        ${CODEGEN_SRCS}
 )
 
 add_executable(semantic_test
@@ -67,6 +71,7 @@ add_executable(semantic_test
         ${SEMANTIC_SRCS}
         ${IR_SRCS}
         ${IR_VISITOR_SRCS}
+        ${CODEGEN_SRCS}
 )
 
 add_executable(IR_test
@@ -78,12 +83,29 @@ add_executable(IR_test
         ${VISITOR_SRCS}
         ${SEMANTIC_SRCS}
         ${IR_SRCS}
-        ${IR_VISITOR_SRCS})
+        ${IR_VISITOR_SRCS}
+        ${CODEGEN_SRCS}
+)
+
+add_executable(codegen_test
+        test/codegen_test.cpp
+        src/data_loader/data_loader.cpp
+        ${PARSER_SRCS}
+        ${COMMON_SRCS}
+        ${LEXER_SRCS}
+        ${VISITOR_SRCS}
+        ${SEMANTIC_SRCS}
+        ${IR_SRCS}
+        ${IR_VISITOR_SRCS}
+        ${CODEGEN_SRCS}
+)
 
 target_link_libraries(parser_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 target_link_libraries(semantic_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 target_link_libraries(IR_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
+target_link_libraries(codegen_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 
 add_test(NAME parser_test COMMAND parser_test)
 add_test(NAME semantic_test COMMAND semantic_test)
 add_test(NAME IR_test COMMAND IR_test)
+add_test(NAME codegen_test COMMAND codegen_test)

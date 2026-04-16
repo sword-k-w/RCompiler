@@ -11,20 +11,20 @@ public:
   void Visit(IRArrayNode *) override;
   void Visit(IRStructNode *) override;
   void Visit(IRArithmeticInstructionNode *) override;
-  // void Visit(IRNegationInstructionNode *) override;
-  // void Visit(IRBranchInstructionNode *) override;
-  // void Visit(IRJumpInstructionNode *) override;
-  // void Visit(IRReturnInstructionNode *) override;
-  // void Visit(IRAllocateInstructionNode *) override;
-  // void Visit(IRLoadInstructionNode *) override;
-  // void Visit(IRStoreVariableInstructionNode *) override;
-  // void Visit(IRStoreConstInstructionNode *) override;
-  // void Visit(IRGetElementPtrInstructionNode *) override;
-  // void Visit(IRGetElementPtrPrimeInstructionNode *) override;
-  // void Visit(IRCompareInstructionNode *) override;
-  // void Visit(IRArgumentNode *) override;
-  // void Visit(IRCallInstructionNode *) override;
-  // void Visit(IRSelectInstructionNode *) override;
+  void Visit(IRNegationInstructionNode *) override;
+  void Visit(IRBranchInstructionNode *) override;
+  void Visit(IRJumpInstructionNode *) override;
+  void Visit(IRReturnInstructionNode *) override;
+  void Visit(IRAllocateInstructionNode *) override;
+  void Visit(IRLoadInstructionNode *) override;
+  void Visit(IRStoreVariableInstructionNode *) override;
+  void Visit(IRStoreConstInstructionNode *) override;
+  void Visit(IRGetElementPtrInstructionNode *) override;
+  void Visit(IRGetElementPtrPrimeInstructionNode *) override;
+  void Visit(IRCompareInstructionNode *) override;
+  void Visit(IRArgumentNode *) override;
+  void Visit(IRCallInstructionNode *) override;
+  void Visit(IRSelectInstructionNode *) override;
   void Visit(IRBlockNode *) override;
   void Visit(IRParameterNode *) override;
   void Visit(IRFunctionNode *) override;
@@ -40,6 +40,7 @@ private:
   std::pair<StorageType, uint32_t> GetVariableAddress(const std::string &);
   void TransferToTreg(uint32_t, uint32_t);
   std::string VariableToReg(const std::string &, uint32_t); // the second argument is the default t reg if the variable is stored in memory.
+  void VariableForceToReg(const std::string &, const std::string &);
   std::string GetResultReg(StorageType, uint32_t, uint32_t); // the third argument is the default t reg if the result is stored in memory.
   void RegToVariable(StorageType, uint32_t, const std::string &);
 };
