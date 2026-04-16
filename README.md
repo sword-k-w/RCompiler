@@ -102,3 +102,7 @@ block = instructions
 ### Idea
 
 Each variable/expression, use ptr to store its value. Corresponding IR name is the name of ptr. Left values use their own pointer; right value use temporary pointer.
+
+## Codegen
+
+TODO: const handle is not complete

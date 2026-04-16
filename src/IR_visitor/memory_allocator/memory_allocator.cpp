@@ -112,7 +112,7 @@ void MemoryAllocator::Visit(IRFunctionNode *node) {
   for (auto &parameter : node->parameters_) {
     parameter->Accept(this);
   }
-  for (auto &block : node->parameters_) {
+  for (auto &block : node->blocks_) {
     block->Accept(this);
   }
 }

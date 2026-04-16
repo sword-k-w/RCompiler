@@ -6,8 +6,10 @@
 
 class FunctionMap {
 private:
-  FunctionMap() = default;
+  FunctionMap();
   std::map<std::string, IRFunctionNode *> mp_;
+  std::vector<std::shared_ptr<IRFunctionNode>> builtin_func_;
+  void AddBuiltinFunction(const std::string &, const std::string &, const std::vector<std::pair<std::string, std::string>> &);
 public:
   FunctionMap(const FunctionMap &) = delete;
   FunctionMap &operator = (const FunctionMap &) = delete;

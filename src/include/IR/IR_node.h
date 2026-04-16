@@ -6,7 +6,7 @@
 #include <map>
 
 enum StorageType {
-  kRegister, kMemory
+  kRegister, kMemory, kConst
 };
 
 class IRVisitorBase;

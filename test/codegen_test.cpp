@@ -31,7 +31,7 @@ void TestCode(const std::string &code, std::ostream &out) {
     auto IR_root = std::make_shared<IRRootNode>();
     IRGenerator gen(IR_root);
     root->Accept(&gen);
-    StructMap::Instance().Print();
+
     Preprocessor preprocessor;
     IR_root->Accept(&preprocessor);
     MemoryAllocator memory_allocator;
