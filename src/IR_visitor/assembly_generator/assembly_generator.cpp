@@ -172,7 +172,7 @@ void AssemblyGenerator::Visit(IRJumpInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRReturnInstructionNode *node) {
-  if (node->type_ != nullptr) {
+  if (!node->type_->IsEmpty()) {
     VariableForceToReg(node->name_, "a0");
   }
   for (uint32_t i = 0; i < 12; ++i) {
