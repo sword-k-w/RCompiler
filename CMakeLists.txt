@@ -87,8 +87,34 @@ add_executable(IR_test
         ${CODEGEN_SRCS}
 )
 
+add_executable(IR_single
+        test/IR_single.cpp
+        src/data_loader/data_loader.cpp
+        ${PARSER_SRCS}
+        ${COMMON_SRCS}
+        ${LEXER_SRCS}
+        ${VISITOR_SRCS}
+        ${SEMANTIC_SRCS}
+        ${IR_SRCS}
+        ${IR_VISITOR_SRCS}
+        ${CODEGEN_SRCS}
+)
+
 add_executable(codegen_test
         test/codegen_test.cpp
+        src/data_loader/data_loader.cpp
+        ${PARSER_SRCS}
+        ${COMMON_SRCS}
+        ${LEXER_SRCS}
+        ${VISITOR_SRCS}
+        ${SEMANTIC_SRCS}
+        ${IR_SRCS}
+        ${IR_VISITOR_SRCS}
+        ${CODEGEN_SRCS}
+)
+
+add_executable(codegen_single
+        test/codegen_single.cpp
         src/data_loader/data_loader.cpp
         ${PARSER_SRCS}
         ${COMMON_SRCS}

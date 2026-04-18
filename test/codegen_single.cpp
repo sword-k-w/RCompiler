@@ -1,4 +1,3 @@
-#include "gtest/gtest.h"
 #include "data_loader/data_loader.h"
 #include "lexer/lexer.h"
 #include "parser/parser.hpp"
@@ -40,22 +39,11 @@ void TestCode(const std::string &code, std::ostream &out) {
     IR_root->Accept(&assembly_generator);
   } catch (Error &err) {
     std::cerr << err.Info() << '\n';
-    EXPECT_EQ(true, false);
   }
 }
 
-TEST(CodegenTest, TestcaseTest) {
-  for (int t = 1; t <= 50; ++t) {
-    std::cerr << "Testing testcase" << t << "...\n";
-    std::string folder = "testcases/IR-1/src/comprehensive" + std::to_string(t);
-    std::string input = LoadFromFile(folder + "/comprehensive" + std::to_string(t) + ".rx");
-    std::string output_file = "tmp/" + std::to_string(t) + ".s";
-    std::ofstream out(output_file);
-    if (!out.is_open()) {
-      throw std::runtime_error("Failed to open file for writing: " + output_file);
-    }
-    TestCode(input, out);
-    std::cerr << '\n';
-  }
+int main() {
+  std::string code = LoadInput();
+  TestCode(code, std::cout);
+  return 0;
 }
-

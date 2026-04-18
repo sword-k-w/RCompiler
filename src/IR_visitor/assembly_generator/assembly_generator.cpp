@@ -6,7 +6,8 @@
 #include "IR/function_map.h"
 #include "codegen/register.h"
 
-AssemblyGenerator::AssemblyGenerator(const std::string &builtin, std::ostream &os) : builtin_(builtin), os_(os) {}
+AssemblyGenerator::AssemblyGenerator(const std::string &builtin_begin, const std::string &builtin_end, std::ostream &os) :
+  builtin_begin_(builtin_begin), builtin_end_(builtin_end),os_(os) {}
 
 std::pair<StorageType, uint32_t> AssemblyGenerator::GetVariableAddress(const std::string &name) {
   if (name[0] != '%') { // name must be a number
@@ -183,8 +184,9 @@ void AssemblyGenerator::Visit(IRReturnInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRAllocateInstructionNode *node) {
+  os_ << "\t# Allocate Instruction " << node->result_ << '\n';
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
-  os_ << "\taddi, " << rd << ", sp, " << current_stack_ - node->inner_address_ << '\n';
+  os_ << "\taddi\t" << rd << ", sp, " << current_stack_ - node->inner_address_ << '\n';
   RegToVariable(node->storage_type_, node->address_, rd);
 }
 
@@ -202,6 +204,7 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
+  os_ << "\t# Store Instruction\n";
   auto ptr_reg = VariableToReg(node->pointer_, 0);
   auto [type, address] = GetVariableAddress(node->value_);
   if (type == kRegister) {
@@ -216,6 +219,7 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRStoreConstInstructionNode *node) {
+  os_ << "\t# Store Instruction\n";
   auto ptr_reg = VariableToReg(node->pointer_, 0);
   os_ << "\tli\tt1, " << node->value_ << '\n';
   os_ << "\tsw\tt1, " << "0(" << ptr_reg << ")\n";
@@ -293,6 +297,7 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
 void AssemblyGenerator::Visit(IRArgumentNode *node) {}
 
 void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
+  os_ << "\t# Call Instruction " << node->function_name_ << '\n';
   auto function_node = FunctionMap::Instance().Query(node->function_name_);
   auto size = node->arguments_.size();
 
@@ -302,6 +307,7 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
   for (uint32_t i = 0; i < 8; ++i) {
     os_ << "\tsw\ta" << i << ", " << current_stack_ - 48 - 4 * i << "(sp)\n";
   }
+  os_ << "\tsw\tra, " << current_stack_ - 48 - 32 << "(sp)\n";
   for (uint32_t i = 0; i < size; ++i) {
     auto para = function_node->parameters_[i];
     auto [type, address] = GetVariableAddress(node->arguments_[i]->value_);
@@ -345,6 +351,12 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
   if (!node->result_type_->IsEmpty()) {
     RegToVariable(node->storage_type_, node->address_, "a0");
   }
+
+  // restore a0~a7 and ra
+  for (uint32_t i = 0; i < 8; ++i) {
+    os_ << "\tlw\ta" << i << ", " << current_stack_ - 48 - 4 * i << "(sp)\n";
+  }
+  os_ << "\tlw\tra, " << current_stack_ - 48 - 32 << "(sp)\n";
 }
 
 void AssemblyGenerator::Visit(IRSelectInstructionNode *node) {
@@ -390,8 +402,9 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRRootNode *node) {
-  os_ << builtin_ << '\n';
+  os_ << builtin_begin_ << '\n';
   for (auto &function_node : node->functions_) {
     function_node->Accept(this);
   }
+  os_ << builtin_end_ << '\n';
 }
