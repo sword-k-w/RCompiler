@@ -109,6 +109,7 @@ void AssemblyGenerator::Visit(IRArrayNode *node) {}
 void AssemblyGenerator::Visit(IRStructNode *node) {}
 
 void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
+  os_ << "\t # Arithmetic Instruction\n";
   auto rs1 = VariableToReg(node->operand1_, 0);
   auto rs2 = VariableToReg(node->operand2_, 1);
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
@@ -176,9 +177,10 @@ void AssemblyGenerator::Visit(IRReturnInstructionNode *node) {
   if (!node->type_->IsEmpty()) {
     VariableForceToReg(node->name_, "a0");
   }
-  for (uint32_t i = 0; i < 12; ++i) {
-    os_ << "\tlw\ts" << i << ", " << current_stack_ - 4 * (i + 1) << "(sp)\n";
-  }
+  // not activated yet. If s registers are used, [remember to enable it]
+  // for (uint32_t i = 0; i < 12; ++i) {
+  //   os_ << "\tlw\ts" << i << ", " << current_stack_ - 4 * (i + 1) << "(sp)\n";
+  // }
   os_ << "\taddi\tsp, sp, " << current_stack_ << '\n';
   os_ << "\tret\n";
 }
@@ -191,6 +193,7 @@ void AssemblyGenerator::Visit(IRAllocateInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
+  os_ << "\t# Load Instruction " << node->result_ << '\n';
   auto ptr_reg = VariableToReg(node->pointer_, 0);
   if (node->storage_type_ == kRegister) {
     os_ << "\tlw\tx" << node->address_ << ", " << "0(" << ptr_reg << ")\n";
@@ -212,7 +215,7 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
   } else {
     uint32_t size = (node->type_->allocated_size_ + 3) / 4;
     for (uint32_t i = 0; i < size; ++i) {
-      os_ << "\tlw\tt1, " << current_stack_ - node->address_ + i * 4 << "(sp)\n";
+      os_ << "\tlw\tt1, " << current_stack_ - address + i * 4 << "(sp)\n";
       os_ << "\tsw\tt1, " << i * 4 << "(" << ptr_reg << ")\n";
     }
   }
@@ -304,7 +307,7 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
   // save a0~a7 and ra
   // Remember to think about the argument of call needs values in a0~a7, but they may be covered.
   // The correct way is to special judge a0~a7 and use the value in the memory.
-  for (uint32_t i = 0; i < 8; ++i) {
+  for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
     os_ << "\tsw\ta" << i << ", " << current_stack_ - 48 - 4 * i << "(sp)\n";
   }
   os_ << "\tsw\tra, " << current_stack_ - 48 - 32 << "(sp)\n";
@@ -353,7 +356,7 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
   }
 
   // restore a0~a7 and ra
-  for (uint32_t i = 0; i < 8; ++i) {
+  for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
     os_ << "\tlw\ta" << i << ", " << current_stack_ - 48 - 4 * i << "(sp)\n";
   }
   os_ << "\tlw\tra, " << current_stack_ - 48 - 32 << "(sp)\n";
@@ -388,12 +391,14 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
 
   current_stack_ = node->stack_size_;
   current_func_name_ = node->name_;
+  current_a_reg_used_ = node->a_reg_used_cnt_;
   current_variables_ = &node->variables_;
 
   // save regs
-  for (uint32_t i = 0; i < 12; ++i) {
-    os_ << "\tsw\ts" << i << ", " << current_stack_ - 4 * (i + 1) << "(sp)\n";
-  }
+  // not activated yet. If s registers are used, [remember to enable it]
+  // for (uint32_t i = 0; i < 12; ++i) {
+  //   os_ << "\tsw\ts" << i << ", " << current_stack_ - 4 * (i + 1) << "(sp)\n";
+  // }
 
   // blocks
   for (auto &block : node->blocks_) {

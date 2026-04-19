@@ -6,7 +6,7 @@ void FunctionMap::AddBuiltinFunction(const std::string &ret_type, const std::str
   if (ret_type != "void") {
     ret->SetBaseType(ret_type);
   }
-  auto func = std::make_shared<IRFunctionNode>(ret, func_name);
+  auto func = std::make_shared<IRFunctionNode>(ret, func_name, true);
   for (auto &[type, name] : param) {
     auto par_type = std::make_shared<IRArrayNode>();
     par_type->SetBaseType(type);
@@ -37,3 +37,12 @@ void FunctionMap::Add(const std::string &name, IRFunctionNode *node) {
 IRFunctionNode *FunctionMap::Query(const std::string &name) {
   return mp_[name];
 }
+
+void FunctionMap::Accept(IRVisitorBase *visitor) {
+  for (auto [name, function_node] : mp_) {
+    if (function_node->IsBuiltin()) {
+      function_node->Accept(visitor);
+    }
+  }
+}
+

@@ -344,11 +344,13 @@ class IRFunctionNode : public IRNode {
   friend class AssemblyGenerator;
 public:
   IRFunctionNode() = delete;
-  IRFunctionNode(std::shared_ptr<IRArrayNode>, const std::string &);
+  IRFunctionNode(std::shared_ptr<IRArrayNode>, const std::string &, bool);
   void AddParameter(std::shared_ptr<IRParameterNode>);
   void AddBlock(std::shared_ptr<IRBlockNode>);
   void Accept(IRVisitorBase *) override;
+  bool IsBuiltin() const;
 private:
+  bool is_builtin_;
   std::shared_ptr<IRArrayNode> type_;
   std::string name_;
   std::vector<std::shared_ptr<IRParameterNode>> parameters_;
@@ -356,6 +358,8 @@ private:
 
   uint32_t stack_size_ = 0;
   std::map<std::string, IRNode *> variables_;
+
+  uint32_t a_reg_used_cnt_;
 };
 
 class IRRootNode : public IRNode {

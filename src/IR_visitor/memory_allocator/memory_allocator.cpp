@@ -105,6 +105,7 @@ void MemoryAllocator::Visit(IRParameterNode *node) {
   }
 }
 
+#include <iostream>
 void MemoryAllocator::Visit(IRFunctionNode *node) {
   node->stack_size_ += 48 + 36; // save s0~s11, and reserve space to save a0~a7, ra
   current_stack_ = &node->stack_size_;
@@ -115,6 +116,7 @@ void MemoryAllocator::Visit(IRFunctionNode *node) {
   for (auto &block : node->blocks_) {
     block->Accept(this);
   }
+  node->a_reg_used_cnt_ = current_parameter_register_ - 10;
 }
 
 void MemoryAllocator::Visit(IRRootNode *node) {

@@ -95,7 +95,7 @@ uint32_t IRBlockNode::GetID() const { return id_; }
 
 IRParameterNode::IRParameterNode(std::shared_ptr<IRArrayNode> type, const std::string &name) : type_(type), name_(name) {}
 
-IRFunctionNode::IRFunctionNode(std::shared_ptr<IRArrayNode> type, const std::string &name) : type_(type), name_(name) {}
+IRFunctionNode::IRFunctionNode(std::shared_ptr<IRArrayNode> type, const std::string &name, bool is_builtin) : type_(type), name_(name), is_builtin_(is_builtin) {}
 
 void IRRootNode::AddStruct(std::shared_ptr<IRStructNode> struct_node) {
   structs_.emplace_back(struct_node);
@@ -187,6 +187,10 @@ void IRFunctionNode::AddParameter(std::shared_ptr<IRParameterNode> parameter) {
 
 void IRFunctionNode::AddBlock(std::shared_ptr<IRBlockNode> block) {
   blocks_.emplace_back(block);
+}
+
+bool IRFunctionNode::IsBuiltin() const {
+  return is_builtin_;
 }
 
 void IRFunctionNode::Accept(IRVisitorBase *visitor) {

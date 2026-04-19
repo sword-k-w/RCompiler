@@ -19,4 +19,5 @@ public:
   }
   void Add(const std::string &, IRFunctionNode *);
   IRFunctionNode *Query(const std::string &);
+  void Accept(IRVisitorBase *);
 };

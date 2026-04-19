@@ -13,6 +13,8 @@
 #include "IR_visitor/memory_allocator/memory_allocator.h"
 #include "IR_visitor/assembly_generator/assembly_generator.h"
 #include <fstream>
+#include "IR/function_map.h"
+
 #include "IR/struct_map.h"
 
 void TestCode(const std::string &code, std::ostream &out) {
@@ -33,8 +35,10 @@ void TestCode(const std::string &code, std::ostream &out) {
 
     Preprocessor preprocessor;
     IR_root->Accept(&preprocessor);
+    FunctionMap::Instance().Accept(&preprocessor);
     MemoryAllocator memory_allocator;
     IR_root->Accept(&memory_allocator);
+    FunctionMap::Instance().Accept(&memory_allocator);
     AssemblyGenerator assembly_generator(LoadFromFile("builtin_begin.s"), LoadFromFile("builtin_end.s"), out);
     IR_root->Accept(&assembly_generator);
   } catch (Error &err) {

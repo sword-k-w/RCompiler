@@ -36,6 +36,7 @@ private:
 
   uint32_t current_stack_;
   std::string current_func_name_;
+  uint32_t current_a_reg_used_;
   std::map<std::string, IRNode *> *current_variables_;
 
   std::pair<StorageType, uint32_t> GetVariableAddress(const std::string &);

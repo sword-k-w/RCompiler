@@ -616,7 +616,7 @@ void IRGenerator::Visit(FunctionNode *node) {
         IR_type = GetIRTypeNode(node->function_return_type_->type_info_.get());
       }
     }
-    cur_function_ = std::make_shared<IRFunctionNode>(IR_type, node->IR_name_);
+    cur_function_ = std::make_shared<IRFunctionNode>(IR_type, node->IR_name_, false);
     FunctionMap::Instance().Add(node->IR_name_, cur_function_.get());
     root_->AddFunction(cur_function_);
     cur_tag_cnt_ = 0;
