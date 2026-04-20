@@ -229,6 +229,7 @@ void AssemblyGenerator::Visit(IRStoreConstInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRGetElementPtrInstructionNode *node) {
+  os_ << "\t# GetElementPtr Instruction " << node->result_ << '\n';
   auto ptr_reg = VariableToReg(node->ptrval_, 0);
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
   uint32_t offset = 0;
@@ -250,6 +251,7 @@ void AssemblyGenerator::Visit(IRGetElementPtrInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRGetElementPtrPrimeInstructionNode *node) {
+  os_ << "\t# GetElementPtr Instruction " << node->result_ << '\n';
   auto ptr_reg = VariableToReg(node->ptrval_, 0);
   auto index_reg = VariableToReg(node->index_, 2);
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);

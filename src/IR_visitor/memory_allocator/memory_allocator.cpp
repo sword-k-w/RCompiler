@@ -33,6 +33,7 @@ void MemoryAllocator::Visit(IRReturnInstructionNode *node) {
   }
 }
 
+#include <iostream>
 void MemoryAllocator::Visit(IRAllocateInstructionNode *node) {
   node->storage_type_ = kMemory;
   *current_stack_ += 4;

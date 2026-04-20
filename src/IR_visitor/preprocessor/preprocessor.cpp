@@ -33,6 +33,7 @@ void Preprocessor::Visit(IRStructNode *node) {
   node->align_ = 1;
   node->allocated_size_ = 0;
   for (auto &array_node : node->members_) {
+    array_node->Accept(this);
     auto inner_size = array_node->allocated_size_;
     auto inner_align = array_node->align_;
     if (inner_align == 1 && node->align_ == 4) {
