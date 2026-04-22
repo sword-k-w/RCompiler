@@ -352,8 +352,8 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
     auto para = function_node->parameters_[i];
     auto [type, address] = GetVariableAddress(node->arguments_[i]->value_);
     if (type == kMemory && para->storage_type_ == kMemory) {
-      PrintIA(os_, "addi", "a0", "sp", current_stack_ - address);
-      PrintIA(os_, "addi", "a1", "sp", -static_cast<int32_t>(para->address_));
+      PrintIA(os_, "addi", "a0", "sp", -static_cast<int32_t>(para->address_));
+      PrintIA(os_, "addi", "a1", "sp", current_stack_ - address);
       os_ << "\tli\ta2, " << para->type_->allocated_size_ << '\n';
       os_ << "\tcall\tbuiltin_memcpy\n";
     }
