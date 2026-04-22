@@ -17,7 +17,7 @@ void PrintIStar(std::ostream &os, const std::string &type, const std::string &rd
   if (imm >= -16 && imm < 16) {
     os << "\t" << type << "\t" << rd << ", " << rs1 << ", " << imm << '\n';
   } else {
-    os << "\t li t6, " << imm << '\n';
+    os << "\tli t6, " << imm << '\n';
     std::string new_type = type;
     new_type.pop_back();
     os << "\t" << new_type << "\t" << rd << ", " << rs1 << ", t6\n";

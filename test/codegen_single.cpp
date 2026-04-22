@@ -13,9 +13,9 @@
 #include "IR_visitor/memory_allocator/memory_allocator.h"
 #include "IR_visitor/assembly_generator/assembly_generator.h"
 #include <fstream>
-#include "IR/function_map.h"
 
 #include "IR/struct_map.h"
+#include "IR/function_map.h"
 
 void TestCode(const std::string &code, std::ostream &out) {
   try {
