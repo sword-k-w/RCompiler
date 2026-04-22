@@ -17,7 +17,9 @@ public:
     static FunctionMap instance;
     return instance;
   }
+  void Init();
   void Add(const std::string &, IRFunctionNode *);
+  void Clear();
   IRFunctionNode *Query(const std::string &);
   void Accept(IRVisitorBase *);
 };

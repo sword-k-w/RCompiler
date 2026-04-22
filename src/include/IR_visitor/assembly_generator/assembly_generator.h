@@ -45,4 +45,6 @@ private:
   void VariableForceToReg(const std::string &, const std::string &);
   std::string GetResultReg(StorageType, uint32_t, uint32_t); // the third argument is the default t reg if the result is stored in memory.
   void RegToVariable(StorageType, uint32_t, const std::string &);
+  void SaveRegister();
+  void RestoreRegister();
 };

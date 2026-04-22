@@ -19,6 +19,10 @@ void FunctionMap::AddBuiltinFunction(const std::string &ret_type, const std::str
 }
 
 FunctionMap::FunctionMap() {
+  Init();
+}
+
+void FunctionMap::Init() {
   // add builtin function
   AddBuiltinFunction("void", "print", {{"ptr", "%0"}});
   AddBuiltinFunction("void", "println", {{"ptr", "%0"}});
@@ -33,6 +37,11 @@ FunctionMap::FunctionMap() {
 void FunctionMap::Add(const std::string &name, IRFunctionNode *node) {
   mp_[name] = node;
 }
+
+void FunctionMap::Clear() {
+  mp_.clear();
+}
+
 
 IRFunctionNode *FunctionMap::Query(const std::string &name) {
   return mp_[name];

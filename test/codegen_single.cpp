@@ -19,6 +19,10 @@
 
 void TestCode(const std::string &code, std::ostream &out) {
   try {
+    FunctionMap::Instance().Clear();
+    FunctionMap::Instance().Init();
+    StructMap::Instance().Clear();
+
     Lexer lexer(code);
     auto tokens = lexer.Run();
     Parser parser(tokens);
@@ -43,6 +47,7 @@ void TestCode(const std::string &code, std::ostream &out) {
     IR_root->Accept(&assembly_generator);
   } catch (Error &err) {
     std::cerr << err.Info() << '\n';
+    exit(-1);
   }
 }
 

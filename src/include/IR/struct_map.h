@@ -16,6 +16,7 @@ public:
     return instance;
   }
   void Add(const std::string &, IRStructNode *);
+  void Clear();
   IRStructNode *Query(const std::string &);
   void Print();
 };

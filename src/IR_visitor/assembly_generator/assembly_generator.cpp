@@ -5,6 +5,7 @@
 #include "IR/struct_map.h"
 #include "IR/function_map.h"
 #include "codegen/register.h"
+#include "codegen/instruction.h"
 
 AssemblyGenerator::AssemblyGenerator(const std::string &builtin_begin, const std::string &builtin_end, std::ostream &os) :
   builtin_begin_(builtin_begin), builtin_end_(builtin_end),os_(os) {}
@@ -59,7 +60,7 @@ std::pair<StorageType, uint32_t> AssemblyGenerator::GetVariableAddress(const std
 }
 
 void AssemblyGenerator::TransferToTreg(uint32_t address, uint32_t reg_id) {
-  os_ << "\tlw\tt" << reg_id << ", " << current_stack_ - address << "(sp)\n";
+  PrintMem(os_, "lw", "t" + std::to_string(reg_id), "sp", current_stack_ - address);
 }
 
 std::string AssemblyGenerator::GetResultReg(StorageType storage_type, uint32_t address, uint32_t reg_id) {
@@ -85,7 +86,7 @@ std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t r
 void AssemblyGenerator::VariableForceToReg(const std::string &name, const std::string &reg) {
   auto [type, address] = GetVariableAddress(name);
   if (type == kMemory) {
-    os_ << "\tlw\t" << reg << ", " << current_stack_ - address << "(sp)\n";
+    PrintMem(os_, "lw", reg, "sp", current_stack_ - address);
   } else if (type == kConst) {
     os_ << "\tli\t" << reg << ", " << name << '\n';
   } else {
@@ -98,10 +99,28 @@ void AssemblyGenerator::VariableForceToReg(const std::string &name, const std::s
 void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address, const std::string &reg) {
   assert(storage_type != kConst);
   if (storage_type == kMemory) {
-    os_ << "\tsw\t" << reg << ", " << current_stack_ - address << "(sp)\n";
+    PrintMem(os_, "sw", reg, "sp", current_stack_ - address);
   } else if (!SameRegister(address, reg)) {
     os_ << "\tmv\t" << address << ", " << reg << '\n';
   }
+}
+
+void AssemblyGenerator::SaveRegister() {
+  // save a0~a7 and ra
+  // Remember to think about the argument of call needs values in a0~a7, but they may be covered.
+  // The correct way is to special judge a0~a7 and use the value in the memory.
+  for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
+    PrintMem(os_, "sw", "a" + std::to_string(i), "sp", current_stack_ - 48 - 4 * i);
+  }
+  PrintMem(os_, "sw", "ra", "sp", current_stack_ - 48 - 32);
+}
+
+void AssemblyGenerator::RestoreRegister() {
+  // restore a0~a7 and ra
+  for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
+    PrintMem(os_, "lw", "a" + std::to_string(i), "sp", current_stack_ - 48 - 4 * i);
+  }
+  PrintMem(os_, "lw", "ra", "sp", current_stack_ - 48 - 32);
 }
 
 void AssemblyGenerator::Visit(IRArrayNode *node) {}
@@ -109,7 +128,7 @@ void AssemblyGenerator::Visit(IRArrayNode *node) {}
 void AssemblyGenerator::Visit(IRStructNode *node) {}
 
 void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
-  os_ << "\t # Arithmetic Instruction\n";
+  os_ << "\t # Arithmetic Instruction " << node->result_ << '\n';
   auto rs1 = VariableToReg(node->operand1_, 0);
   auto rs2 = VariableToReg(node->operand2_, 1);
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
@@ -149,13 +168,14 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRNegationInstructionNode *node) {
+  os_ << "\t# Negation Instruction " << node->result_ << '\n';
   auto rs = VariableToReg(node->operand_, 0);
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
   if (node->is_minus_) {
     os_ << "\tneg\t" << rd << ", " << rs << '\n';
   } else {
     if (node->type_ == "i1") {
-      os_ << "\txori\t" << rd << ", " << rs << ", 1\n";
+      PrintIA(os_, "xori", rd, rs, 1);
     } else {
       os_ << "\tnot\t" << rd << ", " << rs << '\n';
     }
@@ -164,31 +184,34 @@ void AssemblyGenerator::Visit(IRNegationInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
+  os_ << "\t# Branch Instruction\n";
   auto rs = VariableToReg(node->condition_, 0);
   os_ << "\tbnez\t" << rs << ", " << ".L" << current_func_name_ << "_" << node->true_branch_ << '\n';
   os_ << "\tj " << ".L" << current_func_name_ << "_" << node->false_branch_ << '\n';
 }
 
 void AssemblyGenerator::Visit(IRJumpInstructionNode *node) {
+  os_ << "\t# Jump Instruction\n";
   os_ << "\tj " << ".L" << current_func_name_ << "_" << node->destination_ << '\n';
 }
 
 void AssemblyGenerator::Visit(IRReturnInstructionNode *node) {
+  os_ << "\t# Return Instruction\n";
   if (!node->type_->IsEmpty()) {
     VariableForceToReg(node->name_, "a0");
   }
   // not activated yet. If s registers are used, [remember to enable it]
   // for (uint32_t i = 0; i < 12; ++i) {
-  //   os_ << "\tlw\ts" << i << ", " << current_stack_ - 4 * (i + 1) << "(sp)\n";
+  //   PrintMem(os_, "lw", "s" + std::to_string(i), "sp", current_stack_ - 4 * (i + 1));
   // }
-  os_ << "\taddi\tsp, sp, " << current_stack_ << '\n';
+  PrintIA(os_, "addi", "sp", "sp", current_stack_);
   os_ << "\tret\n";
 }
 
 void AssemblyGenerator::Visit(IRAllocateInstructionNode *node) {
   os_ << "\t# Allocate Instruction " << node->result_ << '\n';
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
-  os_ << "\taddi\t" << rd << ", sp, " << current_stack_ - node->inner_address_ << '\n';
+  PrintIA(os_, "addi", rd, "sp", current_stack_ - node->inner_address_);
   RegToVariable(node->storage_type_, node->address_, rd);
 }
 
@@ -196,13 +219,16 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
   os_ << "\t# Load Instruction " << node->result_ << '\n';
   auto ptr_reg = VariableToReg(node->pointer_, 0);
   if (node->storage_type_ == kRegister) {
-    os_ << "\tlw\tx" << node->address_ << ", " << "0(" << ptr_reg << ")\n";
+    PrintMem(os_, "lw", "x" + std::to_string(node->address_), ptr_reg, 0);
   } else {
-    uint32_t size = (node->type_->allocated_size_ + 3) / 4;
-    for (uint32_t i = 0; i < size; ++i) {
-      os_ << "\tlw\tt1, " << i * 4 << "(" << ptr_reg << ")\n";
-      os_ << "\tsw\tt1, " << current_stack_ - node->address_ + i * 4 << "(sp)\n";
+    SaveRegister();
+    PrintIA(os_, "addi", "a0", "sp", current_stack_ - node->address_);
+    if (!SameRegister(11, ptr_reg)) {
+      os_ << "\tmv\ta1, " << ptr_reg << '\n';
     }
+    os_ << "\tli\ta2, " << node->type_->allocated_size_ << '\n';
+    os_ << "\tcall\tbuiltin_memcpy\n";
+    RestoreRegister();
   }
 }
 
@@ -211,13 +237,16 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
   auto ptr_reg = VariableToReg(node->pointer_, 0);
   auto [type, address] = GetVariableAddress(node->value_);
   if (type == kRegister) {
-    os_ << "\tsw\tx" << address << ", 0(" << ptr_reg << ")\n";
+    PrintMem(os_, "sw", "x" + std::to_string(address), ptr_reg, 0);
   } else {
-    uint32_t size = (node->type_->allocated_size_ + 3) / 4;
-    for (uint32_t i = 0; i < size; ++i) {
-      os_ << "\tlw\tt1, " << current_stack_ - address + i * 4 << "(sp)\n";
-      os_ << "\tsw\tt1, " << i * 4 << "(" << ptr_reg << ")\n";
+    SaveRegister();
+    if (!SameRegister(10, ptr_reg)) {
+      os_ << "\tmv\ta0, " << ptr_reg << '\n';
     }
+    PrintIA(os_, "addi", "a1", "sp", current_stack_ - address);
+    os_ << "\tli\ta2, " << node->type_->allocated_size_ << '\n';
+    os_ << "\tcall\tbuiltin_memcpy\n";
+    RestoreRegister();
   }
 }
 
@@ -225,7 +254,7 @@ void AssemblyGenerator::Visit(IRStoreConstInstructionNode *node) {
   os_ << "\t# Store Instruction\n";
   auto ptr_reg = VariableToReg(node->pointer_, 0);
   os_ << "\tli\tt1, " << node->value_ << '\n';
-  os_ << "\tsw\tt1, " << "0(" << ptr_reg << ")\n";
+  PrintMem(os_, "sw", "t1", ptr_reg, 0);
 }
 
 void AssemblyGenerator::Visit(IRGetElementPtrInstructionNode *node) {
@@ -246,7 +275,7 @@ void AssemblyGenerator::Visit(IRGetElementPtrInstructionNode *node) {
   } else {
     offset = node->type_->allocated_size_ / node->type_->length_[0] * node->index_;
   }
-  os_ << "\taddi\t" << rd << ", " << ptr_reg << ", " << offset << '\n';
+  PrintIA(os_, "addi", rd, ptr_reg, offset);
   RegToVariable(node->storage_type_, node->address_, rd);
 }
 
@@ -263,6 +292,7 @@ void AssemblyGenerator::Visit(IRGetElementPtrPrimeInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
+  os_ << "\t# Compare Instruction " << node->result_ << '\n';
   auto rs1 = VariableToReg(node->operand1_, 0);
   auto rs2 = VariableToReg(node->operand2_, 1);
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
@@ -270,7 +300,7 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
     os_ << "\tslt t3, " << rs1 << ", " << rs2 << '\n';
     os_ << "\tslt t4, " << rs2 << ", " << rs1 << '\n';
     os_ << "\tor\tt3, t3, t4\n";
-    os_ << "\txori\t" << rd << ", t3, 1\n";
+    PrintIA(os_, "xori", rd, "t3", 1);
   } else if (node->op_ == IRCompareInstructionNode::kNe) {
     os_ << "\tslt t3, " << rs1 << ", " << rs2 << '\n';
     os_ << "\tslt t4, " << rs2 << ", " << rs1 << '\n';
@@ -279,22 +309,22 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
     os_ << "\tsltu\t" << rd << ", " << rs2 << ", " << rs1 << '\n';
   } else if (node->op_ == IRCompareInstructionNode::kUge) {
     os_ << "\tsltu\tt3, " << rs1 << ", " << rs2 << '\n';
-    os_ << "\txori\t" << rd << ", t3, 1\n";
+    PrintIA(os_, "xori", rd, "t3", 1);
   } else if (node->op_ == IRCompareInstructionNode::kUlt) {
     os_ << "\tsltu\t" << rd << ", " << rs1 << ", " << rs2 << '\n';
   } else if (node->op_ == IRCompareInstructionNode::kUle) {
     os_ << "\tsltu\tt3, " << rs2 << ", " << rs1 << '\n';
-    os_ << "\txori\t" << rd << ", t3, 1\n";
+    PrintIA(os_, "xori", rd, "t3", 1);
   } else if (node->op_ == IRCompareInstructionNode::kSgt) {
     os_ << "\tslt\t" << rd << ", " << rs2 << ", " << rs1 << '\n';
   } else if (node->op_ == IRCompareInstructionNode::kSge) {
     os_ << "\tslt\tt3, " << rs1 << ", " << rs2 << '\n';
-    os_ << "\txori\t" << rd << ", t3, 1\n";
+    PrintIA(os_, "xori", rd, "t3", 1);
   } else if (node->op_ == IRCompareInstructionNode::kSlt) {
     os_ << "\tslt\t" << rd << ", " << rs1 << ", " << rs2 << '\n';
   } else {
     os_ << "\tslt\tt3, " << rs2 << ", " << rs1 << '\n';
-    os_ << "\txori\t" << rd << ", t3, 1\n";
+    PrintIA(os_, "xori", rd, "t3", 1);
   }
   RegToVariable(node->storage_type_, node->address_, rd);
 }
@@ -306,13 +336,20 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
   auto function_node = FunctionMap::Instance().Query(node->function_name_);
   auto size = node->arguments_.size();
 
-  // save a0~a7 and ra
-  // Remember to think about the argument of call needs values in a0~a7, but they may be covered.
-  // The correct way is to special judge a0~a7 and use the value in the memory.
-  for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
-    os_ << "\tsw\ta" << i << ", " << current_stack_ - 48 - 4 * i << "(sp)\n";
+  SaveRegister();
+
+  // operate the memory to memory in advance, using builtin_memcpy
+  for (uint32_t i = 0; i < size; ++i) {
+    auto para = function_node->parameters_[i];
+    auto [type, address] = GetVariableAddress(node->arguments_[i]->value_);
+    if (type == kMemory && para->storage_type_ == kMemory) {
+      PrintIA(os_, "addi", "a0", "sp", current_stack_ - address);
+      PrintIA(os_, "addi", "a1", "sp", -static_cast<int32_t>(para->address_));
+      os_ << "\tli\ta2, " << para->type_->allocated_size_ << '\n';
+      os_ << "\tcall\tbuiltin_memcpy\n";
+    }
   }
-  os_ << "\tsw\tra, " << current_stack_ - 48 - 32 << "(sp)\n";
+
   for (uint32_t i = 0; i < size; ++i) {
     auto para = function_node->parameters_[i];
     auto [type, address] = GetVariableAddress(node->arguments_[i]->value_);
@@ -321,15 +358,15 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
         os_ << "\tli\tx" << para->address_ << ", " << node->arguments_[i]->value_ << '\n';
       } else {
         os_ << "\tli\tt0, " << node->arguments_[i]->value_ << '\n';
-        os_ << "\tsw\tt0, -" << para->address_ << "(sp)" << '\n';
+        PrintMem(os_, "sw", "t0", "sp", -static_cast<int32_t>(para->address_));
       }
     } else if (type == kRegister) {
       if (address >= 10 && address < 18) { // The correct values are in the memory.
         if (para->storage_type_ == kRegister) {
-          os_ << "\tlw\tx" << para->address_ << ", " << current_stack_ - 48 - 4 * (address - 10) << "(sp)\n";
+          PrintMem(os_, "lw", "x" + std::to_string(para->address_), "sp", current_stack_ - 48 - 4 * (address - 10));
         } else {
-          os_ << "\tlw\tt0, " << current_stack_ - 48 - 4 * (address - 10) << "(sp)\n";
-          os_ << "\tsw\tt0, -" << para->address_ << "(sp)\n";
+          PrintMem(os_, "lw", "t0", "sp", current_stack_ - 48 - 4 * (address - 10));
+          PrintMem(os_, "sw", "t0", "sp", -static_cast<int32_t>(para->address_));
         }
       } else {
         if (para->storage_type_ == kRegister) {
@@ -337,18 +374,12 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
             os_ << "\tmv\tx" << address << ", x" << para->address_ << '\n';
           }
         } else {
-          os_ << "\tsw\tx" << address << ", -" << para->address_ << "(sp)\n";
+          PrintMem(os_, "sw", "x" + std::to_string(address), "sp", -static_cast<int32_t>(para->address_));
         }
       }
     } else {
       if (para->storage_type_ == kRegister) {
-        os_ << "\tlw\tx" << para->address_ << ", " << current_stack_ - address << "(sp)\n";
-      } else {
-        uint32_t chunk_size = (para->type_->allocated_size_ + 3) / 4;
-        for (uint32_t i = 0; i < chunk_size; ++i) {
-          os_ << "\tlw\tt0, " << current_stack_ - address + i * 4 << "(sp)\n";
-          os_ << "\tsw\tt0, -" << para->address_ - 4 * i << "(sp)\n";
-        }
+        PrintMem(os_, "lw", "x" + std::to_string(para->address_), "sp", current_stack_ - address);
       }
     }
   }
@@ -357,18 +388,15 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
     RegToVariable(node->storage_type_, node->address_, "a0");
   }
 
-  // restore a0~a7 and ra
-  for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
-    os_ << "\tlw\ta" << i << ", " << current_stack_ - 48 - 4 * i << "(sp)\n";
-  }
-  os_ << "\tlw\tra, " << current_stack_ - 48 - 32 << "(sp)\n";
+  RestoreRegister();
 }
 
 void AssemblyGenerator::Visit(IRSelectInstructionNode *node) {
+  os_ << "\t# Select Instruction " << node->result_ << '\n';
   auto rs = VariableToReg(node->cond_, 0);
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
-  os_ << "\tslti\t" << rd << ", " << rs << ", 1\n";
-  os_ << "\txori\t" << rd << ", " << rd << ", 1\n";
+  PrintIA(os_, "slti", rd, rs, 1);
+  PrintIA(os_, "xori", rd, rd, 1);
   RegToVariable(node->storage_type_, node->address_, rd);
 }
 
@@ -389,7 +417,7 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   os_ << "\t.type " << node->name_ << ",@function\n";
   os_ << node->name_ << ":        # @" << node->name_ << '\n';
 
-  os_ << "\taddi\tsp, sp, -" << node->stack_size_ << '\n'; // reserve stack space
+  PrintIA(os_, "addi", "sp", "sp", -static_cast<int32_t>(node->stack_size_)); // reserve stack space
 
   current_stack_ = node->stack_size_;
   current_func_name_ = node->name_;
@@ -399,7 +427,7 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   // save regs
   // not activated yet. If s registers are used, [remember to enable it]
   // for (uint32_t i = 0; i < 12; ++i) {
-  //   os_ << "\tsw\ts" << i << ", " << current_stack_ - 4 * (i + 1) << "(sp)\n";
+  //   PrintMem(os_, "sw", "s" + std::to_string(i), "sp", current_stack_ - 4 * (i + 1));
   // }
 
   // blocks
