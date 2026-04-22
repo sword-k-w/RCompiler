@@ -1,5 +1,6 @@
 #include "codegen/instruction.h"
 #include <iostream>
+#include <cassert>
 
 void PrintIA(std::ostream &os, const std::string &type, const std::string &rd, const std::string &rs1, int32_t imm) {
   if (imm >= -2048 && imm < 2048) {
@@ -31,4 +32,12 @@ void PrintMem(std::ostream &os, const std::string &type, const std::string &r, c
     os << "\t add t6, t6, " << rs1 << '\n';
     os << "\t" << type << "\t" << r << ", 0(t6)\n";
   }
+}
+
+std::pair<std::string, std::string> LoadStoreType(const std::string &type) {
+  if (type == "i1") {
+    return std::make_pair("lbu", "sb");
+  }
+  assert(type == "i32" || type == "ptr");
+  return std::make_pair("lw", "sw");
 }

@@ -7,3 +7,5 @@ void PrintIA(std::ostream &, const std::string &, const std::string &, const std
 void PrintIStar(std::ostream &, const std::string &, const std::string &, const std::string &, int32_t);
 
 void PrintMem(std::ostream &, const std::string &, const std::string &, const std::string &, int32_t);
+
+std::pair<std::string, std::string> LoadStoreType(const std::string &);
