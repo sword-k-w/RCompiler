@@ -56,6 +56,7 @@ std::pair<StorageType, uint32_t> AssemblyGenerator::GetVariableAddress(const std
     return std::make_pair(para->storage_type_, para->address_);
   }
   std::cerr << "Error: unexpected variable!\n";
+  std::cerr << name << '\n';
   exit(-1);
 }
 
@@ -403,6 +404,10 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
   RestoreRegister();
 }
 
+void AssemblyGenerator::Visit(IRPhiInstructionNode *node) {
+  // TODO
+}
+
 void AssemblyGenerator::Visit(IRSelectInstructionNode *node) {
   os_ << "\t# Select Instruction " << node->result_ << '\n';
   auto rs = VariableToReg(node->cond_, 0, "i1");
@@ -417,6 +422,9 @@ void AssemblyGenerator::Visit(IRBlockNode *node) {
     os_ << ".L" << current_func_name_ << "_" << node->id_ << ":\n";
   }
   for (auto &instruction : node->instructions_) {
+    if (instruction->removed_) {
+      continue;
+    }
     instruction->Accept(this);
   }
 }

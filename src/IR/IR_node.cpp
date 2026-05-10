@@ -65,6 +65,8 @@ IRArgumentNode::IRArgumentNode(std::shared_ptr<IRArrayNode> type, const std::str
 IRCallInstructionNode::IRCallInstructionNode(const std::string &result, std::shared_ptr<IRArrayNode> result_type,
   const std::string &function_name) : result_(result), result_type_(result_type), function_name_(function_name) {}
 
+IRPhiInstructionNode::IRPhiInstructionNode(const std::string &result, std::shared_ptr<IRArrayNode> type) : result_(result), type_(type) {}
+
 IRSelectInstructionNode::IRSelectInstructionNode(const std::string &result, const std::string &cond) :
   result_(result), cond_(cond) {}
 
@@ -89,6 +91,10 @@ void IRBlockNode::AddInstruction(std::shared_ptr<IRInstructionNode> instruction)
       end_ = true;
     }
   }
+}
+
+void IRBlockNode::AddPhi(std::shared_ptr<IRPhiInstructionNode> phi) {
+  phi_.emplace_back(phi);
 }
 
 uint32_t IRBlockNode::GetID() const { return id_; }
@@ -166,6 +172,10 @@ void IRArgumentNode::Accept(IRVisitorBase *visitor) {
 }
 
 void IRCallInstructionNode::Accept(IRVisitorBase *visitor) {
+  visitor->Visit(this);
+}
+
+void IRPhiInstructionNode::Accept(IRVisitorBase *visitor) {
   visitor->Visit(this);
 }
 

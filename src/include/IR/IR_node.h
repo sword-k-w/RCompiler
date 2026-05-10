@@ -4,12 +4,15 @@
 #include <memory>
 #include <deque>
 #include <map>
+#include <set>
 
 enum StorageType {
   kRegister, kMemory, kConst
 };
 
 class IRVisitorBase;
+class IRRootNode;
+class IRFunctionNode;
 
 class IRNode {
 public:
@@ -23,6 +26,7 @@ class IRArrayNode : public IRNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
 public:
   IRArrayNode() = default;
   explicit IRArrayNode(const std::string &);
@@ -43,6 +47,7 @@ class IRStructNode : public IRNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
 public:
   IRStructNode() = delete;
   explicit IRStructNode(const std::string &);
@@ -57,9 +62,16 @@ private:
 };
 
 class IRInstructionNode : public IRNode {
+  friend class CFGBuilder;
+  friend void Mem2reg(std::shared_ptr<IRRootNode>);
+public:
+  bool removed_{false};
 protected:
   StorageType storage_type_;
   uint32_t address_;
+
+  std::set<uint32_t> def_;
+  std::set<uint32_t> use_;
 };
 
 class IRArithmeticInstructionNode : public IRInstructionNode {
@@ -67,6 +79,8 @@ class IRArithmeticInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
 public:
   IRArithmeticInstructionNode() = delete;
   IRArithmeticInstructionNode(const std::string &, const std::string &, const std::string &,
@@ -86,6 +100,8 @@ class IRNegationInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
 public:
   IRNegationInstructionNode() = delete;
   IRNegationInstructionNode(const std::string &, const bool &, const std::string &, const std::string &);
@@ -102,6 +118,8 @@ class IRBranchInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
 public:
   IRBranchInstructionNode() = delete;
   IRBranchInstructionNode(const std::string &, const uint32_t &, const uint32_t &);
@@ -117,6 +135,7 @@ class IRJumpInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
 public:
   IRJumpInstructionNode() = delete;
   explicit IRJumpInstructionNode(const uint32_t &);
@@ -130,6 +149,8 @@ class IRReturnInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
 public:
   IRReturnInstructionNode();
   IRReturnInstructionNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -144,6 +165,8 @@ class IRAllocateInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend void Mem2reg(std::shared_ptr<IRRootNode>);
 public:
   IRAllocateInstructionNode() = delete;
   IRAllocateInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>);
@@ -161,6 +184,8 @@ class IRLoadInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
 public:
   IRLoadInstructionNode() = delete;
   IRLoadInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &);
@@ -176,6 +201,9 @@ class IRStoreVariableInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
+  friend void Mem2reg(std::shared_ptr<IRRootNode>);
 public:
   IRStoreVariableInstructionNode() = delete;
   IRStoreVariableInstructionNode(std::shared_ptr<IRArrayNode>, const std::string &, const std::string &);
@@ -191,6 +219,9 @@ class IRStoreConstInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
+  friend void Mem2reg(std::shared_ptr<IRRootNode>);
 public:
   IRStoreConstInstructionNode() = delete;
   IRStoreConstInstructionNode(const std::string &, const int32_t &, const std::string &);
@@ -206,6 +237,8 @@ class IRGetElementPtrInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
 public:
   IRGetElementPtrInstructionNode() = delete;
   IRGetElementPtrInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &, const uint32_t &);
@@ -223,6 +256,8 @@ class IRGetElementPtrPrimeInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
 public:
   IRGetElementPtrPrimeInstructionNode() = delete;
   IRGetElementPtrPrimeInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &, const std::string &);
@@ -239,6 +274,8 @@ class IRCompareInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
 public:
   enum Operator {
     kEq, kNe, kUgt, kUge, kUlt, kUle, kSgt, kSge, kSlt, kSle
@@ -260,6 +297,8 @@ class IRArgumentNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
 public:
   IRArgumentNode() = delete;
   IRArgumentNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -274,6 +313,8 @@ class IRCallInstructionNode : public IRInstructionNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
 public:
   IRCallInstructionNode() = delete;
   IRCallInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &);
@@ -289,11 +330,30 @@ private:
   uint32_t address_;
 };
 
+class IRPhiInstructionNode : public IRInstructionNode {
+  friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
+public:
+  IRPhiInstructionNode() = delete;
+  IRPhiInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>);
+  void Accept(IRVisitorBase *) override;
+private:
+  std::string result_;
+  std::shared_ptr<IRArrayNode> type_;
+  std::vector<std::pair<std::string, uint32_t>> val_;
+};
+
 class IRSelectInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
 public:
   IRSelectInstructionNode() = delete;
   IRSelectInstructionNode(const std::string &, const std::string &);
@@ -308,16 +368,25 @@ class IRBlockNode : public IRNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
+  friend void Mem2reg(std::shared_ptr<IRRootNode>);
 public:
   IRBlockNode() = delete;
   explicit IRBlockNode(const uint32_t &);
   void AddInstruction(std::shared_ptr<IRInstructionNode>);
+  void AddPhi(std::shared_ptr<IRPhiInstructionNode>);
   void Accept(IRVisitorBase *) override;
   uint32_t GetID() const;
 private:
   uint32_t id_;
   std::deque<std::shared_ptr<IRInstructionNode>> instructions_;
   bool end_{false};
+
+  std::set<uint32_t> def_;
+  std::set<uint32_t> use_;
+
+  std::vector<std::shared_ptr<IRPhiInstructionNode>> phi_;
 };
 
 class IRParameterNode : public IRNode {
@@ -325,6 +394,7 @@ class IRParameterNode : public IRNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
 public:
   IRParameterNode() = delete;
   IRParameterNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -342,6 +412,8 @@ class IRFunctionNode : public IRNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend void Mem2reg(std::shared_ptr<IRRootNode>);
 public:
   IRFunctionNode() = delete;
   IRFunctionNode(std::shared_ptr<IRArrayNode>, const std::string &, bool);
@@ -367,6 +439,8 @@ class IRRootNode : public IRNode {
   friend class Preprocessor;
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend void Mem2reg(std::shared_ptr<IRRootNode>);
 public:
   IRRootNode() = default;
   void AddStruct(std::shared_ptr<IRStructNode>);

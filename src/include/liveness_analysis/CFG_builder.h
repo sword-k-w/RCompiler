@@ -1,12 +1,13 @@
 #pragma once
 
-#include <iostream>
+#include <set>
+#include "CFG.h"
 #include "IR_visitor/base/IR_visitor_base.h"
 
-class IRPrinter : public IRVisitorBase {
+class CFGBuilder : public IRVisitorBase {
 public:
-  IRPrinter() = delete;
-  IRPrinter(const std::string &, std::ostream &);
+  CFGBuilder() = delete;
+  explicit CFGBuilder(std::shared_ptr<CFG>);
   void Visit(IRArrayNode *) override;
   void Visit(IRStructNode *) override;
   void Visit(IRArithmeticInstructionNode *) override;
@@ -30,6 +31,11 @@ public:
   void Visit(IRFunctionNode *) override;
   void Visit(IRRootNode *) override;
 private:
-  std::string builtin_;
-  std::ostream &os_;
+  std::shared_ptr<CFG> cfg_;
+  uint32_t cur_block_{0};
+  std::set<uint32_t> cur_def_;
+  std::set<uint32_t> cur_use_;
+  void Merge(IRInstructionNode *);
+  void AddDef(IRInstructionNode *, const std::string &, bool);
+  void AddUse(IRInstructionNode *, const std::string &, bool);
 };

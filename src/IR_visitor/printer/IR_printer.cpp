@@ -178,6 +178,20 @@ void IRPrinter::Visit(IRCallInstructionNode *node) {
   os_ << ")\n";
 }
 
+void IRPrinter::Visit(IRPhiInstructionNode *node) {
+  os_ << "  " << node->result_ << " = phi ";
+  node->type_->Accept(this);
+  os_ << " ";
+  auto size = node->val_.size();
+  for (uint32_t i = 0; i < size; ++i) {
+    os_ << "[" << node->val_[i].first << ", %" << node->val_[i].second << "]";
+    if (i + 1 < size) {
+      os_ << ", ";
+    }
+  }
+  os_ << '\n';
+}
+
 void IRPrinter::Visit(IRSelectInstructionNode *node) {
   os_ << "  " << node->result_ << " = select i1 " << node->cond_ << ", i32 1, i32 0\n";
 }
@@ -187,7 +201,13 @@ void IRPrinter::Visit(IRBlockNode *node) {
     node->AddInstruction(std::make_shared<IRJumpInstructionNode>(node->id_)); // meaningless but dangerous, just to avoid empty block
   }
   os_ << node->id_ << ":\n";
+  for (auto &phi : node->phi_) {
+    phi->Accept(this);
+  }
   for (auto &instruction : node->instructions_) {
+    if (instruction->removed_) {
+      continue;
+    }
     instruction->Accept(this);
   }
 }

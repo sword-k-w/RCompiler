@@ -37,6 +37,9 @@ void TestCode(const std::string &code, std::ostream &out) {
     IRGenerator gen(IR_root);
     root->Accept(&gen);
 
+    // IRPrinter printer("builtin.ll", std::cerr);
+    // IR_root->Accept(&printer);
+
     Preprocessor preprocessor;
     IR_root->Accept(&preprocessor);
     FunctionMap::Instance().Accept(&preprocessor);

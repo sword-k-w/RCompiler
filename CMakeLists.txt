@@ -20,6 +20,8 @@ set(SEMANTIC_DIR ./src/semantic)
 set(IR_DIR ./src/IR)
 set(IR_VISITOR_DIR ./src/IR_visitor)
 set(CODEGEN_DIR ./src/codegen)
+set(LIVENESS_ANALYSIS_DIR ./src/liveness_analysis)
+set(MEM2REG_DIR ./src/mem2reg)
 
 file(GLOB_RECURSE VISITOR_SRCS
     "${VISITOR_DIR}/*.cpp")
@@ -33,6 +35,10 @@ file(GLOB_RECURSE IR_VISITOR_SRCS
     "${IR_VISITOR_DIR}/*.cpp")
 file(GLOB_RECURSE CODEGEN_SRCS
     "${CODEGEN_DIR}/*.cpp")
+file(GLOB_RECURSE LIVENESS_ANALYSIS_SRCS
+    "${LIVENESS_ANALYSIS_DIR}/*.cpp")
+file(GLOB_RECURSE MEM2REG_SRCS
+    "${MEM2REG_DIR}/*.cpp")
 
 aux_source_directory(${COMMON_DIR} COMMON_SRCS)
 aux_source_directory(${LEXER_DIR} LEXER_SRCS)
@@ -98,6 +104,23 @@ add_executable(IR_single
         ${IR_SRCS}
         ${IR_VISITOR_SRCS}
         ${CODEGEN_SRCS}
+        ${LIVENESS_ANALYSIS_SRCS}
+        ${MEM2REG_SRCS}
+)
+
+add_executable(IR_single_optimized
+        test/IR_single_optimized.cpp
+        src/data_loader/data_loader.cpp
+        ${PARSER_SRCS}
+        ${COMMON_SRCS}
+        ${LEXER_SRCS}
+        ${VISITOR_SRCS}
+        ${SEMANTIC_SRCS}
+        ${IR_SRCS}
+        ${IR_VISITOR_SRCS}
+        ${CODEGEN_SRCS}
+        ${LIVENESS_ANALYSIS_SRCS}
+        ${MEM2REG_SRCS}
 )
 
 add_executable(codegen_test
@@ -111,6 +134,8 @@ add_executable(codegen_test
         ${IR_SRCS}
         ${IR_VISITOR_SRCS}
         ${CODEGEN_SRCS}
+        ${LIVENESS_ANALYSIS_SRCS}
+        ${MEM2REG_SRCS}
 )
 
 add_executable(codegen_single
@@ -124,7 +149,14 @@ add_executable(codegen_single
         ${IR_SRCS}
         ${IR_VISITOR_SRCS}
         ${CODEGEN_SRCS}
+        ${LIVENESS_ANALYSIS_SRCS}
+        ${MEM2REG_SRCS}
 )
+
+add_executable(dominator
+        test/dominator.cpp
+        src/data_loader/data_loader.cpp
+        src/liveness_analysis/dominator_tree.cpp)
 
 target_link_libraries(parser_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 target_link_libraries(semantic_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})

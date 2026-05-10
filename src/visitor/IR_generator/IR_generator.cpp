@@ -779,11 +779,18 @@ void IRGenerator::Return(Type *type, const std::string &name) {
 // name1 is allocated
 void IRGenerator::Copy(const std::string &name1, const std::string &name2, Type *type) {
   try {
-    auto IR_call = std::make_shared<IRCallInstructionNode>("", std::make_shared<IRArrayNode>(), "builtin_memcpy");
-    IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("ptr"), name1));
-    IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("ptr"), name2));
-    IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("i32"), std::to_string(GetTypeSize(type).first)));
-    cur_block_->AddInstruction(IR_call);
+    if (type->type_ == kLeafType || type->type_ == kEnumType) {
+      std::string tmp = name_allocator_.Allocate("%tmp.");
+      auto IR_type = GetIRTypeNode(type);
+      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp, IR_type, name2));
+      cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type, tmp, name1));
+    } else {
+      auto IR_call = std::make_shared<IRCallInstructionNode>("", std::make_shared<IRArrayNode>(), "builtin_memcpy");
+      IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("ptr"), name1));
+      IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("ptr"), name2));
+      IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("i32"), std::to_string(GetTypeSize(type).first)));
+      cur_block_->AddInstruction(IR_call);
+    }
   } catch (Error &) { throw; }
 }
 

@@ -82,6 +82,10 @@ void MemoryAllocator::Visit(IRCallInstructionNode *node) {
   }
 }
 
+void MemoryAllocator::Visit(IRPhiInstructionNode *node) {
+  // TODO
+}
+
 void MemoryAllocator::Visit(IRSelectInstructionNode *node) {
   node->storage_type_ = kMemory;
   *current_stack_ += 4;
@@ -90,6 +94,9 @@ void MemoryAllocator::Visit(IRSelectInstructionNode *node) {
 
 void MemoryAllocator::Visit(IRBlockNode *node) {
   for (auto &instruction : node->instructions_) {
+    if (instruction->removed_) {
+      continue;
+    }
     instruction->Accept(this);
   }
 }

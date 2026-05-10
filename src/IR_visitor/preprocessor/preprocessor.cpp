@@ -109,12 +109,19 @@ void Preprocessor::Visit(IRCallInstructionNode *node) {
   }
 }
 
+void Preprocessor::Visit(IRPhiInstructionNode *node) {
+  // TODO
+}
+
 void Preprocessor::Visit(IRSelectInstructionNode *node) {
   (*current_variables_)[node->result_] = node;
 }
 
 void Preprocessor::Visit(IRBlockNode *node) {
   for (auto &instruction : node->instructions_) {
+    if (instruction->removed_) {
+      continue;
+    }
     instruction->Accept(this);
   }
 }

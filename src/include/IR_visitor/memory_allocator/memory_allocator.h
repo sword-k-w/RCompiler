@@ -23,6 +23,7 @@ public:
   void Visit(IRCompareInstructionNode *) override;
   void Visit(IRArgumentNode *) override;
   void Visit(IRCallInstructionNode *) override;
+  void Visit(IRPhiInstructionNode *) override;
   void Visit(IRSelectInstructionNode *) override;
   void Visit(IRBlockNode *) override;
   void Visit(IRParameterNode *) override;

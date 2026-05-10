@@ -32,6 +32,8 @@ void TestCode(const std::string &code, std::ostream &out) {
     IRGenerator gen(IR_root);
     root->Accept(&gen);
 
+    Mem2reg(IR_root);
+
     IRPrinter printer("builtin.ll", out);
     IR_root->Accept(&printer);
   } catch (Error &err) {
