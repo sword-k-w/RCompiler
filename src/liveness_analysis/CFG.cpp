@@ -38,6 +38,9 @@ uint32_t CFG::VariableMap::QueryAllocated(const std::string &name) {
 }
 
 std::pair<bool, std::string> CFG::VariableMap::GetName(uint32_t id) {
+  if (id >= name_.size()) {
+    std::cerr << "$" << id << " " << name_.size() << "$\n";
+  }
   assert(id < name_.size());
   return name_[id];
 }
@@ -78,6 +81,61 @@ void CFG::AddDef(uint32_t id, IRInstructionNode *node) {
 
 void CFG::AddUse(uint32_t id, IRInstructionNode *node) {
   variable_map_.use_[id].emplace_back(node);
+}
+
+void CFG::CalcInOut() {
+  auto size = node_pool_.size();
+  std::vector<uint32_t> bfs_order;
+  std::vector<uint32_t> vis(size, 0);
+  uint32_t pos = 0;
+  for (uint32_t i = 0; i < size; ++i) {
+    if (node_pool_[i]->succs_.empty()) {
+      vis[i] = 1;
+      bfs_order.emplace_back(i);
+    }
+  }
+  while (pos < size) {
+    uint32_t u = bfs_order[pos];
+    ++pos;
+    for (auto &v : node_pool_[u]->preds_) {
+      if (!vis[v->id_]) {
+        vis[v->id_] = true;
+        bfs_order.emplace_back(v->id_);
+      }
+    }
+  }
+  bool flag = true;
+  while (flag) {
+    flag = false;
+    for (uint32_t i = 0; i < size; ++i) {
+      auto u = bfs_order[i];
+      auto old_out = node_pool_[u]->origin_->out_.size();
+      auto old_in = node_pool_[u]->origin_->in_.size();
+      for (auto &v : node_pool_[u]->succs_) {
+        for (auto &x : v->origin_->in_) {
+          node_pool_[u]->origin_->out_.emplace(x);
+        }
+      }
+      for (auto &x : node_pool_[u]->origin_->out_) {
+        node_pool_[u]->origin_->in_.emplace(x);
+      }
+      for (auto &x : node_pool_[u]->origin_->def_) {
+        auto it = node_pool_[u]->origin_->in_.find(x);
+        if (it != node_pool_[u]->origin_->in_.end()) {
+          node_pool_[u]->origin_->in_.erase(it);
+        }
+      }
+      for (auto &x : node_pool_[u]->origin_->use_) {
+        node_pool_[u]->origin_->in_.emplace(x);
+      }
+      if (old_out != node_pool_[u]->origin_->out_.size()) {
+        flag = true;
+      }
+      if (old_in != node_pool_[u]->origin_->in_.size()) {
+        flag = true;
+      }
+    }
+  }
 }
 
 void CFG::CalcDominatorTree() {
@@ -146,8 +204,9 @@ void CFG::AddPhi(uint32_t id_allocated, std::shared_ptr<IRArrayNode> type) {
   std::queue<uint32_t> q;
   auto add = [&] (uint32_t u) {
     for (auto &v : frontier_[u]) {
+      // std::cerr << u << " " << v << '\n';
       if (visited_block.find(v) == visited_block.end()
-        && node_pool_[v]->origin_->use_.find(id_allocated) != node_pool_[v]->origin_->use_.end()) {
+        && node_pool_[v]->origin_->in_.find(id_allocated) != node_pool_[v]->origin_->in_.end()) {
         q.emplace(v);
         visited_block.emplace(v);
       }
@@ -162,7 +221,7 @@ void CFG::AddPhi(uint32_t id_allocated, std::shared_ptr<IRArrayNode> type) {
   while (!q.empty()) {
     auto u = q.front();
     q.pop();
-    node_pool_[u]->origin_->AddPhi(std::make_shared<IRPhiInstructionNode>(name_allocator_.Allocate("%phi"), type));
+    node_pool_[u]->origin_->AddPhi(std::make_shared<IRPhiInstructionNode>(name_allocator_.Allocate("%phi."), type));
     add(u);
   }
 }
@@ -187,7 +246,6 @@ void CFG::DFS(const std::string &name, uint32_t u) {
       if (load->pointer_ == name) {
         load->removed_ = true;
         replace_map_[load->result_] = current_val_.top();
-        std::cerr << load->result_ << " " << current_val_.top() << '\n';
       }
       continue;
     }
@@ -228,7 +286,6 @@ void CFG::PhiReplace(const std::string &name) {
     current_val_.pop();
   }
   replace_map_.clear();
-  std::cerr << "Replacing " << name << "\n";
   DFS(name, 0);
   auto size = node_pool_.size();
   for (uint32_t i = 0; i < size; ++i) {
@@ -317,4 +374,60 @@ void CFG::PhiReplace(const std::string &name) {
   }
 }
 
+void CFG::EliminateCriticalEdge(IRFunctionNode *func) {
+  auto size = node_pool_.size();
+  auto new_id = size;
+  for (uint32_t i = 0; i < size; ++i) {
+    if (node_pool_[i]->succs_.size() > 1) {
+      auto suc_size = node_pool_[i]->succs_.size();
+      for (uint32_t j = 0; j < suc_size; ++j) {
+        auto v = node_pool_[i]->succs_[j];
+        if (v->preds_.size() > 1) {
+          auto id = new_id++;
+          auto new_IRblock = std::make_shared<IRBlockNode>(id);
+          func->AddBlock(new_IRblock);
 
+          auto new_block = std::make_shared<BlockNode>(id, new_IRblock.get());
+          node_pool_.emplace_back(new_block);
+          new_block->preds_.emplace_back(node_pool_[i].get());
+          new_block->succs_.emplace_back(v);
+
+          node_pool_[i]->succs_[j] = new_block.get();
+          bool flag = false;
+          for (auto &pre : v->preds_) {
+            if (pre->id_ == node_pool_[i]->id_) {
+              pre = new_block.get();
+              flag = true;
+              break;
+            }
+          }
+          assert(flag);
+
+          auto las_ins = node_pool_[i]->origin_->instructions_.back().get();
+          auto br = dynamic_cast<IRBranchInstructionNode *>(las_ins);
+          assert(br != nullptr);
+          if (br->true_branch_ == v->id_) {
+            br->true_branch_ = id;
+          } else {
+            assert(br->false_branch_ == v->id_);
+            br->false_branch_ = id;
+          }
+
+          for (auto &phi : v->origin_->phi_) {
+            for (auto &[val, fr] : phi->val_) {
+              if (fr == node_pool_[i]->id_) {
+                auto transfer = name_allocator_.Allocate("%transfer.");
+                auto move_ins = std::make_shared<IRPhiInstructionNode>(transfer, phi->type_);
+                move_ins->val_.emplace_back(val, fr);
+                new_IRblock->AddPhi(move_ins);
+                val = transfer;
+                fr = id;
+              }
+            }
+          }
+          new_IRblock->AddInstruction(std::make_shared<IRJumpInstructionNode>(v->id_));
+        }
+      }
+    }
+  }
+}

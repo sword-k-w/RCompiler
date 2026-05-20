@@ -55,9 +55,11 @@ public:
   void AddEdge(uint32_t, uint32_t);
   void AddDef(uint32_t, IRInstructionNode *);
   void AddUse(uint32_t, IRInstructionNode *);
+  void CalcInOut();
 
   void CalcDominatorTree();
   void CalcFrontier();
   void AddPhi(uint32_t, std::shared_ptr<IRArrayNode>);
   void PhiReplace(const std::string &);
+  void EliminateCriticalEdge(IRFunctionNode *);
 };

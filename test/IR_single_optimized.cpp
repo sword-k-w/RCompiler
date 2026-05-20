@@ -15,6 +15,7 @@
 #include <fstream>
 #include "IR/struct_map.h"
 #include "mem2reg/mem2reg.h"
+#include "mem2reg/eliminator.h"
 
 void TestCode(const std::string &code, std::ostream &out) {
   try {
@@ -33,6 +34,7 @@ void TestCode(const std::string &code, std::ostream &out) {
     root->Accept(&gen);
 
     Mem2reg(IR_root);
+    EliminateCriticalEdge(IR_root);
 
     IRPrinter printer("builtin.ll", out);
     IR_root->Accept(&printer);

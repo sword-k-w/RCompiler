@@ -8,6 +8,6 @@ fi
 INDEX="$1"
 
 cmake --build cmake-build-debug
-./cmake-build-debug/codegen_single < "tmp_data/codegen/${INDEX}.rx" > "tmp_data/codegen/${INDEX}.s"
+./cmake-build-debug/codegen_single < "tmp_data/codegen/${INDEX}.rx" > "tmp_data/codegen/${INDEX}_optimized.s"
 
-reimu -f="tmp_data/codegen/${INDEX}.s" -i="tmp_data/codegen/${INDEX}.in" -o "tmp_data/codegen/${INDEX}.out" -s=200000000
+reimu -f="tmp_data/codegen/${INDEX}_optimized.s" -i="tmp_data/codegen/${INDEX}.in" -o "tmp_data/codegen/${INDEX}.out" -s=200000000

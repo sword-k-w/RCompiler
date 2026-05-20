@@ -337,6 +337,7 @@ class IRPhiInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class PhiTopo;
 public:
   IRPhiInstructionNode() = delete;
   IRPhiInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>);
@@ -385,6 +386,9 @@ private:
 
   std::set<uint32_t> def_;
   std::set<uint32_t> use_;
+
+  std::set<uint32_t> in_;
+  std::set<uint32_t> out_;
 
   std::vector<std::shared_ptr<IRPhiInstructionNode>> phi_;
 };
@@ -441,6 +445,7 @@ class IRRootNode : public IRNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
+  friend void EliminateCriticalEdge(std::shared_ptr<IRRootNode>);
 public:
   IRRootNode() = default;
   void AddStruct(std::shared_ptr<IRStructNode>);

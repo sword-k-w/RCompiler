@@ -69,6 +69,9 @@ void DominatorTreeSolver::Tarjan(uint32_t s) {
     uint32_t res = n + 1;
     for (uint32_t j = head[1][u]; j; j = e[j].nxt) {
       uint32_t v = e[j].v;
+      if (!dfn[v]) {
+        continue;
+      }
       Find(v);
       if (dfn[v] < dfn[u]) {
         res = std::min(res, dfn[v]);

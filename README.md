@@ -103,6 +103,20 @@ block = instructions
 
 Each variable/expression, use ptr to store its value. Corresponding IR name is the name of ptr. Left values use their own pointer; right value use temporary pointer.
 
-## Codegen
+### Codegen
 
 TODO: const handle is not complete
+
+#### t reg usage
+
+- 0: arith, neg, br, j, load, store, gete, getep, comp, call, sel
+- 1: arith, neg, alloca, j, load, store, gete, getep, comp, sel
+- 2: arith, getep, comp
+- 3: comp
+- 4: comp
+- 5:
+- 6:
+
+### mem2reg
+
+phis in the same block are calculated in parallel!

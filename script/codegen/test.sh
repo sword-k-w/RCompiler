@@ -18,3 +18,5 @@ for INDEX in {1..50}; do
     echo "@@@@@@@@@@@@@@@@@@@@@${INDEX} failed in executing reimu"
   fi
 done
+
+echo "${success_count} success out of 50"

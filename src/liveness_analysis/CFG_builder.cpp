@@ -15,12 +15,18 @@ void CFGBuilder::Merge(IRInstructionNode *node) {
 }
 
 void CFGBuilder::AddDef(IRInstructionNode *node, const std::string &name, bool allocated) {
+  if (name[0] != '%') {
+    return;
+  }
   auto id = allocated ? cfg_->QueryAllocated(name) : cfg_->Query(name);
   node->def_.emplace(id);
   cfg_->AddDef(id, node);
 }
 
 void CFGBuilder::AddUse(IRInstructionNode *node, const std::string &name, bool allocated) {
+  if (name[0] != '%') {
+    return;
+  }
   auto id = allocated ? cfg_->QueryAllocated(name) : cfg_->Query(name);
   node->use_.emplace(id);
   cfg_->AddUse(id, node);
@@ -125,8 +131,11 @@ void CFGBuilder::Visit(IRCallInstructionNode *node) {
 }
 
 void CFGBuilder::Visit(IRPhiInstructionNode *node) {
-  std::cerr << "not implemented yet\n";
-  exit(-1);
+  AddDef(node, node->result_, false);
+  for (auto &[val, _]: node->val_) {
+    AddUse(node, val, false);
+  }
+  Merge(node);
 }
 
 void CFGBuilder::Visit(IRSelectInstructionNode *node) {
@@ -139,6 +148,10 @@ void CFGBuilder::Visit(IRBlockNode *node) {
   cur_block_ = node->id_;
   cur_def_.clear();
   cur_use_.clear();
+
+  for (auto &phi : node->phi_) {
+    phi->Accept(this);
+  }
   for (auto &instruction : node->instructions_) {
     if (instruction->removed_) {
       continue;
@@ -164,6 +177,42 @@ void CFGBuilder::Visit(IRFunctionNode *node) {
   for (auto &block : node->blocks_) {
     block->Accept(this);
   }
+  cfg_->CalcInOut();
+  // for (auto &block : node->blocks_) {
+  //   std::cerr << block->id_ << '\n';
+  //   std::cerr << "def: ";
+  //   for (auto &x : block->def_) {
+  //     auto [a, b] = cfg_->GetName(x);
+  //     if (!a) {
+  //       std::cerr << b << " ";
+  //     }
+  //   }
+  //   std::cerr << '\n';
+  //   std::cerr << "use: ";
+  //   for (auto &x : block->use_) {
+  //     auto [a, b] = cfg_->GetName(x);
+  //     if (!a) {
+  //       std::cerr << b << " ";
+  //     }
+  //   }
+  //   std::cerr << '\n';
+  //   std::cerr << "in: ";
+  //   for (auto &x : block->in_) {
+  //     auto [a, b] = cfg_->GetName(x);
+  //     if (!a) {
+  //       std::cerr << b << " ";
+  //     }
+  //   }
+  //   std::cerr << '\n';
+  //   std::cerr << "out: ";
+  //   for (auto &x : block->out_) {
+  //     auto [a, b] = cfg_->GetName(x);
+  //     if (!a) {
+  //       std::cerr << b << " ";
+  //     }
+  //   }
+  //   std::cerr << '\n';
+  // }
 }
 
 void CFGBuilder::Visit(IRRootNode *node) {

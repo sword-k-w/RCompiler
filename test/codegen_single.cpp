@@ -17,6 +17,9 @@
 #include "IR/struct_map.h"
 #include "IR/function_map.h"
 
+#include "mem2reg/mem2reg.h"
+#include "mem2reg/eliminator.h"
+
 void TestCode(const std::string &code, std::ostream &out) {
   try {
     FunctionMap::Instance().Clear();
@@ -36,6 +39,9 @@ void TestCode(const std::string &code, std::ostream &out) {
     auto IR_root = std::make_shared<IRRootNode>();
     IRGenerator gen(IR_root);
     root->Accept(&gen);
+
+    Mem2reg(IR_root);
+    EliminateCriticalEdge(IR_root);
 
     // IRPrinter printer("builtin.ll", std::cerr);
     // IR_root->Accept(&printer);

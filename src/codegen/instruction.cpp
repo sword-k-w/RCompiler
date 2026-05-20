@@ -28,8 +28,8 @@ void PrintMem(std::ostream &os, const std::string &type, const std::string &r, c
   if (imm >= -2048 && imm < 2048) {
     os << "\t" << type << "\t" << r << ", " << imm << "(" << rs1 << ")\n";
   } else {
-    os << "\t li t6, " << imm << '\n';
-    os << "\t add t6, t6, " << rs1 << '\n';
+    os << "\tli t6, " << imm << '\n';
+    os << "\tadd t6, t6, " << rs1 << '\n';
     os << "\t" << type << "\t" << r << ", 0(t6)\n";
   }
 }

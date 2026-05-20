@@ -42,6 +42,9 @@ private:
 
   uint32_t branch_cnt_{0};
 
+  IRFunctionNode *cur_func_;
+  uint32_t cur_block_;
+
   std::pair<StorageType, uint32_t> GetVariableAddress(const std::string &);
   void TransferToTreg(uint32_t, uint32_t, const std::string &);
   std::string VariableToReg(const std::string &, uint32_t, const std::string &); // the second argument is the default t reg if the variable is stored in memory.
@@ -50,4 +53,6 @@ private:
   void RegToVariable(StorageType, uint32_t, const std::string &, const std::string &);
   void SaveRegister();
   void RestoreRegister();
+  void DataMove(const std::string &, StorageType, uint32_t, std::shared_ptr<IRArrayNode>);
+  void DataMoveFromReg(const std::string &, StorageType, uint32_t, std::shared_ptr<IRArrayNode>);
 };

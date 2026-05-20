@@ -78,12 +78,14 @@ void MemoryAllocator::Visit(IRCallInstructionNode *node) {
   if (node->result_type_ != nullptr) {
     node->storage_type_ = kMemory;
     *current_stack_ += Align4(node->result_type_->allocated_size_);
-    node->address_ += *current_stack_;
+    node->address_ = *current_stack_;
   }
 }
 
 void MemoryAllocator::Visit(IRPhiInstructionNode *node) {
-  // TODO
+  node->storage_type_ = kMemory;
+  *current_stack_ += Align4(node->type_->allocated_size_);
+  node->address_ = *current_stack_;
 }
 
 void MemoryAllocator::Visit(IRSelectInstructionNode *node) {
@@ -93,6 +95,9 @@ void MemoryAllocator::Visit(IRSelectInstructionNode *node) {
 }
 
 void MemoryAllocator::Visit(IRBlockNode *node) {
+  for (auto &phi : node->phi_) {
+    phi->Accept(this);
+  }
   for (auto &instruction : node->instructions_) {
     if (instruction->removed_) {
       continue;
@@ -115,7 +120,7 @@ void MemoryAllocator::Visit(IRParameterNode *node) {
 
 #include <iostream>
 void MemoryAllocator::Visit(IRFunctionNode *node) {
-  node->stack_size_ += 48 + 36; // save s0~s11, and reserve space to save a0~a7, ra
+  node->stack_size_ += 28 + 36; // save s0~s11, and reserve space to save a0~a7, ra
   current_stack_ = &node->stack_size_;
   current_parameter_register_ = 10;
   for (auto &parameter : node->parameters_) {

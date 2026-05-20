@@ -53,6 +53,7 @@ void Mem2reg(std::shared_ptr<IRRootNode> root) {
       if (!flag) {
         continue;
       }
+      // std::cerr << "working on " << name << '\n';
 
       cfg->AddPhi(id_allocated, alloca->type_);
       cfg->PhiReplace(name);
