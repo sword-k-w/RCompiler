@@ -22,6 +22,7 @@ set(IR_VISITOR_DIR ./src/IR_visitor)
 set(CODEGEN_DIR ./src/codegen)
 set(LIVENESS_ANALYSIS_DIR ./src/liveness_analysis)
 set(MEM2REG_DIR ./src/mem2reg)
+set(REG_ALLOC_DIR ./src/reg_alloc)
 
 file(GLOB_RECURSE VISITOR_SRCS
     "${VISITOR_DIR}/*.cpp")
@@ -39,6 +40,9 @@ file(GLOB_RECURSE LIVENESS_ANALYSIS_SRCS
     "${LIVENESS_ANALYSIS_DIR}/*.cpp")
 file(GLOB_RECURSE MEM2REG_SRCS
     "${MEM2REG_DIR}/*.cpp")
+file(GLOB_RECURSE REG_ALLOC_SRCS
+    "${REG_ALLOC_DIR}/*.cpp")
+
 
 aux_source_directory(${COMMON_DIR} COMMON_SRCS)
 aux_source_directory(${LEXER_DIR} LEXER_SRCS)
@@ -106,6 +110,7 @@ add_executable(IR_single
         ${CODEGEN_SRCS}
         ${LIVENESS_ANALYSIS_SRCS}
         ${MEM2REG_SRCS}
+        ${REG_ALLOC_SRCS}
 )
 
 add_executable(IR_single_optimized
@@ -121,6 +126,7 @@ add_executable(IR_single_optimized
         ${CODEGEN_SRCS}
         ${LIVENESS_ANALYSIS_SRCS}
         ${MEM2REG_SRCS}
+        ${REG_ALLOC_SRCS}
 )
 
 add_executable(codegen_test
@@ -136,6 +142,7 @@ add_executable(codegen_test
         ${CODEGEN_SRCS}
         ${LIVENESS_ANALYSIS_SRCS}
         ${MEM2REG_SRCS}
+        ${REG_ALLOC_SRCS}
 )
 
 add_executable(codegen_single
@@ -151,6 +158,7 @@ add_executable(codegen_single
         ${CODEGEN_SRCS}
         ${LIVENESS_ANALYSIS_SRCS}
         ${MEM2REG_SRCS}
+        ${REG_ALLOC_SRCS}
 )
 
 add_executable(dominator
