@@ -38,9 +38,6 @@ uint32_t CFG::VariableMap::QueryAllocated(const std::string &name) {
 }
 
 std::pair<bool, std::string> CFG::VariableMap::GetName(uint32_t id) {
-  if (id >= name_.size()) {
-    std::cerr << "$" << id << " " << name_.size() << "$\n";
-  }
   assert(id < name_.size());
   return name_[id];
 }

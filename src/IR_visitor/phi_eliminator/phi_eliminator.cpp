@@ -50,16 +50,16 @@ void ReplacePhiWithMoves(std::shared_ptr<IRRootNode> root) {
         auto terminator = block->instructions_.back();
         block->instructions_.pop_back();
 
+        std::string cycle_temp;
         for (auto &[from, phi] : order) {
           if (phi == nullptr) {
-            auto temp = name_allocator.Allocate("%phi.temp");
+            cycle_temp = name_allocator.Allocate("%phi.temp");
             block->instructions_.push_back(std::make_shared<IRMoveInstructionNode>(
-                temp, from, dynamic_cast<IRPhiInstructionNode *>(
+                cycle_temp, from, dynamic_cast<IRPhiInstructionNode *>(
                     const_cast<IRNode *>(func->variables_[from]))->type_));
           } else if (from.empty()) {
-            auto temp = name_allocator.Allocate("%phi.temp");
             block->instructions_.push_back(std::make_shared<IRMoveInstructionNode>(
-                phi->result_, temp, phi->type_));
+                phi->result_, cycle_temp, phi->type_));
           } else {
             block->instructions_.push_back(std::make_shared<IRMoveInstructionNode>(
                 phi->result_, from, phi->type_));

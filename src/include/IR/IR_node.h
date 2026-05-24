@@ -25,6 +25,7 @@ class IRArrayNode : public IRNode {
   friend class IRPrinter;
   friend class Preprocessor;
   friend class MemoryAllocator;
+  friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
 public:
@@ -63,6 +64,7 @@ private:
 
 class IRInstructionNode : public IRNode {
   friend class MemoryAllocator;
+  friend class RegAlloc;
   friend class CFGBuilder;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
 public:
@@ -186,6 +188,7 @@ class IRLoadInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
   friend class Preprocessor;
   friend class MemoryAllocator;
+  friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
@@ -315,6 +318,7 @@ class IRCallInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
   friend class Preprocessor;
   friend class MemoryAllocator;
+  friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
@@ -353,6 +357,7 @@ class IRMoveInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
   friend class Preprocessor;
   friend class MemoryAllocator;
+  friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
@@ -388,6 +393,7 @@ class IRBlockNode : public IRNode {
   friend class IRPrinter;
   friend class Preprocessor;
   friend class MemoryAllocator;
+  friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
@@ -418,6 +424,7 @@ class IRParameterNode : public IRNode {
   friend class IRPrinter;
   friend class Preprocessor;
   friend class MemoryAllocator;
+  friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
 public:
@@ -436,6 +443,7 @@ class IRFunctionNode : public IRNode {
   friend class IRPrinter;
   friend class Preprocessor;
   friend class MemoryAllocator;
+  friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
@@ -458,6 +466,7 @@ private:
   std::map<std::string, IRNode *> variables_;
   std::map<std::string, std::pair<StorageType, uint32_t>> variable_storage_;
 
+  std::set<uint32_t> used_s_regs_;
   uint32_t a_reg_used_cnt_;
 };
 
@@ -465,6 +474,7 @@ class IRRootNode : public IRNode {
   friend class IRPrinter;
   friend class Preprocessor;
   friend class MemoryAllocator;
+  friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);

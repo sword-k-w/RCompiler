@@ -64,7 +64,7 @@ void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address
   if (storage_type == kMemory) {
     PrintMem(os_, LoadStoreType(val_type).second, reg, "sp", current_stack_ - address);
   } else if (!SameRegister(address, reg)) {
-    os_ << "\tmv\t" << address << ", " << reg << '\n';
+    os_ << "\tmv\tx" << address << ", " << reg << '\n';
   }
 }
 
@@ -209,10 +209,11 @@ void AssemblyGenerator::Visit(IRReturnInstructionNode *node) {
   if (!node->type_->IsEmpty()) {
     VariableForceToReg(node->name_, "a0", node->type_->base_type_);
   }
-  // not activated yet. If s registers are used, [remember to enable it]
-  // for (uint32_t i = 0; i < 12; ++i) {
-  //   PrintMem(os_, "lw", "s" + std::to_string(i), "sp", current_stack_ - 4 * (i + 1));
-  // }
+  // restore used s-registers
+  for (auto reg_id : cur_func_->used_s_regs_) {
+    uint32_t index = (reg_id <= 9) ? reg_id - 8 : reg_id - 16;
+    PrintMem(os_, "lw", kRegisterName[reg_id], "sp", current_stack_ - 4 * (index + 1));
+  }
   PrintIA(os_, "addi", "sp", "sp", current_stack_);
   os_ << "\tret\n";
 }
@@ -473,11 +474,11 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
 
   cur_func_ = node;
 
-  // save regs
-  // not activated yet. If s registers are used, [remember to enable it]
-  // for (uint32_t i = 0; i < 12; ++i) {
-  //   PrintMem(os_, "sw", "s" + std::to_string(i), "sp", current_stack_ - 4 * (i + 1));
-  // }
+  // save used s-registers
+  for (auto reg_id : node->used_s_regs_) {
+    uint32_t index = (reg_id <= 9) ? reg_id - 8 : reg_id - 16;
+    PrintMem(os_, "sw", kRegisterName[reg_id], "sp", current_stack_ - 4 * (index + 1));
+  }
 
   // blocks
   for (auto &block : node->blocks_) {
