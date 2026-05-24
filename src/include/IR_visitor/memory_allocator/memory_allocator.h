@@ -32,4 +32,7 @@ public:
 private:
   uint32_t *current_stack_;
   uint32_t current_parameter_register_;
+  std::map<std::string, std::pair<StorageType, uint32_t>> *variable_storage_;
+
+  void AllocateOrReuse(const std::string &, uint32_t, IRInstructionNode *);
 };

@@ -39,6 +39,7 @@ private:
   std::string current_func_name_;
   uint32_t current_a_reg_used_;
   std::map<std::string, IRNode *> *current_variables_;
+  std::map<std::string, std::pair<StorageType, uint32_t>> *variable_storage_;
 
   uint32_t branch_cnt_{0};
 
@@ -47,9 +48,9 @@ private:
 
   std::pair<StorageType, uint32_t> GetVariableAddress(const std::string &);
   void TransferToTreg(uint32_t, uint32_t, const std::string &);
-  std::string VariableToReg(const std::string &, uint32_t, const std::string &); // the second argument is the default t reg if the variable is stored in memory.
+  std::string VariableToReg(const std::string &, uint32_t, const std::string &);
   void VariableForceToReg(const std::string &, const std::string &, const std::string &);
-  std::string GetResultReg(StorageType, uint32_t, uint32_t); // the third argument is the default t reg if the result is stored in memory.
+  std::string GetResultReg(StorageType, uint32_t, uint32_t);
   void RegToVariable(StorageType, uint32_t, const std::string &, const std::string &);
   void SaveRegister();
   void RestoreRegister();

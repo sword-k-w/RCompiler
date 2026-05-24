@@ -12,57 +12,15 @@ AssemblyGenerator::AssemblyGenerator(const std::string &builtin_begin, const std
   builtin_begin_(builtin_begin), builtin_end_(builtin_end),os_(os) {}
 
 std::pair<StorageType, uint32_t> AssemblyGenerator::GetVariableAddress(const std::string &name) {
-  if (name[0] != '%') { // name must be a number
+  if (name[0] != '%') {
     return std::make_pair(kConst, 0);
   }
-  auto instruction = (*current_variables_)[name];
-  auto arith = dynamic_cast<IRArithmeticInstructionNode *>(instruction);
-  if (arith != nullptr) {
-    return std::make_pair(arith->storage_type_, arith->address_);
+  auto it = variable_storage_->find(name);
+  if (it == variable_storage_->end()) {
+    std::cerr << "Error: variable " << name << " has no storage assigned\n";
+    exit(-1);
   }
-  auto neg = dynamic_cast<IRNegationInstructionNode *>(instruction);
-  if (neg != nullptr) {
-    return std::make_pair(neg->storage_type_, neg->address_);
-  }
-  auto alloc = dynamic_cast<IRAllocateInstructionNode *>(instruction);
-  if (alloc != nullptr) {
-    return std::make_pair(alloc->storage_type_, alloc->address_);
-  }
-  auto load = dynamic_cast<IRLoadInstructionNode *>(instruction);
-  if (load != nullptr) {
-    return std::make_pair(load->storage_type_, load->address_);
-  }
-  auto gete = dynamic_cast<IRGetElementPtrInstructionNode *>(instruction);
-  if (gete != nullptr) {
-    return std::make_pair(gete->storage_type_, gete->address_);
-  }
-  auto getep = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(instruction);
-  if (getep != nullptr) {
-    return std::make_pair(getep->storage_type_, getep->address_);
-  }
-  auto comp = dynamic_cast<IRCompareInstructionNode *>(instruction);
-  if (comp != nullptr) {
-    return std::make_pair(comp->storage_type_, comp->address_);
-  }
-  auto call = dynamic_cast<IRCallInstructionNode *>(instruction);
-  if (call != nullptr) {
-    return std::make_pair(call->storage_type_, call->address_);
-  }
-  auto phi = dynamic_cast<IRPhiInstructionNode *>(instruction);
-  if (phi != nullptr) {
-    return std::make_pair(phi->storage_type_, phi->address_);
-  }
-  auto sele = dynamic_cast<IRSelectInstructionNode *>(instruction);
-  if (sele != nullptr) {
-    return std::make_pair(sele->storage_type_, sele->address_);
-  }
-  auto para = dynamic_cast<IRParameterNode *>(instruction);
-  if (para != nullptr) {
-    return std::make_pair(para->storage_type_, para->address_);
-  }
-  std::cerr << "Error: unexpected variable!\n";
-  std::cerr << name << '\n';
-  exit(-1);
+  return it->second;
 }
 
 void AssemblyGenerator::TransferToTreg(uint32_t address, uint32_t reg_id, const std::string &val_type) {
@@ -570,6 +528,7 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   current_func_name_ = node->name_;
   current_a_reg_used_ = node->a_reg_used_cnt_;
   current_variables_ = &node->variables_;
+  variable_storage_ = &node->variable_storage_;
 
   cur_func_ = node;
 

@@ -62,6 +62,7 @@ private:
 };
 
 class IRInstructionNode : public IRNode {
+  friend class MemoryAllocator;
   friend class CFGBuilder;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
 public:
@@ -325,9 +326,6 @@ private:
   std::shared_ptr<IRArrayNode> result_type_; // empty means void which also means result_ is also empty
   std::string function_name_;
   std::vector<std::shared_ptr<IRArgumentNode>> arguments_;
-
-  StorageType storage_type_;
-  uint32_t address_;
 };
 
 class IRPhiInstructionNode : public IRInstructionNode {
@@ -434,6 +432,7 @@ private:
 
   uint32_t stack_size_ = 0;
   std::map<std::string, IRNode *> variables_;
+  std::map<std::string, std::pair<StorageType, uint32_t>> variable_storage_;
 
   uint32_t a_reg_used_cnt_;
 };
