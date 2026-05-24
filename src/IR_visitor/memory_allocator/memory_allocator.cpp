@@ -75,7 +75,7 @@ void MemoryAllocator::Visit(IRCallInstructionNode *node) {
   }
 }
 
-void MemoryAllocator::Visit(IRPhiInstructionNode *node) {
+void MemoryAllocator::Visit(IRMoveInstructionNode *node) {
   AllocateOrReuse(node->result_, Align4(node->type_->allocated_size_), node);
 }
 
@@ -84,9 +84,6 @@ void MemoryAllocator::Visit(IRSelectInstructionNode *node) {
 }
 
 void MemoryAllocator::Visit(IRBlockNode *node) {
-  for (auto &phi : node->phi_) {
-    phi->Accept(this);
-  }
   for (auto &instruction : node->instructions_) {
     if (instruction->removed_) {
       continue;

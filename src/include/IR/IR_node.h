@@ -121,6 +121,7 @@ class IRBranchInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
 public:
   IRBranchInstructionNode() = delete;
   IRBranchInstructionNode(const std::string &, const uint32_t &, const uint32_t &);
@@ -137,6 +138,7 @@ class IRJumpInstructionNode : public IRInstructionNode {
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
+  friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
 public:
   IRJumpInstructionNode() = delete;
   explicit IRJumpInstructionNode(const uint32_t &);
@@ -336,6 +338,7 @@ class IRPhiInstructionNode : public IRInstructionNode {
   friend class CFGBuilder;
   friend class CFG;
   friend class PhiTopo;
+  friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
 public:
   IRPhiInstructionNode() = delete;
   IRPhiInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>);
@@ -344,6 +347,25 @@ private:
   std::string result_;
   std::shared_ptr<IRArrayNode> type_;
   std::vector<std::pair<std::string, uint32_t>> val_;
+};
+
+class IRMoveInstructionNode : public IRInstructionNode {
+  friend class IRPrinter;
+  friend class Preprocessor;
+  friend class MemoryAllocator;
+  friend class AssemblyGenerator;
+  friend class CFGBuilder;
+  friend class CFG;
+  friend class PhiTopo;
+public:
+  IRMoveInstructionNode() = delete;
+  IRMoveInstructionNode(const std::string &dest, const std::string &src,
+                        std::shared_ptr<IRArrayNode> type);
+  void Accept(IRVisitorBase *) override;
+private:
+  std::string result_;
+  std::string source_;
+  std::shared_ptr<IRArrayNode> type_;
 };
 
 class IRSelectInstructionNode : public IRInstructionNode {
@@ -370,6 +392,7 @@ class IRBlockNode : public IRNode {
   friend class CFGBuilder;
   friend class CFG;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
+  friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
 public:
   IRBlockNode() = delete;
   explicit IRBlockNode(const uint32_t &);
@@ -416,6 +439,7 @@ class IRFunctionNode : public IRNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
+  friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
 public:
   IRFunctionNode() = delete;
   IRFunctionNode(std::shared_ptr<IRArrayNode>, const std::string &, bool);
@@ -445,6 +469,7 @@ class IRRootNode : public IRNode {
   friend class CFGBuilder;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
   friend void EliminateCriticalEdge(std::shared_ptr<IRRootNode>);
+  friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
 public:
   IRRootNode() = default;
   void AddStruct(std::shared_ptr<IRStructNode>);

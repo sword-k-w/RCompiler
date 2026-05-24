@@ -24,6 +24,7 @@ public:
   void Visit(IRArgumentNode *) override;
   void Visit(IRCallInstructionNode *) override;
   void Visit(IRPhiInstructionNode *) override;
+  void Visit(IRMoveInstructionNode *) override;
   void Visit(IRSelectInstructionNode *) override;
   void Visit(IRBlockNode *) override;
   void Visit(IRParameterNode *) override;

@@ -16,6 +16,7 @@
 #include <fstream>
 #include "IR/struct_map.h"
 #include "IR/function_map.h"
+#include "IR_visitor/phi_eliminator/phi_eliminator.h"
 
 void TestCode(const std::string &code, std::ostream &out) {
   try {
@@ -36,6 +37,8 @@ void TestCode(const std::string &code, std::ostream &out) {
     auto IR_root = std::make_shared<IRRootNode>();
     IRGenerator gen(IR_root);
     root->Accept(&gen);
+
+    ReplacePhiWithMoves(IR_root);
 
     Preprocessor preprocessor;
     IR_root->Accept(&preprocessor);

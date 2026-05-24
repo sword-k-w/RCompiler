@@ -19,6 +19,7 @@
 
 #include "mem2reg/mem2reg.h"
 #include "mem2reg/eliminator.h"
+#include "IR_visitor/phi_eliminator/phi_eliminator.h"
 
 void TestCode(const std::string &code, std::ostream &out) {
   try {
@@ -42,6 +43,8 @@ void TestCode(const std::string &code, std::ostream &out) {
 
     Mem2reg(IR_root);
     EliminateCriticalEdge(IR_root);
+
+    ReplacePhiWithMoves(IR_root);
 
     // IRPrinter printer("builtin.ll", std::cerr);
     // IR_root->Accept(&printer);

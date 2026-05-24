@@ -130,11 +130,11 @@ void CFGBuilder::Visit(IRCallInstructionNode *node) {
   Merge(node);
 }
 
-void CFGBuilder::Visit(IRPhiInstructionNode *node) {
+void CFGBuilder::Visit(IRPhiInstructionNode *node) {}
+
+void CFGBuilder::Visit(IRMoveInstructionNode *node) {
   AddDef(node, node->result_, false);
-  for (auto &[val, _]: node->val_) {
-    AddUse(node, val, false);
-  }
+  AddUse(node, node->source_, false);
   Merge(node);
 }
 

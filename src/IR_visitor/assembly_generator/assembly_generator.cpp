@@ -6,7 +6,6 @@
 #include "IR/function_map.h"
 #include "codegen/register.h"
 #include "codegen/instruction.h"
-#include "codegen/phi_topo.h"
 
 AssemblyGenerator::AssemblyGenerator(const std::string &builtin_begin, const std::string &builtin_end, std::ostream &os) :
   builtin_begin_(builtin_begin), builtin_end_(builtin_end),os_(os) {}
@@ -189,46 +188,6 @@ void AssemblyGenerator::Visit(IRNegationInstructionNode *node) {
 
 void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
   os_ << "\t# Branch Instruction\n";
-  PhiTopo topo;
-  for (auto &phi : cur_func_->blocks_[node->true_branch_]->phi_) {
-    for (const auto &[val, fr] : phi->val_) {
-      if (fr == cur_block_) {
-        topo.AddEdge(val, phi.get());
-      }
-    }
-  }
-
-  auto order = topo.Solve();
-  for (auto &[from, phi] : order) {
-    if (phi == nullptr) {
-      DataMove(from, kRegister, 6, dynamic_cast<IRPhiInstructionNode *>((*current_variables_)[from])->type_);
-    } else if (from.empty()) {
-      DataMoveFromReg("t1", phi->storage_type_, phi->address_, phi->type_);
-    } else {
-      DataMove(from, phi->storage_type_, phi->address_, phi->type_);
-    }
-  }
-
-  topo.Clear();
-  for (auto &phi : cur_func_->blocks_[node->false_branch_]->phi_) {
-    for (const auto &[val, fr] : phi->val_) {
-      if (fr == cur_block_) {
-        topo.AddEdge(val, phi.get());
-      }
-    }
-  }
-
-  order = topo.Solve();
-  for (auto &[from, phi] : order) {
-    if (phi == nullptr) {
-      DataMove(from, kRegister, 6, dynamic_cast<IRPhiInstructionNode *>((*current_variables_)[from])->type_);
-    } else if (from.empty()) {
-      DataMoveFromReg("t1", phi->storage_type_, phi->address_, phi->type_);
-    } else {
-      DataMove(from, phi->storage_type_, phi->address_, phi->type_);
-    }
-  }
-
   auto rs = VariableToReg(node->condition_, 0, "i1");
 
   std::string tmp_label = ".Lbranch..tmp." + std::to_string(branch_cnt_);
@@ -242,24 +201,6 @@ void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
 
 void AssemblyGenerator::Visit(IRJumpInstructionNode *node) {
   os_ << "\t# Jump Instruction\n";
-  PhiTopo topo;
-  for (auto &phi : cur_func_->blocks_[node->destination_]->phi_) {
-    for (const auto &[val, fr] : phi->val_) {
-      if (fr == cur_block_) {
-        topo.AddEdge(val, phi.get());
-      }
-    }
-  }
-  auto order = topo.Solve();
-  for (auto &[from, phi] : order) {
-    if (phi == nullptr) {
-      DataMove(from, kRegister, 6, dynamic_cast<IRPhiInstructionNode *>((*current_variables_)[from])->type_);
-    } else if (from.empty()) {
-      DataMoveFromReg("t1", phi->storage_type_, phi->address_, phi->type_);
-    } else {
-      DataMove(from, phi->storage_type_, phi->address_, phi->type_);
-    }
-  }
   os_ << "\tj " << ".L" << current_func_name_ << "_" << node->destination_ << '\n';
 }
 
@@ -487,9 +428,9 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
   RestoreRegister();
 }
 
-void AssemblyGenerator::Visit(IRPhiInstructionNode *node) {
-  std::cerr << "Error! should not visit Phi!\n";
-  exit(-1);
+void AssemblyGenerator::Visit(IRMoveInstructionNode *node) {
+  os_ << "\t# Move " << node->result_ << " <- " << node->source_ << '\n';
+  DataMove(node->source_, node->storage_type_, node->address_, node->type_);
 }
 
 void AssemblyGenerator::Visit(IRSelectInstructionNode *node) {

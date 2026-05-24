@@ -70,6 +70,9 @@ IRPhiInstructionNode::IRPhiInstructionNode(const std::string &result, std::share
 IRSelectInstructionNode::IRSelectInstructionNode(const std::string &result, const std::string &cond) :
   result_(result), cond_(cond) {}
 
+IRMoveInstructionNode::IRMoveInstructionNode(const std::string &dest, const std::string &src,
+  std::shared_ptr<IRArrayNode> type) : result_(dest), source_(src), type_(type) {}
+
 void IRCallInstructionNode::AddArgument(std::shared_ptr<IRArgumentNode> argument) {
   arguments_.emplace_back(argument);
 }
@@ -180,6 +183,10 @@ void IRPhiInstructionNode::Accept(IRVisitorBase *visitor) {
 }
 
 void IRSelectInstructionNode::Accept(IRVisitorBase *visitor) {
+  visitor->Visit(this);
+}
+
+void IRMoveInstructionNode::Accept(IRVisitorBase *visitor) {
   visitor->Visit(this);
 }
 
