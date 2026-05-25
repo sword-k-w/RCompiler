@@ -117,6 +117,25 @@ TODO: const handle is not complete
 - 5:
 - 6:
 
+#### Stack frame layout
+
+s-regs at the bottom, a-reg/ra/t1 at the top, variables in between:
+
+```
+High addresses (sp + total_stack):
+  ┌──────────────────────────────┐
+  │ t1 / ra / a0-a7 saves       │ ← SaveRegister (top)
+  ├──────────────────────────────┤ ← top of stack_size_
+  │ local variables & spills     │
+  ├──────────────────────────────┤ ← bottom of variable area
+  │ s1 / s2 / ... saves         │ ← prologue (sp + 0, 4, ...)
+  └──────────────────────────────┘
+Low addresses (sp):
+```
+
+- `s_save = 4 * |used_s_regs|`, `total_stack = stack_size_ + s_save`
+- Extending sp by s_save shifts variable area up, freeing the bottom for s-regs.
+
 ### mem2reg
 
 phis in the same block are calculated in parallel!

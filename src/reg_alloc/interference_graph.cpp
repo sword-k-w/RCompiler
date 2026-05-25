@@ -1,6 +1,7 @@
 #include "reg_alloc/interference_graph.h"
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 
 void InterferenceGraph::AddNode(uint32_t id) {
   adjacency_[id];  // ensure entry exists
@@ -67,9 +68,8 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
   std::set<uint32_t> spilled;
   std::vector<uint32_t> stack;
 
-  // Make a copy of adjacency for simplify/select
   auto adj = adjacency_;
-  auto saved_adj = adjacency_;  // keep original for select phase
+  auto saved_adj = adjacency_;
 
   // --- Simplify ---
   std::set<uint32_t> active_nodes;
@@ -77,47 +77,60 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
     active_nodes.insert(id);
   }
 
+  // Precolored nodes use a-registers, regular nodes use s-registers —
+  // disjoint sets, so edges to precolored nodes don't constrain coloring.
+  for (auto &[id, _] : precolored_) {
+    active_nodes.erase(id);
+    for (auto neighbor : adj[id]) {
+      adj[neighbor].erase(id);
+      saved_adj[neighbor].erase(id);
+    }
+    adj[id].clear();
+  }
+
+  // Verify precolored phys regs and color pool are disjoint.
+  std::set<uint32_t> precolored_regs;
+  for (auto &[_, reg] : precolored_) {
+    precolored_regs.insert(reg);
+  }
+  std::set<uint32_t> color_pool(colors.begin(), colors.end());
+  std::vector<uint32_t> overlap;
+  std::set_intersection(precolored_regs.begin(), precolored_regs.end(),
+                        color_pool.begin(), color_pool.end(),
+                        std::back_inserter(overlap));
+  assert(overlap.empty() && "precolored regs and color pool must be disjoint");
+
   while (!active_nodes.empty()) {
-    // Find a node with degree < k that is not precolored
+    // Find a node with degree < k
     bool found = false;
-    for (auto it = active_nodes.begin(); it != active_nodes.end(); ) {
+    for (auto it = active_nodes.begin(); it != active_nodes.end(); ++it) {
       uint32_t id = *it;
-      if (precolored_.count(id)) {
-        ++it;
-        continue;
-      }
-      uint32_t deg = adj[id].size();
-      if (deg < k) {
+      if (adj[id].size() < k) {
         stack.push_back(id);
-        // Remove from adjacency
         for (auto neighbor : adj[id]) {
           adj[neighbor].erase(id);
         }
         adj.erase(id);
-        it = active_nodes.erase(it);
+        active_nodes.erase(it);
         found = true;
         break;
       }
-      ++it;
     }
 
     if (!found) {
-      // Spill: pick non-precolored node with lowest spill cost
-      uint32_t best_id = 0;
-      float best_cost = -1.0f;
+      // Spill: pick node with lowest spill cost
+      uint32_t best_id = *active_nodes.begin();
+      float best_cost = SpillCost(best_id);
       for (auto id : active_nodes) {
-        if (precolored_.count(id)) continue;
         float cost = SpillCost(id);
-        if (best_cost < 0 || cost < best_cost) {
+        if (cost < best_cost) {
           best_cost = cost;
           best_id = id;
         }
       }
-      if (best_id == 0) break;  // shouldn't happen
 
       spilled.insert(best_id);
       stack.push_back(best_id);
-      // Remove from adjacency
       for (auto neighbor : adj[best_id]) {
         adj[neighbor].erase(best_id);
       }
@@ -127,22 +140,10 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
   }
 
   // --- Select ---
-  // Process in reverse order (stack is LIFO)
   for (int i = stack.size() - 1; i >= 0; --i) {
     uint32_t id = stack[i];
-    bool is_spilled = spilled.count(id);
+    if (spilled.count(id)) continue;
 
-    if (precolored_.count(id)) {
-      // Already has a color, nothing to do
-      continue;
-    }
-
-    if (is_spilled) {
-      // Keep spilled — no phys_reg_ entry
-      continue;
-    }
-
-    // Find a color not used by neighbors
     std::set<uint32_t> neighbor_colors;
     for (auto neighbor : saved_adj[id]) {
       if (phys_reg_.count(neighbor)) {
@@ -160,7 +161,6 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
     }
 
     if (!assigned) {
-      // No color available — spill
       spilled.insert(id);
     }
   }

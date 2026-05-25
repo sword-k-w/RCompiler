@@ -11,6 +11,7 @@ Drop a new `N.txt` file when adding a version, then add its label to
 |------|-------------|
 | `1.txt` | origin |
 | `2.txt` | origin + mem2reg |
+| `3.txt` | origin + mem2reg + trivial graph coloring (no coalescing) |
 
 ## Visualization
 

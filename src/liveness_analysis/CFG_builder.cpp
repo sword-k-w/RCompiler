@@ -174,6 +174,9 @@ void CFGBuilder::Visit(IRFunctionNode *node) {
   for (uint32_t i = 0; i < size; ++i) {
     cfg_->NewNode(i, node->blocks_[i].get());
   }
+  for (auto &para : node->parameters_) {
+    cfg_->Query(para->name_);
+  }
   for (auto &block : node->blocks_) {
     block->Accept(this);
   }

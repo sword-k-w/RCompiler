@@ -58,6 +58,22 @@ aux_source_directory(${LEXER_DIR} LEXER_SRCS)
 #        ${IR_SRCS}
 #        ${IR_VISITOR_SRCS})
 
+
+add_executable(code
+        test/codegen_submit.cpp
+        src/data_loader/data_loader.cpp
+        ${PARSER_SRCS}
+        ${COMMON_SRCS}
+        ${LEXER_SRCS}
+        ${VISITOR_SRCS}
+        ${SEMANTIC_SRCS}
+        ${IR_SRCS}
+        ${IR_VISITOR_SRCS}
+        ${CODEGEN_SRCS}
+        ${LIVENESS_ANALYSIS_SRCS}
+        ${MEM2REG_SRCS}
+        ${REG_ALLOC_SRCS})
+
 add_executable(parser_test
         test/parser_test.cpp
         src/data_loader/data_loader.cpp
@@ -166,12 +182,18 @@ add_executable(dominator
         src/data_loader/data_loader.cpp
         src/liveness_analysis/dominator_tree.cpp)
 
+add_executable(reg_alloc_test
+        test/reg_alloc_test.cpp
+        src/reg_alloc/interference_graph.cpp)
+
 target_link_libraries(parser_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 target_link_libraries(semantic_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 target_link_libraries(IR_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 target_link_libraries(codegen_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
+target_link_libraries(reg_alloc_test ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
 
 add_test(NAME parser_test COMMAND parser_test)
 add_test(NAME semantic_test COMMAND semantic_test)
 add_test(NAME IR_test COMMAND IR_test)
 add_test(NAME codegen_test COMMAND codegen_test)
+add_test(NAME reg_alloc_test COMMAND reg_alloc_test)

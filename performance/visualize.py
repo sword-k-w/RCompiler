@@ -19,6 +19,7 @@ import numpy as np
 VERSION_LABELS = {
     "1": "origin",
     "2": "origin + mem2reg",
+    "3": "origin + mem2reg + trivial graph coloring (no coalescing)",
 }
 # ───────────────────────────────────────────────────────────────────────────
 

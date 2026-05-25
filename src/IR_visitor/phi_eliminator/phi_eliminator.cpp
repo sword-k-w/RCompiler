@@ -14,15 +14,28 @@ void ReplacePhiWithMoves(std::shared_ptr<IRRootNode> root) {
         continue;
       }
 
-      // Find successor block IDs
-      auto last_ins = block->instructions_.back().get();
+      // Find and remove the terminator (last branch/jump). Search
+      // rather than assuming back(), since later passes may have
+      // appended instructions after the terminator.
+      std::shared_ptr<IRInstructionNode> terminator;
+      for (auto it = block->instructions_.begin(); it != block->instructions_.end(); ++it) {
+        auto ins = it->get();
+        if (dynamic_cast<IRBranchInstructionNode *>(ins) ||
+            dynamic_cast<IRJumpInstructionNode *>(ins)) {
+          terminator = *it;
+          block->instructions_.erase(it);
+          break;
+        }
+      }
+      if (!terminator) continue;
+
       std::vector<uint32_t> successors;
-      auto br = dynamic_cast<IRBranchInstructionNode *>(last_ins);
+      auto br = dynamic_cast<IRBranchInstructionNode *>(terminator.get());
       if (br != nullptr) {
         successors.push_back(br->true_branch_);
         successors.push_back(br->false_branch_);
       } else {
-        auto j = dynamic_cast<IRJumpInstructionNode *>(last_ins);
+        auto j = dynamic_cast<IRJumpInstructionNode *>(terminator.get());
         if (j != nullptr) {
           successors.push_back(j->destination_);
         }
@@ -44,16 +57,13 @@ void ReplacePhiWithMoves(std::shared_ptr<IRRootNode> root) {
         }
 
         auto order = topo.Solve();
-        // Insert moves before the terminator (last instruction).
-        // Use push_back directly on the deque — not AddInstruction —
-        // because AddInstruction checks end_ and will drop moves.
-        auto terminator = block->instructions_.back();
-        block->instructions_.pop_back();
-
+        // Append moves to the end of the deque (before the terminator
+        // is re-added). Use push_back — not AddInstruction — because
+        // AddInstruction checks end_ and will drop moves.
         std::string cycle_temp;
         for (auto &[from, phi] : order) {
           if (phi == nullptr) {
-            cycle_temp = name_allocator.Allocate("%phi.temp");
+            cycle_temp = name_allocator.Allocate("%phi.temp.");
             block->instructions_.push_back(std::make_shared<IRMoveInstructionNode>(
                 cycle_temp, from, dynamic_cast<IRPhiInstructionNode *>(
                     const_cast<IRNode *>(func->variables_[from]))->type_));
@@ -65,9 +75,9 @@ void ReplacePhiWithMoves(std::shared_ptr<IRRootNode> root) {
                 phi->result_, from, phi->type_));
           }
         }
-
-        block->instructions_.push_back(terminator);
       }
+
+      block->instructions_.push_back(terminator);
     }
 
     // Remove all phi nodes from all blocks

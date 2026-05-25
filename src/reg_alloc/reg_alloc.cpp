@@ -3,6 +3,7 @@
 #include "liveness_analysis/CFG.h"
 #include "liveness_analysis/CFG_builder.h"
 #include "codegen/register.h"
+#include <iostream>
 
 static const std::vector<uint32_t> kColorPool = {9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
 static const uint32_t kNumColors = 11;
@@ -64,16 +65,35 @@ void RegAlloc::Visit(IRFunctionNode *node) {
     }
   }
 
-  // Track which def IDs are promotable (used to filter uses below)
-  std::set<uint32_t> promotable_defs;
-
-  // Walk instructions in reverse per block to build edges.
-  // Only track non-allocated variables with promotable types.
+  // Step 1: Compute the set of promotable variable IDs upfront.
+  // A variable is promotable if any def of it comes from a
+  // promotable instruction type (i32/i1/ptr, no arrays).
+  std::set<uint32_t> promotable_vars;
   for (auto &block : node->blocks_) {
+    for (auto &inst : block->instructions_) {
+      auto *ins = inst.get();
+      if (ins->removed_) continue;
+      if (!IsPromotableType(ins)) continue;
+      for (auto def_id : ins->def_) {
+        auto [not_alloc, name] = cfg->GetName(def_id);
+        if (not_alloc) {
+          promotable_vars.insert(def_id);
+        }
+      }
+    }
+  }
+
+  // Step 2: Per block, compute instruction-level liveness following
+  // the same pattern as CFG::CalcInOut (out = ∪ in[succ],
+  // in = use ∪ (out − def)), then build interference edges.
+  // For each def, add edges from the def to the instruction's liveIn
+  // (the set of variables live immediately before the instruction).
+  for (auto &block : node->blocks_) {
+    // live = out[block] (variables live at block exit)
     std::set<uint32_t> live;
     for (auto id : block->out_) {
       auto [not_alloc, name] = cfg->GetName(id);
-      if (not_alloc) live.insert(id);  // keep normal (Query) vars
+      if (not_alloc && promotable_vars.count(id)) live.insert(id);
     }
 
     auto &insts = block->instructions_;
@@ -81,32 +101,45 @@ void RegAlloc::Visit(IRFunctionNode *node) {
       auto *ins = it->get();
       if (ins->removed_) continue;
 
+      // liveOut = current live (before processing this instruction)
+      // Process defs: killed going backwards (remove from live)
+      for (auto def_id : ins->def_) {
+        if (promotable_vars.count(def_id)) {
+          live.erase(def_id);
+        }
+      }
+      // Process uses: become live going backwards (add to live)
+      for (auto use_id : ins->use_) {
+        if (promotable_vars.count(use_id)) {
+          live.insert(use_id);
+        }
+      }
+      // 'live' is now liveIn — variables live immediately before
+      // this instruction in forward execution.
+
+      // Build edges: for each promotable def, add interference
+      // edges to every other variable in liveIn.
       for (auto def_id : ins->def_) {
         auto [not_alloc, name] = cfg->GetName(def_id);
-        if (!not_alloc) continue;  // skip allocated (QueryAllocated)
-        if (!IsPromotableType(ins)) continue;  // skip complex types
+        if (!not_alloc) continue;
+        if (!promotable_vars.count(def_id)) continue;
 
-        promotable_defs.insert(def_id);
         ig.AddNode(def_id);
         ig.IncDefCount(def_id);
-
-        for (auto live_id : live) {
-          if (live_id != def_id) {
-            ig.AddNode(live_id);
-            ig.AddEdge(def_id, live_id);
+        for (auto other : live) {
+          if (other != def_id) {
+            ig.AddNode(other);
+            ig.AddEdge(def_id, other);
           }
         }
-        live.erase(def_id);
       }
 
+      // Add use counts for promotable uses
       for (auto use_id : ins->use_) {
-        auto [not_alloc, name] = cfg->GetName(use_id);
-        if (!not_alloc) continue;  // skip allocated
-        if (!promotable_defs.count(use_id)) continue;  // only track uses of promotable defs
-
-        ig.AddNode(use_id);
-        ig.IncUseCount(use_id);
-        live.insert(use_id);
+        if (promotable_vars.count(use_id)) {
+          ig.AddNode(use_id);
+          ig.IncUseCount(use_id);
+        }
       }
     }
   }

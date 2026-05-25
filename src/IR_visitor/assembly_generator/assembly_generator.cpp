@@ -69,9 +69,9 @@ void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address
 }
 
 void AssemblyGenerator::SaveRegister() {
-  // save a0~a7 and ra
-  // Remember to think about the argument of call needs values in a0~a7, but they may be covered.
-  // The correct way is to special judge a0~a7 and use the value in the memory.
+  // Save a0~aN, ra, and t1 at the top of the frame (within the
+  // 64-byte reserved area).  s-regs live at the bottom of the frame
+  // and are handled by the prologue/epilogue.
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
     PrintMem(os_, "sw", "a" + std::to_string(i), "sp", current_stack_ - 28 - 4 * i);
   }
@@ -80,7 +80,6 @@ void AssemblyGenerator::SaveRegister() {
 }
 
 void AssemblyGenerator::RestoreRegister() {
-  // restore a0~a7 and ra
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
     PrintMem(os_, "lw", "a" + std::to_string(i), "sp", current_stack_ - 28 - 4 * i);
   }
@@ -209,10 +208,13 @@ void AssemblyGenerator::Visit(IRReturnInstructionNode *node) {
   if (!node->type_->IsEmpty()) {
     VariableForceToReg(node->name_, "a0", node->type_->base_type_);
   }
-  // restore used s-registers
-  for (auto reg_id : cur_func_->used_s_regs_) {
-    uint32_t index = (reg_id <= 9) ? reg_id - 8 : reg_id - 16;
-    PrintMem(os_, "lw", kRegisterName[reg_id], "sp", current_stack_ - 4 * (index + 1));
+  // restore used s-registers from the bottom of the frame
+  {
+    uint32_t s_off = 0;
+    for (auto reg_id : cur_func_->used_s_regs_) {
+      PrintMem(os_, "lw", kRegisterName[reg_id], "sp", s_off);
+      s_off += 4;
+    }
   }
   PrintIA(os_, "addi", "sp", "sp", current_stack_);
   os_ << "\tret\n";
@@ -464,9 +466,15 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   os_ << "\t.type " << node->name_ << ",@function\n";
   os_ << node->name_ << ":        # @" << node->name_ << '\n';
 
-  PrintIA(os_, "addi", "sp", "sp", -static_cast<int32_t>(node->stack_size_)); // reserve stack space
+  // Extend the frame by s_save bytes to hold s-reg saves at the bottom
+  // (sp + 0, sp + 4, ...).  a-reg/ra/t1 saves stay at the top within the
+  // MemoryAllocator's 64-byte reserved area.  The two areas never overlap.
+  uint32_t s_save = 4 * node->used_s_regs_.size();
+  uint32_t total_stack = node->stack_size_ + s_save;
 
-  current_stack_ = node->stack_size_;
+  PrintIA(os_, "addi", "sp", "sp", -static_cast<int32_t>(total_stack));
+
+  current_stack_ = total_stack;
   current_func_name_ = node->name_;
   current_a_reg_used_ = node->a_reg_used_cnt_;
   current_variables_ = &node->variables_;
@@ -474,10 +482,13 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
 
   cur_func_ = node;
 
-  // save used s-registers
-  for (auto reg_id : node->used_s_regs_) {
-    uint32_t index = (reg_id <= 9) ? reg_id - 8 : reg_id - 16;
-    PrintMem(os_, "sw", kRegisterName[reg_id], "sp", current_stack_ - 4 * (index + 1));
+  // save used s-registers at the bottom of the frame
+  {
+    uint32_t s_off = 0;
+    for (auto reg_id : node->used_s_regs_) {
+      PrintMem(os_, "sw", kRegisterName[reg_id], "sp", s_off);
+      s_off += 4;
+    }
   }
 
   // blocks
