@@ -16,6 +16,7 @@
 #include "common/error.h"
 #include <set>
 #include "common/tool_func.h"
+#include <climits>
 
 void SecondChecker::Visit(CrateNode *node) {
   try {
