@@ -2,14 +2,14 @@ cmake_minimum_required(VERSION 3.22)
 
 project(RCompiler CXX)
 
-enable_testing()
+#enable_testing()
 
-find_package(GTest REQUIRED)
+#find_package(GTest REQUIRED)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(${GTEST_INCLUDE_DIRS})
+#include_directories(${GTEST_INCLUDE_DIRS})
 include_directories(src/include)
 
 set(LEXER_DIR ./src/lexer)
