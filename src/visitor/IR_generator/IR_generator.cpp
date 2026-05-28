@@ -237,7 +237,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
           IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("ptr"), node->IR_name_));
           if (son_expr->const_value_->type_name_ != "bool") {
             IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("i32"), "0"));
-            IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("i32"), std::to_string(4 * size)));
+            IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("i32"), std::to_string(GetTypeSize(inside_type.get()).first * size)));
           } else {
             IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("i1"), "0"));
             IR_call->AddArgument(std::make_shared<IRArgumentNode>(std::make_shared<IRArrayNode>("i32"), std::to_string(size)));

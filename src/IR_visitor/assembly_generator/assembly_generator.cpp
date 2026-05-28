@@ -7,8 +7,8 @@
 #include "codegen/register.h"
 #include "codegen/instruction.h"
 
-AssemblyGenerator::AssemblyGenerator(const std::string &builtin_begin, const std::string &builtin_end, std::ostream &os) :
-  builtin_begin_(builtin_begin), builtin_end_(builtin_end),os_(os) {}
+AssemblyGenerator::AssemblyGenerator(const std::string &builtin_begin, std::ostream &os) :
+  builtin_begin_(builtin_begin), os_(os) {}
 
 std::pair<StorageType, uint32_t> AssemblyGenerator::GetVariableAddress(const std::string &name) {
   if (name[0] != '%') {
@@ -73,18 +73,18 @@ void AssemblyGenerator::SaveRegister() {
   // 64-byte reserved area).  s-regs live at the bottom of the frame
   // and are handled by the prologue/epilogue.
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
-    PrintMem(os_, "sw", "a" + std::to_string(i), "sp", current_stack_ - 28 - 4 * i);
+    PrintMem(os_, "sd", "a" + std::to_string(i), "sp", current_stack_ - 56 - 8 * i);
   }
-  PrintMem(os_, "sw", "ra", "sp", current_stack_ - 28 - 32);
-  PrintMem(os_, "sw", "t1", "sp", current_stack_ - 4);
+  PrintMem(os_, "sd", "ra", "sp", current_stack_ - 56 - 64);
+  PrintMem(os_, "sd", "t1", "sp", current_stack_ - 8);
 }
 
 void AssemblyGenerator::RestoreRegister() {
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
-    PrintMem(os_, "lw", "a" + std::to_string(i), "sp", current_stack_ - 28 - 4 * i);
+    PrintMem(os_, "ld", "a" + std::to_string(i), "sp", current_stack_ - 56 - 8 * i);
   }
-  PrintMem(os_, "lw", "ra", "sp", current_stack_ - 28 - 32);
-  PrintMem(os_, "lw", "t1", "sp", current_stack_ - 4);
+  PrintMem(os_, "ld", "ra", "sp", current_stack_ - 56 - 64);
+  PrintMem(os_, "ld", "t1", "sp", current_stack_ - 8);
 }
 
 void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, uint32_t to_address, std::shared_ptr<IRArrayNode> type) {
@@ -136,25 +136,27 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
   os_ << "\t";
   if (node->op_ == "+") {
-    os_ << "add";
+    os_ << "addw";
   } else if (node->op_ == "-") {
-    os_ << "sub";
+    os_ << "subw";
   } else if (node->op_ == "*") {
-    os_ << "mul";
+    os_ << "mulw";
   } else if (node->op_ == "/") {
     os_ << "div";
     if (node->is_unsigned_) {
       os_ << "u";
     }
+    os_ << "w";
   } else if (node->op_ == "%") {
     os_ << "rem";
     if (node->is_unsigned_) {
       os_ << "u";
     }
+    os_ << "w";
   } else if (node->op_ == "<<") {
-    os_ << "sll";
+    os_ << "sllw";
   } else if (node->op_ == ">>") {
-    os_ << "sra";
+    os_ << "sraw";
   } else if (node->op_ == "&") {
     os_ << "and";
   } else if (node->op_ == "|") {
@@ -212,8 +214,8 @@ void AssemblyGenerator::Visit(IRReturnInstructionNode *node) {
   {
     uint32_t s_off = 0;
     for (auto reg_id : cur_func_->used_s_regs_) {
-      PrintMem(os_, "lw", kRegisterName[reg_id], "sp", s_off);
-      s_off += 4;
+      PrintMem(os_, "ld", kRegisterName[reg_id], "sp", s_off);
+      s_off += 8;
     }
   }
   PrintIA(os_, "addi", "sp", "sp", current_stack_);
@@ -239,7 +241,7 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
     bool flag = true;
     for (uint32_t i = 10; i < 18; ++i) {
       if (SameRegister(i, ptr_reg)) {
-        PrintMem(os_, "lw", "a1", "sp", current_stack_ - 28 - 4 * (i - 10));
+        PrintMem(os_, "ld", "a1", "sp", current_stack_ - 56 - 8 * (i - 10));
         flag = false;
       }
     }
@@ -269,7 +271,7 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
     bool flag = true;
     for (uint32_t i = 10; i < 18; ++i) {
       if (SameRegister(i, ptr_reg)) {
-        PrintMem(os_, "lw", "a0", "sp", current_stack_ - 28 - 4 * (i - 10));
+        PrintMem(os_, "ld", "a0", "sp", current_stack_ - 56 - 8 * (i - 10));
         flag = false;
       }
     }
@@ -300,14 +302,14 @@ void AssemblyGenerator::Visit(IRGetElementPtrInstructionNode *node) {
     uint32_t align = 1;
     auto struct_node = StructMap::Instance().Query(node->type_->base_type_);
     for (uint32_t i = 0; i < node->index_; ++i) {
-      if (align == 1 && struct_node->members_[i]->align_ == 4) {
-        align = 4;
-        offset = Align4(offset);
+      if (align == 1 && struct_node->members_[i]->align_ == 8) {
+        align = 8;
+        offset = Align8(offset);
       }
       offset += struct_node->members_[i]->allocated_size_;
     }
-    if (struct_node->members_[node->index_]->align_ == 4) {
-      offset = Align4(offset);
+    if (struct_node->members_[node->index_]->align_ == 8) {
+      offset = Align8(offset);
     }
   } else {
     offset = node->type_->allocated_size_ / node->type_->length_[0] * node->index_;
@@ -402,9 +404,9 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
       auto [l_ins, s_ins] = LoadStoreType(para->type_->base_type_);
       if (address >= 10 && address < 18) { // The correct values are in the memory.
         if (para->storage_type_ == kRegister) {
-          PrintMem(os_, l_ins, "x" + std::to_string(para->address_), "sp", current_stack_ - 28 - 4 * (address - 10));
+          PrintMem(os_, l_ins, "x" + std::to_string(para->address_), "sp", current_stack_ - 56 - 8 * (address - 10));
         } else {
-          PrintMem(os_, l_ins, "t0", "sp", current_stack_ - 28 - 4 * (address - 10));
+          PrintMem(os_, l_ins, "t0", "sp", current_stack_ - 56 - 8 * (address - 10));
           PrintMem(os_, s_ins, "t0", "sp", -static_cast<int32_t>(para->address_));
         }
       } else {
@@ -461,15 +463,16 @@ void AssemblyGenerator::Visit(IRBlockNode *node) {
 void AssemblyGenerator::Visit(IRParameterNode *node) {}
 
 void AssemblyGenerator::Visit(IRFunctionNode *node) {
+  os_ << "\t.text\n";
   os_ << "\t.globl " << node->name_ << "        # -- Begin function " << node->name_ << '\n';
   os_ << "\t.p2align 2\n";
   os_ << "\t.type " << node->name_ << ",@function\n";
   os_ << node->name_ << ":        # @" << node->name_ << '\n';
 
   // Extend the frame by s_save bytes to hold s-reg saves at the bottom
-  // (sp + 0, sp + 4, ...).  a-reg/ra/t1 saves stay at the top within the
+  // (sp + 0, sp + 8, ...).  a-reg/ra/t1 saves stay at the top within the
   // MemoryAllocator's 64-byte reserved area.  The two areas never overlap.
-  uint32_t s_save = 4 * node->used_s_regs_.size();
+  uint32_t s_save = 8 * node->used_s_regs_.size();
   uint32_t total_stack = node->stack_size_ + s_save;
 
   PrintIA(os_, "addi", "sp", "sp", -static_cast<int32_t>(total_stack));
@@ -486,8 +489,8 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   {
     uint32_t s_off = 0;
     for (auto reg_id : node->used_s_regs_) {
-      PrintMem(os_, "sw", kRegisterName[reg_id], "sp", s_off);
-      s_off += 4;
+      PrintMem(os_, "sd", kRegisterName[reg_id], "sp", s_off);
+      s_off += 8;
     }
   }
 
@@ -502,5 +505,4 @@ void AssemblyGenerator::Visit(IRRootNode *node) {
   for (auto &function_node : node->functions_) {
     function_node->Accept(this);
   }
-  os_ << builtin_end_ << '\n';
 }

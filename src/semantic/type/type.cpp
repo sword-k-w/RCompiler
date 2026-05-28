@@ -225,10 +225,10 @@ std::pair<uint32_t, bool> GetTypeSize(Type *type) {
       if (type->type_name_ == "char" || type->type_name_ == "String" || type->type_name_ == "str") {
         throw Error("IR generator : unexpected type");
       }
-      return std::make_pair(4, false);
+      return std::make_pair(8, false);
     }
     if (type->type_ == kEnumType || type->type_ == kPointerType) {
-      return std::make_pair(4, false);
+      return std::make_pair(8, false);
     }
     if (type->type_ == kArrayType) {
       auto [size, tag] = GetTypeSize(type->array_type_info_.first.get());
@@ -241,10 +241,10 @@ std::pair<uint32_t, bool> GetTypeSize(Type *type) {
       for (auto &field : struct_type->struct_fields_->struct_field_s_) {
         auto [inner_size, inner_tag] = GetTypeSize(field->type_->type_info_.get());
         if (!tag && inner_tag) {
-          inner_size = (inner_size + 3) / 4 * 4;
+          inner_size = (inner_size + 7) / 8 * 8;
         }
         if (tag && !inner_tag) {
-          size = (size + 3) / 4 * 4;
+          size = (size + 7) / 8 * 8;
         }
         tag &= inner_tag;
         size += inner_size;

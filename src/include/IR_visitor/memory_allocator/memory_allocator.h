@@ -2,7 +2,7 @@
 
 #include "IR_visitor/base/IR_visitor_base.h"
 
-uint32_t Align4(uint32_t);
+uint32_t Align8(uint32_t);
 
 class MemoryAllocator : public IRVisitorBase {
 public:

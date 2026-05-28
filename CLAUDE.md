@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-A Rust-subset (`.rx`) to RISC-V 32-bit compiler written in C++20. The compiler targets a custom RISC-V simulator called `reimu`.
+A Rust-subset (`.rx`) to RISC-V 64-bit compiler written in C++20. The compiler generates RV64 assembly and runs via `qemu-riscv64`.
 
 ## Build
 
@@ -16,7 +16,7 @@ make build
 mkdir -p build && cd build && cmake .. && cmake --build .
 ```
 
-The CMake build produces 8 targets: `parser_test`, `semantic_test`, `IR_test`, `codegen_test`, `IR_single`, `IR_single_optimized`, `codegen_single`, `dominator`.
+The CMake build produces 9 targets: `parser_test`, `semantic_test`, `IR_test`, `codegen_test`, `reg_alloc_test`, `IR_single`, `IR_single_optimized`, `codegen_single`, `dominator`.
 
 ## Test
 
@@ -33,7 +33,7 @@ cd test && python3 run_isolated_tests.py
 
 CI (`.github/workflows/cmake-ci.yml`) triggers on push to `main`/`master`, builds all targets and runs `ctest` on `ubuntu-latest`.
 
-Test cases live in `testcases/` (git submodule). Scripts under `script/IR/` and `script/codegen/` drive end-to-end testing through the `reimu` simulator.
+Test cases live in `testcases/` (git submodule). Scripts under `script/IR/` and `script/codegen/` drive end-to-end testing through `qemu-riscv64`. The test scripts require `clang-21`, `lld-21`, and RISC-V Linux cross-compilation libraries (extracted under `tools/riscv64-linux/`).
 
 ## Architecture
 
@@ -86,15 +86,15 @@ Phis in the same block are calculated in parallel (see `codegen/phi_topo.cpp`).
 
 ### Stack frame layout (codegen)
 
-s-reg saves live at the bottom of the frame (near sp), a-reg/ra/t1 saves at the top (within the MemoryAllocator's 64-byte reserved area). The two areas never overlap.
+s-reg saves live at the bottom of the frame (near sp), a-reg/ra/t1 saves at the top (within the MemoryAllocator's 120-byte reserved area). The two areas never overlap.
 
 ```
 High addresses (sp + total_stack):
   ┌──────────────────────────────┐
-  │ t1 save             (off  4) │ ┐
-  │ ra save             (off 60) │ │ SaveRegister / RestoreRegister
-  │ a0 save             (off 28) │ │ fixed offsets from current_stack_
-  │ a1 save             (off 32) │ │
+  │ t1 save             (off  8) │ ┐
+  │ ra save             (of 120) │ │ SaveRegister / RestoreRegister
+  │ a0 save             (off 56) │ │ fixed offsets from current_stack_
+  │ a1 save             (off 64) │ │
   │ ...                          │ ┘
   ├──────────────────────────────┤ ← top of original stack_size_
   │                              │
@@ -102,15 +102,15 @@ High addresses (sp + total_stack):
   │                              │
   ├──────────────────────────────┤ ← bottom of variable area (sp + s_save)
   │ s1 save             (off  0) │ ┐ prologue / epilogue: s-regs
-  │ s2 save             (off  4) │ │ packed at sp + 0, 4, 8, ...
+  │ s2 save             (off  8) │ │ packed at sp + 0, 8, 16, ...
   │ ...                          │ ┘
   └──────────────────────────────┘
 Low addresses (sp):
 ```
 
-- `s_save = 4 * |used_s_regs|`, `total_stack = stack_size_ + s_save`
-- s-regs at `sp + 0, sp + 4, ...` (bottom of frame)
-- a-regs at `current_stack_ - 28 - 4*i`, ra at `current_stack_ - 60`, t1 at `current_stack_ - 4` (top of frame)
+- `s_save = 8 * |used_s_regs|`, `total_stack = stack_size_ + s_save`
+- s-regs at `sp + 0, sp + 8, ...` (bottom of frame)
+- a-regs at `current_stack_ - 56 - 8*i`, ra at `current_stack_ - 120`, t1 at `current_stack_ - 8` (top of frame)
 - Variable access: `sp + current_stack_ - address`; extending sp and `current_stack_` by `s_save` shifts variable area up by `s_save`, leaving the bottom free for s-regs.
 
 ### Reg alloc color pool
@@ -121,7 +121,15 @@ Low addresses (sp):
 
 ## Performance tracking
 
-Cycle counts from the `reimu` simulator across compiler versions are tracked in `performance/`. Each version gets a `N.txt` file. Run `python3 performance/visualize.py` to generate comparison plots.
+Cycle counts from the RISC-V simulator across compiler versions are tracked in `performance/`. Each version gets a `N.txt` file. Run `python3 performance/visualize.py` to generate comparison plots.
+
+## RISC-V 64 toolchain (local)
+
+The RV64 linker and cross-compilation libraries are stored under `tools/riscv64-linux/`:
+- `lld/bin/` — extracted `lld-21` package (LLVM linker with RISC-V support)
+- `sysroot/` — extracted `libc6-riscv64-cross`, `libc6-dev-riscv64-cross`, `libgcc-*-riscv64-cross`, `linux-libc-dev-riscv64-cross`
+
+Source `.deb` files are in `tools/debs/`. To set up on a new machine, extract them with `dpkg-deb -x` into `tools/riscv64-linux/`.
 
 ## Testcases submodule
 

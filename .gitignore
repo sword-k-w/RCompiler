@@ -7,3 +7,5 @@ tmp/**
 tmp_data/**
 tmptmp/
 tmp.out
+log.txt
+tools/

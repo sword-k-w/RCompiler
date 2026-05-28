@@ -8,8 +8,8 @@ void Preprocessor::Visit(IRArrayNode *node) {
     return;
   }
   if (node->base_type_ == "i32" || node->base_type_ == "ptr") {
-    node->align_ = 4;
-    node->allocated_size_ = 4;
+    node->align_ = 8;
+    node->allocated_size_ = 8;
     for (auto &length : node->length_) {
       node->allocated_size_ *= length;
     }
@@ -36,12 +36,12 @@ void Preprocessor::Visit(IRStructNode *node) {
     array_node->Accept(this);
     auto inner_size = array_node->allocated_size_;
     auto inner_align = array_node->align_;
-    if (inner_align == 1 && node->align_ == 4) {
-      inner_size = Align4(inner_size);
+    if (inner_align == 1 && node->align_ == 8) {
+      inner_size = Align8(inner_size);
     }
-    if (node->align_ == 1 && inner_align == 4) {
-      node->allocated_size_ = Align4(node->allocated_size_);
-      node->align_ = 4;
+    if (node->align_ == 1 && inner_align == 8) {
+      node->allocated_size_ = Align8(node->allocated_size_);
+      node->align_ = 8;
     }
     node->allocated_size_ += inner_size;
   }

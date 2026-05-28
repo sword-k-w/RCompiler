@@ -2,8 +2,8 @@
 #include "IR/struct_map.h"
 #include <cassert>
 
-uint32_t Align4(uint32_t x) {
-  return (x + 3) / 4 * 4;
+uint32_t Align8(uint32_t x) {
+  return (x + 7) / 8 * 8;
 }
 
 void MemoryAllocator::AllocateOrReuse(const std::string &name, uint32_t size, IRInstructionNode *node) {
@@ -21,11 +21,11 @@ void MemoryAllocator::Visit(IRArrayNode *node) {}
 void MemoryAllocator::Visit(IRStructNode *node) {}
 
 void MemoryAllocator::Visit(IRArithmeticInstructionNode *node) {
-  AllocateOrReuse(node->result_, 4, node);
+  AllocateOrReuse(node->result_, 8, node);
 }
 
 void MemoryAllocator::Visit(IRNegationInstructionNode *node) {
-  AllocateOrReuse(node->result_, 4, node);
+  AllocateOrReuse(node->result_, 8, node);
 }
 
 void MemoryAllocator::Visit(IRBranchInstructionNode *node) {}
@@ -40,15 +40,15 @@ void MemoryAllocator::Visit(IRReturnInstructionNode *node) {
 }
 
 void MemoryAllocator::Visit(IRAllocateInstructionNode *node) {
-  AllocateOrReuse(node->result_, 4, node);
+  AllocateOrReuse(node->result_, 8, node);
 
   node->inner_storage_type_ = kMemory;
-  *current_stack_ += Align4(node->type_->allocated_size_);
+  *current_stack_ += Align8(node->type_->allocated_size_);
   node->inner_address_ = *current_stack_;
 }
 
 void MemoryAllocator::Visit(IRLoadInstructionNode *node) {
-  AllocateOrReuse(node->result_, Align4(node->type_->allocated_size_), node);
+  AllocateOrReuse(node->result_, Align8(node->type_->allocated_size_), node);
 }
 
 void MemoryAllocator::Visit(IRStoreVariableInstructionNode *node) {}
@@ -56,31 +56,31 @@ void MemoryAllocator::Visit(IRStoreVariableInstructionNode *node) {}
 void MemoryAllocator::Visit(IRStoreConstInstructionNode *node) {}
 
 void MemoryAllocator::Visit(IRGetElementPtrInstructionNode *node) {
-  AllocateOrReuse(node->result_, 4, node);
+  AllocateOrReuse(node->result_, 8, node);
 }
 
 void MemoryAllocator::Visit(IRGetElementPtrPrimeInstructionNode *node) {
-  AllocateOrReuse(node->result_, 4, node);
+  AllocateOrReuse(node->result_, 8, node);
 }
 
 void MemoryAllocator::Visit(IRCompareInstructionNode *node) {
-  AllocateOrReuse(node->result_, 4, node);
+  AllocateOrReuse(node->result_, 8, node);
 }
 
 void MemoryAllocator::Visit(IRArgumentNode *node) {}
 
 void MemoryAllocator::Visit(IRCallInstructionNode *node) {
   if (node->result_type_ != nullptr) {
-    AllocateOrReuse(node->result_, Align4(node->result_type_->allocated_size_), node);
+    AllocateOrReuse(node->result_, Align8(node->result_type_->allocated_size_), node);
   }
 }
 
 void MemoryAllocator::Visit(IRMoveInstructionNode *node) {
-  AllocateOrReuse(node->result_, Align4(node->type_->allocated_size_), node);
+  AllocateOrReuse(node->result_, Align8(node->type_->allocated_size_), node);
 }
 
 void MemoryAllocator::Visit(IRSelectInstructionNode *node) {
-  AllocateOrReuse(node->result_, 4, node);
+  AllocateOrReuse(node->result_, 8, node);
 }
 
 void MemoryAllocator::Visit(IRBlockNode *node) {
@@ -99,14 +99,14 @@ void MemoryAllocator::Visit(IRParameterNode *node) {
     node->address_ = current_parameter_register_++;
   } else {
     node->storage_type_ = kMemory;
-    *current_stack_ += Align4(node->type_->allocated_size_);
+    *current_stack_ += Align8(node->type_->allocated_size_);
     node->address_ = *current_stack_;
   }
   (*variable_storage_)[node->name_] = {node->storage_type_, node->address_};
 }
 
 void MemoryAllocator::Visit(IRFunctionNode *node) {
-  node->stack_size_ += 28 + 36;
+  node->stack_size_ += 56 + 64;
   current_stack_ = &node->stack_size_;
   current_parameter_register_ = 10;
   variable_storage_ = &node->variable_storage_;

@@ -1,4 +1,3 @@
-#include "gtest/gtest.h"
 #include "data_loader/data_loader.h"
 #include "lexer/lexer.h"
 #include "parser/parser.hpp"
@@ -14,10 +13,13 @@
 #include "IR_visitor/memory_allocator/memory_allocator.h"
 #include "IR_visitor/assembly_generator/assembly_generator.h"
 #include <fstream>
+
 #include "IR/struct_map.h"
 #include "IR/function_map.h"
+
+#include "mem2reg/mem2reg.h"
+#include "mem2reg/eliminator.h"
 #include "IR_visitor/phi_eliminator/phi_eliminator.h"
-#include "reg_alloc/reg_alloc.h"
 
 void TestCode(const std::string &code, std::ostream &out) {
   try {
@@ -39,7 +41,13 @@ void TestCode(const std::string &code, std::ostream &out) {
     IRGenerator gen(IR_root);
     root->Accept(&gen);
 
+    Mem2reg(IR_root);
+    EliminateCriticalEdge(IR_root);
+
     ReplacePhiWithMoves(IR_root);
+
+    // IRPrinter printer("builtin.ll", std::cerr);
+    // IR_root->Accept(&printer);
 
     Preprocessor preprocessor;
     IR_root->Accept(&preprocessor);
@@ -47,28 +55,18 @@ void TestCode(const std::string &code, std::ostream &out) {
     MemoryAllocator memory_allocator;
     IR_root->Accept(&memory_allocator);
     FunctionMap::Instance().Accept(&memory_allocator);
-    RegAlloc reg_alloc;
-    IR_root->Accept(&reg_alloc);
     AssemblyGenerator assembly_generator(LoadFromFile("builtin_begin.s"), out);
     IR_root->Accept(&assembly_generator);
   } catch (Error &err) {
     std::cerr << err.Info() << '\n';
-    EXPECT_EQ(true, false);
+    exit(-1);
   }
 }
 
-TEST(CodegenTest, TestcaseTest) {
-  for (int t = 1; t <= 50; ++t) {
-    std::cerr << "Testing testcase" << t << "...\n";
-    std::string folder = "testcases/IR-1/src/comprehensive" + std::to_string(t);
-    std::string input = LoadFromFile(folder + "/comprehensive" + std::to_string(t) + ".rx");
-    std::string output_file = "tmp/" + std::to_string(t) + ".s";
-    std::ofstream out(output_file);
-    if (!out.is_open()) {
-      throw std::runtime_error("Failed to open file for writing: " + output_file);
-    }
-    TestCode(input, out);
-    std::cerr << '\n';
-  }
+int main() {
+  std::string builtin_code = LoadFromFile("src/IR/builtin.c");
+  std::cerr << builtin_code << '\n';
+  std::string code = LoadInput();
+  TestCode(code, std::cout);
+  return 0;
 }
-
