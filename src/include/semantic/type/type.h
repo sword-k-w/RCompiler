@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <cstdint>
 
 #include "IR/IR_node.h"
 #include "parser/class_declaration.h"

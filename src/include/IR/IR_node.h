@@ -5,6 +5,7 @@
 #include <deque>
 #include <map>
 #include <set>
+#include <cstdint>
 
 enum StorageType {
   kRegister, kMemory, kConst
