@@ -60,7 +60,7 @@ void TestCode(const std::string &code, std::ostream &out) {
     MemoryAllocator memory_allocator;
     IR_root->Accept(&memory_allocator);
     FunctionMap::Instance().Accept(&memory_allocator);
-    AssemblyGenerator assembly_generator(LoadFromFile("builtin_begin.s"), out);
+    AssemblyGenerator assembly_generator(LoadFromFile("builtin.s"), out);
     IR_root->Accept(&assembly_generator);
   } catch (Error &err) {
     std::cerr << err.Info() << '\n';

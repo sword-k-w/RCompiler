@@ -2,9 +2,8 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-TOOLS_DIR="$PROJECT_DIR/tools/riscv64-linux"
-SYSROOT="$TOOLS_DIR/sysroot"
-LLD_BIN="$TOOLS_DIR/lld/bin"
+SYSROOT="$PROJECT_DIR/tools/riscv64-linux/sysroot"
+GCC="riscv64-linux-gnu-gcc-12"
 
 cmake --build cmake-build-debug
 success_count=0
@@ -12,13 +11,8 @@ success_count=0
 for INDEX in {1..50}; do
   ./cmake-build-debug/codegen_single < "testcases/IR-1/src/comprehensive${INDEX}/comprehensive${INDEX}.rx" > "tmp/${INDEX}_optimized.s"
 
-  PATH="$LLD_BIN:$PATH" \
-    clang-21 --target=riscv64-linux-gnu -march=rv64gc \
-    -fuse-ld=lld-21 \
+  $GCC -march=rv64gc -mabi=lp64d \
     --sysroot="$SYSROOT" \
-    -B"$SYSROOT/riscv64-linux-gnu/lib" \
-    -L"$SYSROOT/riscv64-linux-gnu/lib" \
-    -L"$SYSROOT/lib/gcc-cross/riscv64-linux-gnu/12" \
     -static \
     "tmp/${INDEX}_optimized.s" -o "tmp/${INDEX}_optimized"
 
