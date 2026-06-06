@@ -43,7 +43,7 @@ void TestCode(const std::string &code, std::ostream &out) {
       IRGenerator gen(IR_root);
       root->Accept(&gen);
     } catch (...) {
-      return 0;
+      return;
     }
 
     Mem2reg(IR_root);
