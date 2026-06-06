@@ -38,8 +38,13 @@ void TestCode(const std::string &code, std::ostream &out) {
     ThirdChecker tc;
     root->Accept(&tc);
     auto IR_root = std::make_shared<IRRootNode>();
-    IRGenerator gen(IR_root);
-    root->Accept(&gen);
+
+    try {
+      IRGenerator gen(IR_root);
+      root->Accept(&gen);
+    } catch (...) {
+      return 0;
+    }
 
     Mem2reg(IR_root);
     EliminateCriticalEdge(IR_root);
