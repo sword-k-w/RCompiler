@@ -335,7 +335,7 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
   auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
   auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
-  if (node->op_ == IRCompareInstructiobnNode::kEq) {
+  if (node->op_ == IRCompareInstructionNode::kEq) {
     os_ << "\tslt t3, " << rs1 << ", " << rs2 << '\n';
     os_ << "\tslt t4, " << rs2 << ", " << rs1 << '\n';
     os_ << "\tor\tt3, t3, t4\n";
