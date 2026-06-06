@@ -59,20 +59,20 @@ aux_source_directory(${LEXER_DIR} LEXER_SRCS)
 #        ${IR_VISITOR_SRCS})
 
 
-#add_executable(code
-#        test/codegen_submit.cpp
-#        src/data_loader/data_loader.cpp
-#        ${PARSER_SRCS}
-#        ${COMMON_SRCS}
-#        ${LEXER_SRCS}
-#        ${VISITOR_SRCS}
-#        ${SEMANTIC_SRCS}
-#        ${IR_SRCS}
-#        ${IR_VISITOR_SRCS}
-#        ${CODEGEN_SRCS}
-#        ${LIVENESS_ANALYSIS_SRCS}
-#        ${MEM2REG_SRCS}
-#        ${REG_ALLOC_SRCS})
+add_executable(code
+        test/codegen_submit.cpp
+        src/data_loader/data_loader.cpp
+        ${PARSER_SRCS}
+        ${COMMON_SRCS}
+        ${LEXER_SRCS}
+        ${VISITOR_SRCS}
+        ${SEMANTIC_SRCS}
+        ${IR_SRCS}
+        ${IR_VISITOR_SRCS}
+        ${CODEGEN_SRCS}
+        ${LIVENESS_ANALYSIS_SRCS}
+        ${MEM2REG_SRCS}
+        ${REG_ALLOC_SRCS})
 
 #add_executable(parser_test
 #        test/parser_test.cpp
@@ -161,21 +161,21 @@ aux_source_directory(${LEXER_DIR} LEXER_SRCS)
 #        ${REG_ALLOC_SRCS}
 #)
 #
-add_executable(codegen_single
-        test/codegen_single.cpp
-        src/data_loader/data_loader.cpp
-        ${PARSER_SRCS}
-        ${COMMON_SRCS}
-        ${LEXER_SRCS}
-        ${VISITOR_SRCS}
-        ${SEMANTIC_SRCS}
-        ${IR_SRCS}
-        ${IR_VISITOR_SRCS}
-        ${CODEGEN_SRCS}
-        ${LIVENESS_ANALYSIS_SRCS}
-        ${MEM2REG_SRCS}
-        ${REG_ALLOC_SRCS}
-)
+#add_executable(codegen_single
+#        test/codegen_single.cpp
+#        src/data_loader/data_loader.cpp
+#        ${PARSER_SRCS}
+#        ${COMMON_SRCS}
+#        ${LEXER_SRCS}
+#        ${VISITOR_SRCS}
+#        ${SEMANTIC_SRCS}
+#        ${IR_SRCS}
+#        ${IR_VISITOR_SRCS}
+#        ${CODEGEN_SRCS}
+#        ${LIVENESS_ANALYSIS_SRCS}
+#        ${MEM2REG_SRCS}
+#        ${REG_ALLOC_SRCS}
+#)
 #
 #add_executable(dominator
 #        test/dominator.cpp
