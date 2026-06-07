@@ -20,6 +20,7 @@
 #include "mem2reg/mem2reg.h"
 #include "mem2reg/eliminator.h"
 #include "IR_visitor/phi_eliminator/phi_eliminator.h"
+#include "reg_alloc/reg_alloc.h"
 
 void TestCode(const std::string &code, std::ostream &out) {
   try {
@@ -60,7 +61,9 @@ void TestCode(const std::string &code, std::ostream &out) {
     MemoryAllocator memory_allocator;
     IR_root->Accept(&memory_allocator);
     FunctionMap::Instance().Accept(&memory_allocator);
-    AssemblyGenerator assembly_generator(LoadFromFile("builtin_gcc.s"), out);
+    RegAlloc reg_alloc;
+    IR_root->Accept(&reg_alloc);
+    AssemblyGenerator assembly_generator(LoadFromFile("builtin_gcc.s"), out, &std::cerr);
     IR_root->Accept(&assembly_generator);
   } catch (Error &err) {
     std::cerr << err.Info() << '\n';

@@ -161,21 +161,21 @@ add_executable(code
 #        ${REG_ALLOC_SRCS}
 #)
 #
-#add_executable(codegen_single
-#        test/codegen_single.cpp
-#        src/data_loader/data_loader.cpp
-#        ${PARSER_SRCS}
-#        ${COMMON_SRCS}
-#        ${LEXER_SRCS}
-#        ${VISITOR_SRCS}
-#        ${SEMANTIC_SRCS}
-#        ${IR_SRCS}
-#        ${IR_VISITOR_SRCS}
-#        ${CODEGEN_SRCS}
-#        ${LIVENESS_ANALYSIS_SRCS}
-#        ${MEM2REG_SRCS}
-#        ${REG_ALLOC_SRCS}
-#)
+add_executable(codegen_single
+        test/codegen_single.cpp
+        src/data_loader/data_loader.cpp
+        ${PARSER_SRCS}
+        ${COMMON_SRCS}
+        ${LEXER_SRCS}
+        ${VISITOR_SRCS}
+        ${SEMANTIC_SRCS}
+        ${IR_SRCS}
+        ${IR_VISITOR_SRCS}
+        ${CODEGEN_SRCS}
+        ${LIVENESS_ANALYSIS_SRCS}
+        ${MEM2REG_SRCS}
+        ${REG_ALLOC_SRCS}
+)
 #
 #add_executable(dominator
 #        test/dominator.cpp

@@ -7,7 +7,7 @@
 class AssemblyGenerator : public IRVisitorBase {
 public:
   AssemblyGenerator() = delete;
-  AssemblyGenerator(const std::string &, std::ostream &);
+  AssemblyGenerator(const std::string &, std::ostream &, std::ostream *builtin_os = nullptr);
   void Visit(IRArrayNode *) override;
   void Visit(IRStructNode *) override;
   void Visit(IRArithmeticInstructionNode *) override;
@@ -34,6 +34,7 @@ public:
 private:
   std::string builtin_begin_;
   std::ostream &os_;
+  std::ostream *builtin_os_;
 
   uint32_t current_stack_;
   std::string current_func_name_;

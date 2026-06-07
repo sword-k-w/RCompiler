@@ -7,8 +7,9 @@
 #include "codegen/register.h"
 #include "codegen/instruction.h"
 
-AssemblyGenerator::AssemblyGenerator(const std::string &builtin_begin, std::ostream &os) :
-  builtin_begin_(builtin_begin), os_(os) {}
+AssemblyGenerator::AssemblyGenerator(const std::string &builtin_begin, std::ostream &os,
+                                   std::ostream *builtin_os) :
+  builtin_begin_(builtin_begin), os_(os), builtin_os_(builtin_os) {}
 
 std::pair<StorageType, uint32_t> AssemblyGenerator::GetVariableAddress(const std::string &name) {
   if (name[0] != '%') {
@@ -501,7 +502,8 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRRootNode *node) {
-  std::cerr << builtin_begin_ << '\n';
+  auto &builtin_out = builtin_os_ ? *builtin_os_ : os_;
+  builtin_out << builtin_begin_ << '\n';
   for (auto &function_node : node->functions_) {
     function_node->Accept(this);
   }
