@@ -475,6 +475,7 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   // MemoryAllocator's 64-byte reserved area.  The two areas never overlap.
   uint32_t s_save = 8 * node->used_s_regs_.size();
   uint32_t total_stack = node->stack_size_ + s_save;
+  total_stack = (total_stack + 15) / 16 * 16;  // 16-byte alignment for RISC-V ABI
 
   PrintIA(os_, "addi", "sp", "sp", -static_cast<int32_t>(total_stack));
 
