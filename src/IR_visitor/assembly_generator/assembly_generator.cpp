@@ -501,7 +501,7 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRRootNode *node) {
-  os_ << builtin_begin_ << '\n';
+  std::cerr << builtin_begin_ << '\n';
   for (auto &function_node : node->functions_) {
     function_node->Accept(this);
   }

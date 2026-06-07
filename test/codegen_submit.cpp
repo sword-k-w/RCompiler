@@ -69,8 +69,6 @@ void TestCode(const std::string &code, std::ostream &out) {
 }
 
 int main() {
-  std::string builtin_code = LoadFromFile("src/IR/builtin.c");
-  std::cerr << builtin_code << '\n';
   std::string code = LoadInput();
   TestCode(code, std::cout);
   return 0;
