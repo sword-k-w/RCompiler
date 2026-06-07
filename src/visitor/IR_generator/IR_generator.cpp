@@ -724,8 +724,10 @@ void IRGenerator::Visit(StructNode *node) {
     node->IR_name_ = name_allocator_.Allocate("struct.." + node->identifier_->val_);
     auto IR_struct = std::make_shared<IRStructNode>(node->IR_name_);
     StructMap::Instance().Add("%" + node->IR_name_, IR_struct.get());
-    for (auto &struct_field : node->struct_fields_->struct_field_s_) {
-      IR_struct->AddMember(GetIRTypeNode(struct_field->type_->type_info_.get()));
+    if (node->struct_fields_ != nullptr) {
+      for (auto &struct_field : node->struct_fields_->struct_field_s_) {
+        IR_struct->AddMember(GetIRTypeNode(struct_field->type_->type_info_.get()));
+      }
     }
     root_->AddStruct(IR_struct);
 

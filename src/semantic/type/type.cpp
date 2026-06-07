@@ -238,16 +238,18 @@ std::pair<uint32_t, bool> GetTypeSize(Type *type) {
       auto struct_type = dynamic_cast<StructNode *>(type->source_);
       uint32_t size = 0;
       bool tag = true;
-      for (auto &field : struct_type->struct_fields_->struct_field_s_) {
-        auto [inner_size, inner_tag] = GetTypeSize(field->type_->type_info_.get());
-        if (!tag && inner_tag) {
-          inner_size = (inner_size + 7) / 8 * 8;
+      if (struct_type->struct_fields_ != nullptr) {
+        for (auto &field : struct_type->struct_fields_->struct_field_s_) {
+          auto [inner_size, inner_tag] = GetTypeSize(field->type_->type_info_.get());
+          if (!tag && inner_tag) {
+            inner_size = (inner_size + 7) / 8 * 8;
+          }
+          if (tag && !inner_tag) {
+            size = (size + 7) / 8 * 8;
+          }
+          tag &= inner_tag;
+          size += inner_size;
         }
-        if (tag && !inner_tag) {
-          size = (size + 7) / 8 * 8;
-        }
-        tag &= inner_tag;
-        size += inner_size;
       }
       return std::make_pair(size, tag);
     }
