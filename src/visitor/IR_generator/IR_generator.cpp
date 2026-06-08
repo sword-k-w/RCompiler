@@ -794,12 +794,12 @@ void IRGenerator::Dereference(const std::string &name1, const std::string &name2
 void IRGenerator::Return(Type *type, const std::string &name) {
   try {
     if (type->type_ == kArrayType || type->type_ == kStructType) {
-      // if (!rvo_target_.empty()) {
-      //   cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
-      // } else {
+      if (!rvo_target_.empty() && name == rvo_target_) {
+        cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
+      } else {
         Copy("%pass..pointer", name, type);
         cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
-      // }
+      }
       return;
     }
     if (type->type_ == kNeverType) {
