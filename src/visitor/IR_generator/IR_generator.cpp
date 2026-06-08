@@ -225,9 +225,14 @@ void IRGenerator::Visit(ExpressionNode *node) {
         }
       }
     } else if (node->type_ == kArrayExpr) {
-      node->IR_name_ = name_allocator_.Allocate("%tmp.");
       auto IR_type = GetIRTypeNode(node->type_info_.get());
-      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
+      if (!rvo_target_.empty() && in_return_) {
+        node->IR_name_ = rvo_target_;
+        in_return_ = false;
+      } else {
+        node->IR_name_ = name_allocator_.Allocate("%tmp.");
+        first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
+      }
       auto &[inside_type, size] = node->type_info_->array_type_info_;
       if (node->array_expr_->array_elements_->semicolon_) {
         auto son_expr = node->array_expr_->array_elements_->exprs_[0];
@@ -263,10 +268,15 @@ void IRGenerator::Visit(ExpressionNode *node) {
         }
       }
     } else if (node->type_ == kStructExpr) {
-      node->IR_name_ = name_allocator_.Allocate("%tmp.");
       auto IR_type = GetIRTypeNode(node->type_info_.get());
-      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
       auto struct_node = dynamic_cast<StructNode *>(node->type_info_->source_);
+      if (!rvo_target_.empty() && in_return_) {
+        node->IR_name_ = rvo_target_;
+        in_return_ = false;
+      } else {
+        node->IR_name_ = name_allocator_.Allocate("%tmp.");
+        first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
+      }
       uint32_t size = struct_node->field_.size();
       for (uint32_t i = 0; i < size; ++i) {
         auto son_expr = node->struct_expr_->struct_expr_fields_->struct_expr_field_s_[i]->expr_;
@@ -569,7 +579,9 @@ void IRGenerator::Visit(ExpressionNode *node) {
       cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(loop_end_block_.top()->GetID()));
     } else if (node->type_ == kReturnExpr) {
       if (node->expr1_ != nullptr) {
+        in_return_ = true;
         node->expr1_->Accept(this);
+        in_return_ = false;
         Return(node->expr1_->type_info_.get(), node->expr1_->IR_name_);
       } else {
         cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
@@ -648,6 +660,7 @@ void IRGenerator::Visit(FunctionNode *node) {
     }
     if (pass_result) {
       cur_function_->AddParameter(std::make_shared<IRParameterNode>(std::make_shared<IRArrayNode>("ptr"), "%pass..pointer"));
+      rvo_target_ = "%pass..pointer";
     }
 
     if (node->block_expr_->statements_ != nullptr) {
@@ -655,6 +668,7 @@ void IRGenerator::Visit(FunctionNode *node) {
     } else {
       cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
     }
+    rvo_target_.clear();
   } catch (Error &) { throw; }
 }
 
@@ -701,20 +715,29 @@ void IRGenerator::Visit(StatementNode *node) {
 
 void IRGenerator::Visit(StatementsNode *node) {
   try {
-    for (auto &statement : node->statement_s_) {
-      statement->Accept(this);
-    }
     if (node->expr_without_block_ != nullptr) {
+      for (auto &statement : node->statement_s_) {
+        statement->Accept(this);
+      }
+      in_return_ = true;
       node->expr_without_block_->expr_->Accept(this);
+      in_return_ = false;
       Return(node->expr_without_block_->type_info_.get(), node->expr_without_block_->expr_->IR_name_);
     } else {
+      for (auto it = node->statement_s_.begin(); std::next(it) != node->statement_s_.end(); ++it) {
+        (*it)->Accept(this);
+      }
       auto trailer_statement = *node->statement_s_.rbegin();
       if (trailer_statement->expr_statement_ != nullptr
         && trailer_statement->expr_statement_->semicolon_ == false) {
+        in_return_ = true;
+        trailer_statement->Accept(this);
+        in_return_ = false;
         Return(trailer_statement->expr_statement_->type_info_.get(), trailer_statement->expr_statement_->expr_with_block_->IR_name_);
-        } else {
-          cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
-        }
+      } else {
+        trailer_statement->Accept(this);
+        cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
+      }
     }
   } catch (Error &) { throw; }
 }
@@ -759,8 +782,12 @@ void IRGenerator::Dereference(const std::string &name1, const std::string &name2
 void IRGenerator::Return(Type *type, const std::string &name) {
   try {
     if (type->type_ == kArrayType || type->type_ == kStructType) {
-      Copy("%pass..pointer", name, type);
-      cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
+      // if (!rvo_target_.empty()) {
+      //   cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
+      // } else {
+        Copy("%pass..pointer", name, type);
+        cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
+      // }
       return;
     }
     if (type->type_ == kNeverType) {

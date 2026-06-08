@@ -81,6 +81,8 @@ private:
   std::shared_ptr<IRBlockNode> first_block_;
   NameAllocator name_allocator_;
   uint32_t cur_tag_cnt_{0};
+  std::string rvo_target_;
+  bool in_return_ = false;
   std::stack<std::shared_ptr<IRBlockNode>> loop_condition_block_;
   std::stack<std::shared_ptr<IRBlockNode>> loop_body_block_;
   std::stack<std::shared_ptr<IRBlockNode>> loop_end_block_;
