@@ -252,22 +252,46 @@ void IRGenerator::Visit(ExpressionNode *node) {
           }
           cur_block_->AddInstruction(IR_call);
         } else {
-          son_expr->Accept(this);
-          for (uint32_t i = 0; i < size; ++i) {
-            std::string tmp = name_allocator_.Allocate("%tmp.");
+          if (son_expr->type_ == kStructExpr || son_expr->type_ == kArrayExpr) {
+            std::string gep0 = name_allocator_.Allocate("%tmp.");
             cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-              tmp, IR_type, node->IR_name_, i));
-            Copy(tmp, son_expr->IR_name_, inside_type.get());
+              gep0, IR_type, node->IR_name_, 0));
+            let_target_ = gep0;
+            son_expr->Accept(this);
+            let_target_.clear();
+            for (uint32_t i = 1; i < size; ++i) {
+              std::string tmp = name_allocator_.Allocate("%tmp.");
+              cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
+                tmp, IR_type, node->IR_name_, i));
+              Copy(tmp, son_expr->IR_name_, inside_type.get());
+            }
+          } else {
+            son_expr->Accept(this);
+            for (uint32_t i = 0; i < size; ++i) {
+              std::string tmp = name_allocator_.Allocate("%tmp.");
+              cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
+                tmp, IR_type, node->IR_name_, i));
+              Copy(tmp, son_expr->IR_name_, inside_type.get());
+            }
           }
         }
       } else {
         for (uint32_t i = 0; i < size; ++i) {
           auto son_expr = node->array_expr_->array_elements_->exprs_[i];
-          son_expr->Accept(this);
-          std::string tmp = name_allocator_.Allocate("%tmp.");
-          cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-            tmp, IR_type, node->IR_name_, i));
-          Copy(tmp, son_expr->IR_name_, inside_type.get());
+          if (son_expr->type_ == kStructExpr || son_expr->type_ == kArrayExpr) {
+            std::string gep = name_allocator_.Allocate("%tmp.");
+            cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
+              gep, IR_type, node->IR_name_, i));
+            let_target_ = gep;
+            son_expr->Accept(this);
+            let_target_.clear();
+          } else {
+            son_expr->Accept(this);
+            std::string tmp = name_allocator_.Allocate("%tmp.");
+            cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
+              tmp, IR_type, node->IR_name_, i));
+            Copy(tmp, son_expr->IR_name_, inside_type.get());
+          }
         }
       }
     } else if (node->type_ == kStructExpr) {
@@ -287,11 +311,20 @@ void IRGenerator::Visit(ExpressionNode *node) {
       for (uint32_t i = 0; i < size; ++i) {
         auto son_expr = node->struct_expr_->struct_expr_fields_->struct_expr_field_s_[i]->expr_;
         auto inside_type = struct_node->struct_fields_->struct_field_s_[i]->type_->type_info_.get();
-        son_expr->Accept(this);
-        std::string tmp = name_allocator_.Allocate("%tmp.");
-        cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-          tmp, IR_type, node->IR_name_, i));
-        Copy(tmp, son_expr->IR_name_, inside_type);
+        if (son_expr->type_ == kStructExpr || son_expr->type_ == kArrayExpr) {
+          std::string gep = name_allocator_.Allocate("%tmp.");
+          cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
+            gep, IR_type, node->IR_name_, i));
+          let_target_ = gep;
+          son_expr->Accept(this);
+          let_target_.clear();
+        } else {
+          son_expr->Accept(this);
+          std::string tmp = name_allocator_.Allocate("%tmp.");
+          cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
+            tmp, IR_type, node->IR_name_, i));
+          Copy(tmp, son_expr->IR_name_, inside_type);
+        }
       }
     } else if (node->type_ == kBorrowExpr) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
