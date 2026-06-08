@@ -226,7 +226,10 @@ void IRGenerator::Visit(ExpressionNode *node) {
       }
     } else if (node->type_ == kArrayExpr) {
       auto IR_type = GetIRTypeNode(node->type_info_.get());
-      if (!rvo_target_.empty() && in_return_) {
+      if (!let_target_.empty()) {
+        node->IR_name_ = let_target_;
+        let_target_.clear();
+      } else if (!rvo_target_.empty() && in_return_) {
         node->IR_name_ = rvo_target_;
         in_return_ = false;
       } else {
@@ -270,7 +273,10 @@ void IRGenerator::Visit(ExpressionNode *node) {
     } else if (node->type_ == kStructExpr) {
       auto IR_type = GetIRTypeNode(node->type_info_.get());
       auto struct_node = dynamic_cast<StructNode *>(node->type_info_->source_);
-      if (!rvo_target_.empty() && in_return_) {
+      if (!let_target_.empty()) {
+        node->IR_name_ = let_target_;
+        let_target_.clear();
+      } else if (!rvo_target_.empty() && in_return_) {
         node->IR_name_ = rvo_target_;
         in_return_ = false;
       } else {
@@ -684,12 +690,18 @@ void IRGenerator::Visit(ItemNode *node) {
 
 void IRGenerator::Visit(LetStatementNode *node) {
   try {
-    node->expr_->Accept(this);
     auto IR_type = GetIRTypeNode(node->type_->type_info_.get());
     auto pattern = node->pattern_no_top_alt_->identifier_pattern_;
     pattern->IR_name_ = name_allocator_.Allocate("%" + pattern->identifier_->val_);
     first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(pattern->IR_name_, IR_type));
-    Copy(pattern->IR_name_, node->expr_->IR_name_, node->type_->type_info_.get());
+    if (node->expr_->type_ == kStructExpr || node->expr_->type_ == kArrayExpr) {
+      let_target_ = pattern->IR_name_;
+      node->expr_->Accept(this);
+      let_target_.clear();
+    } else {
+      node->expr_->Accept(this);
+      Copy(pattern->IR_name_, node->expr_->IR_name_, node->type_->type_info_.get());
+    }
   } catch (Error &) { throw; }
 }
 
