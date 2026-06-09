@@ -4,6 +4,7 @@
 #include <memory>
 #include <deque>
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <cstdint>
 #include "common/bit_set.h"
@@ -465,8 +466,8 @@ private:
   std::vector<std::shared_ptr<IRBlockNode>> blocks_;
 
   uint32_t stack_size_ = 0;
-  std::map<std::string, IRNode *> variables_;
-  std::map<std::string, std::pair<StorageType, uint32_t>> variable_storage_;
+  std::unordered_map<std::string, IRNode *> variables_;
+  std::unordered_map<std::string, std::pair<StorageType, uint32_t>> variable_storage_;
 
   std::set<uint32_t> used_s_regs_;
   uint32_t a_reg_used_cnt_;

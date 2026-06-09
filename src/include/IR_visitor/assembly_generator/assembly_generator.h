@@ -39,8 +39,8 @@ private:
   uint32_t current_stack_;
   std::string current_func_name_;
   uint32_t current_a_reg_used_;
-  std::map<std::string, IRNode *> *current_variables_;
-  std::map<std::string, std::pair<StorageType, uint32_t>> *variable_storage_;
+  std::unordered_map<std::string, IRNode *> *current_variables_;
+  std::unordered_map<std::string, std::pair<StorageType, uint32_t>> *variable_storage_;
 
   uint32_t branch_cnt_{0};
 

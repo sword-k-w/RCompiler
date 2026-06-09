@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include <map>
 #include <memory>
 #include <stack>
@@ -10,8 +11,8 @@
 class CFG {
 private:
   struct VariableMap {
-    std::map<std::string, uint32_t> id_;
-    std::map<std::string, uint32_t> allocated_id_;
+    std::unordered_map<std::string, uint32_t> id_;
+    std::unordered_map<std::string, uint32_t> allocated_id_;
     std::vector<std::pair<bool, std::string>> name_; // false means allocated
     std::vector<std::vector<IRInstructionNode *>> def_;
     std::vector<std::vector<IRInstructionNode *>> use_;
@@ -45,8 +46,8 @@ private:
 
   std::set<uint32_t> visited_block;
   std::stack<std::string> current_val_;
-  std::map<std::string, std::string> replace_map_;
-  std::map<std::string, std::string> phi_to_var_;  // phi result -> alloca name
+  std::unordered_map<std::string, std::string> replace_map_;
+  std::unordered_map<std::string, std::string> phi_to_var_;  // phi result -> alloca name
 
   void ReplaceValue(std::string &);
   void DFS(const std::string &, uint32_t, uint32_t);

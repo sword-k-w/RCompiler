@@ -29,5 +29,5 @@ public:
   void Visit(IRFunctionNode *) override;
   void Visit(IRRootNode *) override;
 private:
-  std::map<std::string, IRNode *> *current_variables_;
+  std::unordered_map<std::string, IRNode *> *current_variables_;
 };
