@@ -15,6 +15,7 @@ private:
     std::vector<std::pair<bool, std::string>> name_; // false means allocated
     std::vector<std::vector<IRInstructionNode *>> def_;
     std::vector<std::vector<IRInstructionNode *>> use_;
+    std::vector<std::set<uint32_t>> def_blocks_;
     void Clear();
     uint32_t Query(const std::string &);
     uint32_t QueryAllocated(const std::string &);
@@ -44,7 +45,7 @@ private:
   std::map<std::string, std::string> replace_map_;
 
   void ReplaceValue(std::string &);
-  void DFS(const std::string &, uint32_t);
+  void DFS(const std::string &, uint32_t, uint32_t);
 public:
   CFG() = default;
   void Init(uint32_t);
@@ -54,6 +55,7 @@ public:
   std::pair<bool, std::string> GetName(uint32_t);
   void AddEdge(uint32_t, uint32_t);
   void AddDef(uint32_t, IRInstructionNode *);
+  void AddDefBlock(uint32_t, uint32_t);
   void AddUse(uint32_t, IRInstructionNode *);
   void CalcInOut();
 
@@ -61,7 +63,7 @@ public:
   void CalcFrontier();
   void AddPhi(uint32_t, std::shared_ptr<IRArrayNode>);
   void PhiReplace(const std::string &);
-  void PhiDFS(const std::string &);
+  void PhiDFS(const std::string &, uint32_t);
   void PhiRewriteAll();
   void EliminateCriticalEdge(IRFunctionNode *);
 };

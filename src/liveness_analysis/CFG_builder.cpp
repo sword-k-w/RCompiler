@@ -21,6 +21,9 @@ void CFGBuilder::AddDef(IRInstructionNode *node, const std::string &name, bool a
   auto id = allocated ? cfg_->QueryAllocated(name) : cfg_->Query(name);
   node->def_.emplace(id);
   cfg_->AddDef(id, node);
+  if (allocated) {
+    cfg_->AddDefBlock(id, cur_block_);
+  }
 }
 
 void CFGBuilder::AddUse(IRInstructionNode *node, const std::string &name, bool allocated) {

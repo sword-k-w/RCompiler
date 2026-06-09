@@ -57,7 +57,7 @@ void Mem2reg(std::shared_ptr<IRRootNode> root) {
       }
 
       cfg->AddPhi(id_allocated, alloca->type_);
-      cfg->PhiDFS(name);
+      cfg->PhiDFS(name, id_allocated);
 
       alloca->removed_ = true;
     }

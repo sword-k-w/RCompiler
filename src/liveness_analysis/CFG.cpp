@@ -10,6 +10,9 @@ void CFG::VariableMap::Clear() {
   id_.clear();
   allocated_id_.clear();
   name_.clear();
+  def_.clear();
+  use_.clear();
+  def_blocks_.clear();
 }
 
 uint32_t CFG::VariableMap::Query(const std::string &name) {
@@ -22,6 +25,7 @@ uint32_t CFG::VariableMap::Query(const std::string &name) {
   name_.emplace_back(true, name);
   def_.emplace_back();
   use_.emplace_back();
+  def_blocks_.emplace_back();
   return new_id;
 }
 
@@ -35,6 +39,7 @@ uint32_t CFG::VariableMap::QueryAllocated(const std::string &name) {
   name_.emplace_back(false, name);
   def_.emplace_back();
   use_.emplace_back();
+  def_blocks_.emplace_back();
   return new_id;
 }
 
@@ -75,6 +80,10 @@ void CFG::AddEdge(uint32_t u, uint32_t v) {
 
 void CFG::AddDef(uint32_t id, IRInstructionNode *node) {
   variable_map_.def_[id].emplace_back(node);
+}
+
+void CFG::AddDefBlock(uint32_t id, uint32_t block_id) {
+  variable_map_.def_blocks_[id].emplace(block_id);
 }
 
 void CFG::AddUse(uint32_t id, IRInstructionNode *node) {
@@ -223,12 +232,10 @@ void CFG::CalcFrontier() {
 }
 
 void CFG::AddPhi(uint32_t id_allocated, std::shared_ptr<IRArrayNode> type) {
-  auto size = node_pool_.size();
   visited_block.clear();
   std::queue<uint32_t> q;
   auto add = [&] (uint32_t u) {
     for (auto &v : frontier_[u]) {
-      // std::cerr << u << " " << v << '\n';
       if (visited_block.find(v) == visited_block.end()
         && node_pool_[v]->origin_->in_.Test(id_allocated)) {
         q.emplace(v);
@@ -236,11 +243,9 @@ void CFG::AddPhi(uint32_t id_allocated, std::shared_ptr<IRArrayNode> type) {
       }
     }
   };
-  for (uint32_t i = 0; i < size; ++i) {
-    auto u = node_pool_[i];
-    if (u->origin_->def_.find(id_allocated) != u->origin_->def_.end()) {
-      add(u->id_);
-    }
+  auto &def_blocks = variable_map_.def_blocks_[id_allocated];
+  for (auto block_id : def_blocks) {
+    add(block_id);
   }
   while (!q.empty()) {
     auto u = q.front();
@@ -263,49 +268,55 @@ void CFG::ReplaceValue(std::string &name) {
   }
 }
 
-void CFG::DFS(const std::string &name, uint32_t u) {
+void CFG::DFS(const std::string &name, uint32_t u, uint32_t id_allocated) {
   auto block = node_pool_[u]->origin_;
   uint32_t push_cnt = 0;
   if (visited_block.find(u) != visited_block.end()) {
     current_val_.emplace(block->phi_.back()->result_);
     ++push_cnt;
   }
-  for (auto &instruction : block->instructions_) {
-    auto ins = instruction.get();
-    auto load = dynamic_cast<IRLoadInstructionNode *>(ins);
-    if (load != nullptr) {
-      if (load->pointer_ == name) {
-        load->removed_ = true;
-        replace_map_[load->result_] = current_val_.top();
+
+  bool touches = block->def_.find(id_allocated) != block->def_.end()
+              || block->use_.find(id_allocated) != block->use_.end();
+  if (touches) {
+    for (auto &instruction : block->instructions_) {
+      auto ins = instruction.get();
+      auto load = dynamic_cast<IRLoadInstructionNode *>(ins);
+      if (load != nullptr) {
+        if (load->pointer_ == name) {
+          load->removed_ = true;
+          replace_map_[load->result_] = current_val_.top();
+        }
+        continue;
       }
-      continue;
-    }
-    auto store_v = dynamic_cast<IRStoreVariableInstructionNode *>(ins);
-    if (store_v != nullptr) {
-      ReplaceValue(store_v->value_);
-      if (store_v->pointer_ == name) {
-        store_v->removed_ = true;
-        current_val_.push(store_v->value_);
-        ++push_cnt;
+      auto store_v = dynamic_cast<IRStoreVariableInstructionNode *>(ins);
+      if (store_v != nullptr) {
+        ReplaceValue(store_v->value_);
+        if (store_v->pointer_ == name) {
+          store_v->removed_ = true;
+          current_val_.push(store_v->value_);
+          ++push_cnt;
+        }
+        continue;
       }
-      continue;
-    }
-    auto store_c = dynamic_cast<IRStoreConstInstructionNode *>(ins);
-    if (store_c != nullptr) {
-      if (store_c->pointer_ == name) {
-        store_c->removed_ = true;
-        current_val_.push(std::to_string(store_c->value_));
-        ++push_cnt;
+      auto store_c = dynamic_cast<IRStoreConstInstructionNode *>(ins);
+      if (store_c != nullptr) {
+        if (store_c->pointer_ == name) {
+          store_c->removed_ = true;
+          current_val_.push(std::to_string(store_c->value_));
+          ++push_cnt;
+        }
       }
     }
   }
+
   for (auto &v : node_pool_[u]->succs_) {
     if (visited_block.find(v->id_) != visited_block.end()) {
       v->origin_->phi_.back()->val_.emplace_back(current_val_.top(), u);
     }
   }
   for (auto &v : dom_child_[u]) {
-    DFS(name, v);
+    DFS(name, v, id_allocated);
   }
   while (push_cnt--) {
     current_val_.pop();
@@ -317,14 +328,14 @@ void CFG::PhiReplace(const std::string &name) {
     current_val_.pop();
   }
   replace_map_.clear();
-  DFS(name, 0);
+  DFS(name, 0, 0);
   PhiRewriteAll();
 }
-void CFG::PhiDFS(const std::string &name) {
+void CFG::PhiDFS(const std::string &name, uint32_t id_allocated) {
   while (!current_val_.empty()) {
     current_val_.pop();
   }
-  DFS(name, 0);
+  DFS(name, 0, id_allocated);
 }
 
 void CFG::PhiRewriteAll() {
