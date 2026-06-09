@@ -1,4 +1,5 @@
 #include "liveness_analysis/CFG_builder.h"
+#include <algorithm>
 #include <iostream>
 
 CFGBuilder::CFGBuilder(std::shared_ptr<CFG> cfg) : cfg_(cfg) {}
@@ -6,12 +7,14 @@ CFGBuilder::CFGBuilder(std::shared_ptr<CFG> cfg) : cfg_(cfg) {}
 void CFGBuilder::Merge(IRInstructionNode *node) {
   if (skip_def_use_) return;
   for (auto &x : node->use_) {
-    if (cur_def_.find(x) == cur_def_.end()) {
-      cur_use_.emplace(x);
+    if (!cur_def_bits_.Test(x)) {
+      cur_use_.push_back(x);
     }
   }
   for (auto &x : node->def_) {
-    cur_def_.emplace(x);
+    cur_def_.push_back(x);
+    cur_def_bits_.Grow(x + 1);
+    cur_def_bits_.Set(x);
   }
 }
 
@@ -150,6 +153,7 @@ void CFGBuilder::Visit(IRBlockNode *node) {
   cur_block_ = node->id_;
   cur_def_.clear();
   cur_use_.clear();
+  cur_def_bits_.Clear();
 
   for (auto &phi : node->phi_) {
     phi->Accept(this);
@@ -161,8 +165,13 @@ void CFGBuilder::Visit(IRBlockNode *node) {
     instruction->Accept(this);
   }
 
-  node->def_ = cur_def_;
-  node->use_ = cur_use_;
+  std::sort(cur_def_.begin(), cur_def_.end());
+  cur_def_.erase(std::unique(cur_def_.begin(), cur_def_.end()), cur_def_.end());
+  node->def_ = std::set<uint32_t>(cur_def_.begin(), cur_def_.end());
+
+  std::sort(cur_use_.begin(), cur_use_.end());
+  cur_use_.erase(std::unique(cur_use_.begin(), cur_use_.end()), cur_use_.end());
+  node->use_ = std::set<uint32_t>(cur_use_.begin(), cur_use_.end());
 }
 
 void CFGBuilder::Visit(IRParameterNode *node) {

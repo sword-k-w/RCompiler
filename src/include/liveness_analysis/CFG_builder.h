@@ -1,7 +1,9 @@
 #pragma once
 
 #include <set>
+#include <vector>
 #include "CFG.h"
+#include "common/bit_set.h"
 #include "IR_visitor/base/IR_visitor_base.h"
 
 class CFGBuilder : public IRVisitorBase {
@@ -38,8 +40,9 @@ private:
   bool skip_calc_in_out_{false};
   bool skip_def_use_{false};
   uint32_t cur_block_{0};
-  std::set<uint32_t> cur_def_;
-  std::set<uint32_t> cur_use_;
+  std::vector<uint32_t> cur_def_;
+  std::vector<uint32_t> cur_use_;
+  BitSet cur_def_bits_;
   void Merge(IRInstructionNode *);
   void AddDef(IRInstructionNode *, const std::string &, bool);
   void AddUse(IRInstructionNode *, const std::string &, bool);

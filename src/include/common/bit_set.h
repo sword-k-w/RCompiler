@@ -15,6 +15,14 @@ public:
     bits_.resize((static_cast<uint64_t>(n) + 63) >> 6, 0);
   }
 
+  // Grow to hold at least n bits without clearing existing bits
+  void Grow(uint32_t n) {
+    uint32_t need = (static_cast<uint64_t>(n) + 63) >> 6;
+    if (need > bits_.size()) {
+      bits_.resize(need, 0);
+    }
+  }
+
   void Set(uint32_t idx) {
     bits_[idx >> 6] |= (1ULL << (idx & 63));
   }
