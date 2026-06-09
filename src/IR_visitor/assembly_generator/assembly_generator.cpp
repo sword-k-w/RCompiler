@@ -200,13 +200,13 @@ void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
   os_ << "\t# Branch Instruction\n";
   auto rs = VariableToReg(node->condition_, 0, "i1");
 
-  std::string tmp_label = ".Lbranch..tmp." + std::to_string(branch_cnt_);
-  os_ << "\tbeqz\t" << rs << ", " << tmp_label << '\n';
-  os_ << "\tj " << ".L" << current_func_name_ << "_" << node->true_branch_ << '\n';
-  os_ << tmp_label << ":\n";
-  os_ << "\tj " << ".L" << current_func_name_ << "_" << node->false_branch_ << '\n';
-
-  ++branch_cnt_;
+  auto label = [&](uint32_t id) {
+    return ".L" + current_func_name_ + "_" + std::to_string(id);
+  };
+  // bnez may be out of range; the assembler/linker will relax it to
+  // beqz+j if needed.  The trailing j handles the false-target case.
+  os_ << "\tbnez\t" << rs << ", " << label(node->true_branch_) << '\n';
+  os_ << "\tj " << label(node->false_branch_) << '\n';
 }
 
 void AssemblyGenerator::Visit(IRJumpInstructionNode *node) {
