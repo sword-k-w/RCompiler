@@ -46,12 +46,12 @@ Source (.rx) → Lexer → Parser → Semantic (3 passes) → IR Generator → [
 ### Source layout (under `src/`)
 
 - **`lexer/`** — Tokenizer: tries each token function at each position, picks the longest match. Single-char, multi-char, literal, and whitespace/comment tokens are split across separate files.
-- **`parser/`** — Recursive-descent parser. Expression parsing uses Pratt parsing for operator precedence. AST nodes each live in `parser/node/`. Template method `Parser::Run<T>()` instantiates parsing for a specific AST node type.
+- **`parser/`** — Recursive-descent parser. Expression parsing uses Pratt parsing for operator precedence. AST nodes each live in `parser/node/`. Template method `Parser::Run<T>()` instantiates parsing for a specific AST node type. In `ExpressionStatementNode`, `ExpressionWithBlockNode` is tried first (before `ExpressionWithoutBlockNode`) to avoid exponential backtracking on deeply nested `if`/`else` chains.
 - **`semantic/`** — Scope tree (`scope/`) with separate type/value namespaces. Type system (`type/`) with `ConstValue` for compile-time evaluation. Builtin types/functions defined in `builtin/`.
 - **`visitor/`** — AST visitors via `VisitorBase` (~50 Visit methods). Three checker passes: first (scope building, name collection, impl binding), second (type inference, const evaluation), third (type checking). Also `IR_generator/` (AST→IR) and `printer/` (AST pretty-printer).
 - **`IR/`** — Three-address-code IR: functions contain blocks, blocks contain instructions. Values are ptr-based (each variable/expression gets a named pointer). Key instruction types: Arithmetic, Branch, Jump, Return, Allocate, Load, Store, GEP, Compare, Call, Phi, Select.
 - **`IR_visitor/`** — IR passes via `IRVisitorBase`: `preprocessor/`, `memory_allocator/` (stack frame layout), `assembly_generator/` (IR→RISC-V assembly, the final backend).
-- **`liveness_analysis/`** — CFG construction, def-use sets, liveness in/out, dominator tree (for SSA construction).
+- **`liveness_analysis/`** — CFG construction, def-use sets, liveness in/out, dominator tree (for SSA construction). `CalcInOut()` uses a worklist algorithm: when a block's IN set changes, only its predecessors are re-queued (since `OUT[pred] = ∪ IN[succ]`). This avoids full fixed-point scans over all blocks, reducing O(n²) to near-linear for deeply nested control flow.
 - **`mem2reg/`** — Memory-to-register promotion (alloca→SSA registers with phi insertion) and critical edge elimination.
 - **`reg_alloc/`** — Register allocation, currently stub/WIP (interference graph defined).
 - **`codegen/`** — RISC-V assembly emission helpers, register name table (32 regs), phi topological ordering.
@@ -72,6 +72,11 @@ All headers live under `src/include/`, mirroring the source tree structure.
 - **Pratt parsing**: Expression parsing uses Pratt's algorithm for operator precedence.
 - **Template-based parser dispatch**: `Parser::Run<T>()` templates generate parsing code for each AST node type.
 - **Ptr-based IR values**: Each variable/expression stores its value via a named pointer; left-values use their own pointer, right-values use a temporary pointer.
+- **RVO and direct-write optimization**: The IR generator avoids temporary allocations and `memcpy` for struct/array literals via three cooperating fields:
+  - `rvo_target_` — set to `%pass..pointer` when the current function has a struct/array return type (the caller passes a return buffer pointer). In `Return()`, if the expression's IR name already equals `rvo_target_`, the `memcpy` is skipped entirely.
+  - `in_return_` — flag set while visiting a return expression. When both `rvo_target_` and `in_return_` are set, `StructExpressionNode`/`ArrayExpressionNode` use the pass pointer as their base instead of allocating locally.
+  - `let_target_` — set to the pattern's IR name when a `let` statement's RHS is a struct/array literal. The literal writes directly into the let variable, eliminating the temp+memcpy.
+  - **Nested propagation**: When a struct/array field is itself a struct/array literal, the parent pre-computes a GEP into the target and sets it as `let_target_` for the child, propagating the optimization recursively through nested literals.
 
 ### RISC-V temp register conventions (codegen)
 
@@ -109,6 +114,7 @@ Low addresses (sp):
 ```
 
 - `s_save = 8 * |used_s_regs|`, `total_stack = stack_size_ + s_save`
+- `total_stack` is rounded up to the nearest multiple of 16 for RISC-V ABI compliance (sp must be 16-byte aligned at function entry/call sites).
 - s-regs at `sp + 0, sp + 8, ...` (bottom of frame)
 - a-regs at `current_stack_ - 56 - 8*i`, ra at `current_stack_ - 120`, t1 at `current_stack_ - 8` (top of frame)
 - Variable access: `sp + current_stack_ - address`; extending sp and `current_stack_` by `s_save` shifts variable area up by `s_save`, leaving the bottom free for s-regs.

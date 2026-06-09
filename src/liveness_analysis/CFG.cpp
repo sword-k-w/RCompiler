@@ -82,54 +82,64 @@ void CFG::AddUse(uint32_t id, IRInstructionNode *node) {
 
 void CFG::CalcInOut() {
   auto size = node_pool_.size();
-  std::vector<uint32_t> bfs_order;
-  std::vector<uint32_t> vis(size, 0);
-  uint32_t pos = 0;
+  if (size == 0) {
+    return;
+  }
+
+  // Clear previous in/out sets
   for (uint32_t i = 0; i < size; ++i) {
-    if (node_pool_[i]->succs_.empty()) {
-      vis[i] = 1;
-      bfs_order.emplace_back(i);
-    }
+    node_pool_[i]->origin_->in_.clear();
+    node_pool_[i]->origin_->out_.clear();
   }
-  while (pos < size) {
-    uint32_t u = bfs_order[pos];
-    ++pos;
-    for (auto &v : node_pool_[u]->preds_) {
-      if (!vis[v->id_]) {
-        vis[v->id_] = true;
-        bfs_order.emplace_back(v->id_);
+
+  // Worklist algorithm: when a block's IN changes, its predecessors need
+  // to be recomputed (because OUT[pred] = U IN[succ]).
+  std::queue<uint32_t> worklist;
+  std::vector<bool> in_worklist(size, false);
+
+  // Initially all blocks are in the worklist
+  for (uint32_t i = 0; i < size; ++i) {
+    worklist.push(i);
+    in_worklist[i] = true;
+  }
+
+  while (!worklist.empty()) {
+    uint32_t u = worklist.front();
+    worklist.pop();
+    in_worklist[u] = false;
+
+    auto block = node_pool_[u]->origin_;
+
+    // Compute new out: union of IN sets of all successors
+    std::set<uint32_t> new_out;
+    for (auto &v : node_pool_[u]->succs_) {
+      for (auto &x : v->origin_->in_) {
+        new_out.emplace(x);
       }
     }
-  }
-  bool flag = true;
-  while (flag) {
-    flag = false;
-    for (uint32_t i = 0; i < size; ++i) {
-      auto u = bfs_order[i];
-      auto old_out = node_pool_[u]->origin_->out_.size();
-      auto old_in = node_pool_[u]->origin_->in_.size();
-      for (auto &v : node_pool_[u]->succs_) {
-        for (auto &x : v->origin_->in_) {
-          node_pool_[u]->origin_->out_.emplace(x);
+
+    // Compute new in: use U (out - def)
+    std::set<uint32_t> new_in;
+    for (auto &x : new_out) {
+      if (block->def_.find(x) == block->def_.end()) {
+        new_in.emplace(x);
+      }
+    }
+    for (auto &x : block->use_) {
+      new_in.emplace(x);
+    }
+
+    // Check if anything changed
+    if (new_out != block->out_ || new_in != block->in_) {
+      block->out_ = std::move(new_out);
+      block->in_ = std::move(new_in);
+
+      // IN changed => predecessors need recomputation
+      for (auto &pred : node_pool_[u]->preds_) {
+        if (!in_worklist[pred->id_]) {
+          worklist.push(pred->id_);
+          in_worklist[pred->id_] = true;
         }
-      }
-      for (auto &x : node_pool_[u]->origin_->out_) {
-        node_pool_[u]->origin_->in_.emplace(x);
-      }
-      for (auto &x : node_pool_[u]->origin_->def_) {
-        auto it = node_pool_[u]->origin_->in_.find(x);
-        if (it != node_pool_[u]->origin_->in_.end()) {
-          node_pool_[u]->origin_->in_.erase(it);
-        }
-      }
-      for (auto &x : node_pool_[u]->origin_->use_) {
-        node_pool_[u]->origin_->in_.emplace(x);
-      }
-      if (old_out != node_pool_[u]->origin_->out_.size()) {
-        flag = true;
-      }
-      if (old_in != node_pool_[u]->origin_->in_.size()) {
-        flag = true;
       }
     }
   }
