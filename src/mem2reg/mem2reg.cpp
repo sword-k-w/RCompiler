@@ -40,6 +40,7 @@ void Mem2reg(std::shared_ptr<IRRootNode> root) {
       }
     }
 
+    std::set<std::string> promoted_names;
     for (auto &instruction : function_node->blocks_[0]->instructions_) {
       auto ins = instruction.get();
       auto alloca = dynamic_cast<IRAllocateInstructionNode *>(ins);
@@ -58,11 +59,11 @@ void Mem2reg(std::shared_ptr<IRRootNode> root) {
       }
 
       cfg->AddPhi(id_allocated, alloca->type_);
-      cfg->PhiDFS(name, id_allocated);
-
+      promoted_names.insert(name);
       alloca->removed_ = true;
     }
 
+    cfg->BatchedPhiDFS(promoted_names);
     cfg->PhiRewriteAll();
   }
 }

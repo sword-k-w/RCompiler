@@ -46,9 +46,12 @@ private:
   std::set<uint32_t> visited_block;
   std::stack<std::string> current_val_;
   std::map<std::string, std::string> replace_map_;
+  std::map<std::string, std::string> phi_to_var_;  // phi result -> alloca name
 
   void ReplaceValue(std::string &);
   void DFS(const std::string &, uint32_t, uint32_t);
+  void BatchedDFSRecursive(uint32_t, std::map<std::string, std::stack<std::string>> &,
+                           const std::set<std::string> &);
 public:
   CFG() = default;
   void Init(uint32_t);
@@ -68,6 +71,7 @@ public:
   void BuildInsIndex(IRFunctionNode *);
   void PhiReplace(const std::string &);
   void PhiDFS(const std::string &, uint32_t);
+  void BatchedPhiDFS(const std::set<std::string> &);
   void PhiRewriteAll();
   void EliminateCriticalEdge(IRFunctionNode *);
 };

@@ -233,6 +233,7 @@ void CFG::CalcFrontier() {
 
 void CFG::AddPhi(uint32_t id_allocated, std::shared_ptr<IRArrayNode> type) {
   visited_block.clear();
+  auto var_name = variable_map_.GetName(id_allocated).second;
   std::queue<uint32_t> q;
   auto add = [&] (uint32_t u) {
     for (auto &v : frontier_[u]) {
@@ -250,7 +251,9 @@ void CFG::AddPhi(uint32_t id_allocated, std::shared_ptr<IRArrayNode> type) {
   while (!q.empty()) {
     auto u = q.front();
     q.pop();
-    node_pool_[u]->origin_->AddPhi(std::make_shared<IRPhiInstructionNode>(name_allocator_.Allocate("%phi."), type));
+    auto phi = std::make_shared<IRPhiInstructionNode>(name_allocator_.Allocate("%phi."), type);
+    node_pool_[u]->origin_->AddPhi(phi);
+    phi_to_var_[phi->result_] = var_name;
     add(u);
   }
 }
@@ -342,6 +345,80 @@ void CFG::PhiDFS(const std::string &name, uint32_t id_allocated) {
     current_val_.pop();
   }
   DFS(name, 0, id_allocated);
+}
+
+void CFG::BatchedDFSRecursive(uint32_t u,
+    std::map<std::string, std::stack<std::string>> &stacks,
+    const std::set<std::string> &promoted) {
+  auto block = node_pool_[u]->origin_;
+  std::map<std::string, uint32_t> local_pushes;
+
+  auto do_push = [&](const std::string &var, const std::string &val) {
+    stacks[var].push(val);
+    ++local_pushes[var];
+  };
+
+  // Process phi nodes
+  for (auto &phi : block->phi_) {
+    auto it = phi_to_var_.find(phi->result_);
+    if (it != phi_to_var_.end()) {
+      do_push(it->second, phi->result_);
+    }
+  }
+
+  // Process instructions via index — only for promoted variables
+  auto &index = block_ins_index_[u];
+  for (auto &[pointer_name, ins_list] : index) {
+    if (!promoted.count(pointer_name)) continue;
+    for (auto ins : ins_list) {
+      if (auto *load = dynamic_cast<IRLoadInstructionNode *>(ins)) {
+        auto &stack = stacks[pointer_name];
+        if (!stack.empty()) {
+          load->removed_ = true;
+          replace_map_[load->result_] = stack.top();
+        }
+      } else if (auto *store_v = dynamic_cast<IRStoreVariableInstructionNode *>(ins)) {
+        ReplaceValue(store_v->value_);
+        store_v->removed_ = true;
+        do_push(pointer_name, store_v->value_);
+      } else if (auto *store_c = dynamic_cast<IRStoreConstInstructionNode *>(ins)) {
+        store_c->removed_ = true;
+        do_push(pointer_name, std::to_string(store_c->value_));
+      }
+    }
+  }
+
+  // Add current values to successor phis
+  for (auto &v : node_pool_[u]->succs_) {
+    for (auto &phi : v->origin_->phi_) {
+      auto var_it = phi_to_var_.find(phi->result_);
+      if (var_it != phi_to_var_.end()) {
+        auto &stack = stacks[var_it->second];
+        if (!stack.empty()) {
+          phi->val_.emplace_back(stack.top(), u);
+        }
+      }
+    }
+  }
+
+  // Recurse into children
+  for (auto &v : dom_child_[u]) {
+    BatchedDFSRecursive(v, stacks, promoted);
+  }
+
+  // Pop locally pushed values
+  for (auto &[var, cnt] : local_pushes) {
+    auto &stack = stacks[var];
+    while (cnt--) {
+      stack.pop();
+    }
+  }
+}
+
+void CFG::BatchedPhiDFS(const std::set<std::string> &promoted) {
+  replace_map_.clear();
+  std::map<std::string, std::stack<std::string>> stacks;
+  BatchedDFSRecursive(0, stacks, promoted);
 }
 
 void CFG::PhiRewriteAll() {
