@@ -4,6 +4,7 @@
 CFGBuilder::CFGBuilder(std::shared_ptr<CFG> cfg) : cfg_(cfg) {}
 
 void CFGBuilder::Merge(IRInstructionNode *node) {
+  if (skip_def_use_) return;
   for (auto &x : node->use_) {
     if (cur_def_.find(x) == cur_def_.end()) {
       cur_use_.emplace(x);
@@ -15,9 +16,8 @@ void CFGBuilder::Merge(IRInstructionNode *node) {
 }
 
 void CFGBuilder::AddDef(IRInstructionNode *node, const std::string &name, bool allocated) {
-  if (name[0] != '%') {
-    return;
-  }
+  if (name[0] != '%') return;
+  if (skip_def_use_) return;
   auto id = allocated ? cfg_->QueryAllocated(name) : cfg_->Query(name);
   node->def_.emplace(id);
   cfg_->AddDef(id, node);
@@ -27,9 +27,8 @@ void CFGBuilder::AddDef(IRInstructionNode *node, const std::string &name, bool a
 }
 
 void CFGBuilder::AddUse(IRInstructionNode *node, const std::string &name, bool allocated) {
-  if (name[0] != '%') {
-    return;
-  }
+  if (name[0] != '%') return;
+  if (skip_def_use_) return;
   auto id = allocated ? cfg_->QueryAllocated(name) : cfg_->Query(name);
   node->use_.emplace(id);
   cfg_->AddUse(id, node);
