@@ -14,6 +14,7 @@ void Mem2reg(std::shared_ptr<IRRootNode> root) {
     function_node->Accept(cfg_builder.get());
     cfg->CalcDominatorTree();
     cfg->CalcFrontier();
+    cfg->BuildInsIndex(function_node.get());
 
     std::set<std::string> escaped_vars;
     std::set<uint32_t> direct_use_ids;

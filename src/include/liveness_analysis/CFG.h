@@ -38,6 +38,9 @@ private:
   std::vector<std::vector<uint32_t>> dom_child_;
   std::vector<std::set<uint32_t>> frontier_;
 
+  // Per-block index: pointer_name -> instructions that reference it (in block order)
+  std::vector<std::map<std::string, std::vector<IRInstructionNode *>>> block_ins_index_;
+
   NameAllocator name_allocator_;
 
   std::set<uint32_t> visited_block;
@@ -62,6 +65,7 @@ public:
   void CalcDominatorTree();
   void CalcFrontier();
   void AddPhi(uint32_t, std::shared_ptr<IRArrayNode>);
+  void BuildInsIndex(IRFunctionNode *);
   void PhiReplace(const std::string &);
   void PhiDFS(const std::string &, uint32_t);
   void PhiRewriteAll();
