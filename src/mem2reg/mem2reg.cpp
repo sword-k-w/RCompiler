@@ -15,7 +15,6 @@ void Mem2reg(std::shared_ptr<IRRootNode> root) {
     cfg->CalcDominatorTree();
     cfg->CalcFrontier();
 
-    // Pre-compute which allocas are not promotable in a single scan.
     std::set<std::string> escaped_vars;
     std::set<uint32_t> direct_use_ids;
 
@@ -58,9 +57,11 @@ void Mem2reg(std::shared_ptr<IRRootNode> root) {
       }
 
       cfg->AddPhi(id_allocated, alloca->type_);
-      cfg->PhiReplace(name);
+      cfg->PhiDFS(name);
 
       alloca->removed_ = true;
     }
+
+    cfg->PhiRewriteAll();
   }
 }

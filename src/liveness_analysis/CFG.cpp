@@ -251,8 +251,15 @@ void CFG::AddPhi(uint32_t id_allocated, std::shared_ptr<IRArrayNode> type) {
 }
 
 void CFG::ReplaceValue(std::string &name) {
-  if (replace_map_.find(name) != replace_map_.end()) {
-    name = replace_map_[name];
+  auto it = replace_map_.find(name);
+  if (it == replace_map_.end()) return;
+  // Walk chained replacements until reaching a key not in the map.
+  // Chains form because a DFS may push an unresolved load result from
+  // a variable processed later; transitive closure fixes this.
+  while (true) {
+    name = it->second;
+    it = replace_map_.find(name);
+    if (it == replace_map_.end()) break;
   }
 }
 
