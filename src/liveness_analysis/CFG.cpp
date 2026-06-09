@@ -2,6 +2,7 @@
 #include "liveness_analysis/dominator_tree.h"
 
 #include <cassert>
+#include <functional>
 #include <queue>
 #include <iostream>
 
@@ -92,30 +93,35 @@ void CFG::CalcInOut() {
     node_pool_[i]->origin_->out_.clear();
   }
 
-  // Worklist algorithm: when a block's IN changes, its predecessors need
-  // to be recomputed (because OUT[pred] = U IN[succ]).
+  // Compute postorder via DFS from entry block. For backward dataflow
+  // (liveness), processing in postorder means successors are processed
+  // before predecessors — OUT[pred] = U IN[succ] uses up-to-date IN
+  // sets. One postorder pass converges for DAGs; the worklist handles
+  // residual changes from back edges in cyclic graphs.
+  std::vector<uint32_t> postorder;
+  postorder.reserve(size);
+  std::vector<bool> visited(size, false);
+  std::function<void(uint32_t)> dfs = [&](uint32_t u) {
+    visited[u] = true;
+    for (auto &v : node_pool_[u]->succs_) {
+      if (!visited[v->id_]) {
+        dfs(v->id_);
+      }
+    }
+    postorder.push_back(u);
+  };
+  dfs(0);
+
   std::queue<uint32_t> worklist;
   std::vector<bool> in_worklist(size, false);
 
-  // Initially all blocks are in the worklist
-  for (uint32_t i = 0; i < size; ++i) {
-    worklist.push(i);
-    in_worklist[i] = true;
-  }
-
-  while (!worklist.empty()) {
-    uint32_t u = worklist.front();
-    worklist.pop();
-    in_worklist[u] = false;
-
+  auto process = [&](uint32_t u) {
     auto block = node_pool_[u]->origin_;
 
     // Compute new out: union of IN sets of all successors
     std::set<uint32_t> new_out;
     for (auto &v : node_pool_[u]->succs_) {
-      for (auto &x : v->origin_->in_) {
-        new_out.emplace(x);
-      }
+      new_out.insert(v->origin_->in_.begin(), v->origin_->in_.end());
     }
 
     // Compute new in: use U (out - def)
@@ -129,7 +135,6 @@ void CFG::CalcInOut() {
       new_in.emplace(x);
     }
 
-    // Check if anything changed
     if (new_out != block->out_ || new_in != block->in_) {
       block->out_ = std::move(new_out);
       block->in_ = std::move(new_in);
@@ -142,6 +147,19 @@ void CFG::CalcInOut() {
         }
       }
     }
+  };
+
+  // First pass: postorder (successors before predecessors)
+  for (uint32_t u : postorder) {
+    process(u);
+  }
+
+  // Second pass: worklist for residual from back edges
+  while (!worklist.empty()) {
+    uint32_t u = worklist.front();
+    worklist.pop();
+    in_worklist[u] = false;
+    process(u);
   }
 }
 
