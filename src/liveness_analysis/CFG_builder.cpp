@@ -180,7 +180,9 @@ void CFGBuilder::Visit(IRFunctionNode *node) {
   for (auto &block : node->blocks_) {
     block->Accept(this);
   }
-  cfg_->CalcInOut();
+  if (!skip_calc_in_out_) {
+    cfg_->CalcInOut();
+  }
   // for (auto &block : node->blocks_) {
   //   std::cerr << block->id_ << '\n';
   //   std::cerr << "def: ";

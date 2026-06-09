@@ -8,6 +8,7 @@ class CFGBuilder : public IRVisitorBase {
 public:
   CFGBuilder() = delete;
   explicit CFGBuilder(std::shared_ptr<CFG>);
+  void SetSkipCalcInOut(bool skip) { skip_calc_in_out_ = skip; }
   void Visit(IRArrayNode *) override;
   void Visit(IRStructNode *) override;
   void Visit(IRArithmeticInstructionNode *) override;
@@ -33,6 +34,7 @@ public:
   void Visit(IRRootNode *) override;
 private:
   std::shared_ptr<CFG> cfg_;
+  bool skip_calc_in_out_{false};
   uint32_t cur_block_{0};
   std::set<uint32_t> cur_def_;
   std::set<uint32_t> cur_use_;
