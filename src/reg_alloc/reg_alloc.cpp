@@ -68,7 +68,7 @@ void RegAlloc::Visit(IRFunctionNode *node) {
   // Step 1: Compute the set of promotable variable IDs upfront.
   // A variable is promotable if any def of it comes from a
   // promotable instruction type (i32/i1/ptr, no arrays).
-  std::set<uint32_t> promotable_vars;
+  std::unordered_set<uint32_t> promotable_vars;
   for (auto &block : node->blocks_) {
     for (auto &inst : block->instructions_) {
       auto *ins = inst.get();
@@ -90,7 +90,7 @@ void RegAlloc::Visit(IRFunctionNode *node) {
   // (the set of variables live immediately before the instruction).
   for (auto &block : node->blocks_) {
     // live = out[block] (variables live at block exit)
-    std::set<uint32_t> live;
+    std::unordered_set<uint32_t> live;
     block->out_.ForEach([&](uint32_t id) {
       auto [not_alloc, name] = cfg->GetName(id);
       if (not_alloc && promotable_vars.count(id)) live.insert(id);

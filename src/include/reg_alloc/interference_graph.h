@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <map>
+#include <unordered_set>
 #include <set>
 #include <vector>
 
@@ -27,7 +28,7 @@ public:
   const std::map<uint32_t, uint32_t> &GetPhysRegs() const { return phys_reg_; }
 
 private:
-  std::map<uint32_t, std::set<uint32_t>> adjacency_;
+  std::map<uint32_t, std::unordered_set<uint32_t>> adjacency_;
   std::map<uint32_t, uint32_t> precolored_;
   std::map<uint32_t, uint32_t> phys_reg_;
   std::map<uint32_t, uint32_t> def_count_;

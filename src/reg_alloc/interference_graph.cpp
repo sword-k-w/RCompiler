@@ -69,7 +69,6 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
   std::vector<uint32_t> stack;
 
   auto adj = adjacency_;
-  auto saved_adj = adjacency_;
 
   // --- Simplify ---
   std::set<uint32_t> active_nodes;
@@ -83,7 +82,7 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
     active_nodes.erase(id);
     for (auto neighbor : adj[id]) {
       adj[neighbor].erase(id);
-      saved_adj[neighbor].erase(id);
+      adjacency_[neighbor].erase(id);
     }
     adj[id].clear();
   }
@@ -145,7 +144,7 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
     if (spilled.count(id)) continue;
 
     std::set<uint32_t> neighbor_colors;
-    for (auto neighbor : saved_adj[id]) {
+    for (auto neighbor : adjacency_[id]) {
       if (phys_reg_.count(neighbor)) {
         neighbor_colors.insert(phys_reg_[neighbor]);
       }
