@@ -61,5 +61,7 @@ public:
   void CalcFrontier();
   void AddPhi(uint32_t, std::shared_ptr<IRArrayNode>);
   void PhiReplace(const std::string &);
+  void PhiDFS(const std::string &);
+  void PhiRewriteAll();
   void EliminateCriticalEdge(IRFunctionNode *);
 };

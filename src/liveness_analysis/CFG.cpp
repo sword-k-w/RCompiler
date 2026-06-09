@@ -87,17 +87,15 @@ void CFG::CalcInOut() {
     return;
   }
 
-  // Clear previous in/out sets
+  uint32_t var_cnt = variable_map_.name_.size();
+
+  // Resize and clear all in/out bitsets
   for (uint32_t i = 0; i < size; ++i) {
-    node_pool_[i]->origin_->in_.clear();
-    node_pool_[i]->origin_->out_.clear();
+    node_pool_[i]->origin_->in_.Resize(var_cnt);
+    node_pool_[i]->origin_->out_.Resize(var_cnt);
   }
 
-  // Compute postorder via DFS from entry block. For backward dataflow
-  // (liveness), processing in postorder means successors are processed
-  // before predecessors — OUT[pred] = U IN[succ] uses up-to-date IN
-  // sets. One postorder pass converges for DAGs; the worklist handles
-  // residual changes from back edges in cyclic graphs.
+  // Compute postorder via DFS from entry block.
   std::vector<uint32_t> postorder;
   postorder.reserve(size);
   std::vector<bool> visited(size, false);
@@ -115,31 +113,32 @@ void CFG::CalcInOut() {
   std::queue<uint32_t> worklist;
   std::vector<bool> in_worklist(size, false);
 
+  BitSet new_out, new_in;
+  new_out.Resize(var_cnt);
+  new_in.Resize(var_cnt);
+
   auto process = [&](uint32_t u) {
     auto block = node_pool_[u]->origin_;
 
-    // Compute new out: union of IN sets of all successors
-    std::set<uint32_t> new_out;
+    // new_out = U IN[succ]
+    new_out.Clear();
     for (auto &v : node_pool_[u]->succs_) {
-      new_out.insert(v->origin_->in_.begin(), v->origin_->in_.end());
+      new_out.Union(v->origin_->in_);
     }
 
-    // Compute new in: use U (out - def)
-    std::set<uint32_t> new_in;
-    for (auto &x : new_out) {
-      if (block->def_.find(x) == block->def_.end()) {
-        new_in.emplace(x);
-      }
+    // new_in = new_out, then clear def bits, set use bits
+    new_in.Copy(new_out);
+    for (auto &x : block->def_) {
+      new_in.ClearBit(x);
     }
     for (auto &x : block->use_) {
-      new_in.emplace(x);
+      new_in.Set(x);
     }
 
     if (new_out != block->out_ || new_in != block->in_) {
-      block->out_ = std::move(new_out);
-      block->in_ = std::move(new_in);
+      block->out_ = new_out;
+      block->in_ = new_in;
 
-      // IN changed => predecessors need recomputation
       for (auto &pred : node_pool_[u]->preds_) {
         if (!in_worklist[pred->id_]) {
           worklist.push(pred->id_);
@@ -149,7 +148,7 @@ void CFG::CalcInOut() {
     }
   };
 
-  // First pass: postorder (successors before predecessors)
+  // First pass: postorder
   for (uint32_t u : postorder) {
     process(u);
   }
@@ -231,7 +230,7 @@ void CFG::AddPhi(uint32_t id_allocated, std::shared_ptr<IRArrayNode> type) {
     for (auto &v : frontier_[u]) {
       // std::cerr << u << " " << v << '\n';
       if (visited_block.find(v) == visited_block.end()
-        && node_pool_[v]->origin_->in_.find(id_allocated) != node_pool_[v]->origin_->in_.end()) {
+        && node_pool_[v]->origin_->in_.Test(id_allocated)) {
         q.emplace(v);
         visited_block.emplace(v);
       }
@@ -312,6 +311,16 @@ void CFG::PhiReplace(const std::string &name) {
   }
   replace_map_.clear();
   DFS(name, 0);
+  PhiRewriteAll();
+}
+void CFG::PhiDFS(const std::string &name) {
+  while (!current_val_.empty()) {
+    current_val_.pop();
+  }
+  DFS(name, 0);
+}
+
+void CFG::PhiRewriteAll() {
   auto size = node_pool_.size();
   for (uint32_t i = 0; i < size; ++i) {
     auto block = node_pool_[i]->origin_;

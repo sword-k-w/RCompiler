@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 #include <cstdint>
+#include "common/bit_set.h"
 
 enum StorageType {
   kRegister, kMemory, kConst
@@ -415,8 +416,8 @@ private:
   std::set<uint32_t> def_;
   std::set<uint32_t> use_;
 
-  std::set<uint32_t> in_;
-  std::set<uint32_t> out_;
+  BitSet in_;
+  BitSet out_;
 
   std::vector<std::shared_ptr<IRPhiInstructionNode>> phi_;
 };

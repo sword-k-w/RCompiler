@@ -41,8 +41,8 @@ void RegAlloc::Visit(IRFunctionNode *node) {
   for (auto &block : node->blocks_) {
     block->def_.clear();
     block->use_.clear();
-    block->in_.clear();
-    block->out_.clear();
+    block->in_.Clear();
+    block->out_.Clear();
     for (auto &ins : block->instructions_) {
       ins->def_.clear();
       ins->use_.clear();
@@ -91,10 +91,10 @@ void RegAlloc::Visit(IRFunctionNode *node) {
   for (auto &block : node->blocks_) {
     // live = out[block] (variables live at block exit)
     std::set<uint32_t> live;
-    for (auto id : block->out_) {
+    block->out_.ForEach([&](uint32_t id) {
       auto [not_alloc, name] = cfg->GetName(id);
       if (not_alloc && promotable_vars.count(id)) live.insert(id);
-    }
+    });
 
     auto &insts = block->instructions_;
     for (auto it = insts.rbegin(); it != insts.rend(); ++it) {

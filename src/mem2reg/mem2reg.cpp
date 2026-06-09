@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <queue>
+#include <set>
+#include <string>
 
 void Mem2reg(std::shared_ptr<IRRootNode> root) {
   auto cfg = std::make_shared<CFG>();
@@ -12,6 +14,32 @@ void Mem2reg(std::shared_ptr<IRRootNode> root) {
     function_node->Accept(cfg_builder.get());
     cfg->CalcDominatorTree();
     cfg->CalcFrontier();
+
+    // Pre-compute which allocas are not promotable in a single scan.
+    std::set<std::string> escaped_vars;
+    std::set<uint32_t> direct_use_ids;
+
+    for (auto &block : function_node->blocks_) {
+      for (auto &instra : block->instructions_) {
+        auto store_v = dynamic_cast<IRStoreVariableInstructionNode *>(instra.get());
+        if (store_v != nullptr) {
+          escaped_vars.insert(store_v->value_);
+          continue;
+        }
+        auto store_c = dynamic_cast<IRStoreConstInstructionNode *>(instra.get());
+        if (store_c != nullptr) {
+          continue;
+        }
+        auto load = dynamic_cast<IRLoadInstructionNode *>(instra.get());
+        if (load != nullptr) {
+          continue;
+        }
+        for (auto &x : instra->use_) {
+          direct_use_ids.insert(x);
+        }
+      }
+    }
+
     for (auto &instruction : function_node->blocks_[0]->instructions_) {
       auto ins = instruction.get();
       auto alloca = dynamic_cast<IRAllocateInstructionNode *>(ins);
@@ -22,38 +50,12 @@ void Mem2reg(std::shared_ptr<IRRootNode> root) {
       auto id = cfg->Query(name);
       auto id_allocated = cfg->QueryAllocated(name);
 
-      bool flag = true;
-      for (auto &block: function_node->blocks_) {
-        for (auto &instra: block->instructions_) {
-          auto store_v = dynamic_cast<IRStoreVariableInstructionNode *>(instra.get());
-          if (store_v != nullptr) {
-            if (store_v->value_ == name) {
-              flag = false;
-              break;
-            }
-            continue;
-          }
-          auto store_c = dynamic_cast<IRStoreConstInstructionNode *>(instra.get());
-          if (store_c != nullptr) {
-            continue;
-          }
-          auto load = dynamic_cast<IRLoadInstructionNode *>(instra.get());
-          if (load != nullptr) {
-            continue;
-          }
-          if (instra->use_.find(id) != instra->use_.end()) {
-            flag = false;
-            break;
-          }
-        }
-        if (!flag) {
-          break;
-        }
-      }
-      if (!flag) {
+      if (escaped_vars.find(name) != escaped_vars.end()) {
         continue;
       }
-      // std::cerr << "working on " << name << '\n';
+      if (direct_use_ids.find(id) != direct_use_ids.end()) {
+        continue;
+      }
 
       cfg->AddPhi(id_allocated, alloca->type_);
       cfg->PhiReplace(name);
