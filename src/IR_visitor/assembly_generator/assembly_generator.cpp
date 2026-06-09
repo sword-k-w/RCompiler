@@ -174,6 +174,14 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
 
 void AssemblyGenerator::Visit(IRNegationInstructionNode *node) {
   os_ << "\t# Negation Instruction " << node->result_ << '\n';
+  auto [op_type, op_addr] = GetVariableAddress(node->operand_);
+  if (node->is_minus_ && op_type == kConst) {
+    auto rd = GetResultReg(node->storage_type_, node->address_, 1);
+    int32_t val = std::stoi(node->operand_);
+    os_ << "\tli\t" << rd << ", " << -val << '\n';
+    RegToVariable(node->storage_type_, node->address_, rd, node->type_);
+    return;
+  }
   auto rs = VariableToReg(node->operand_, 0, node->type_);
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
   if (node->is_minus_) {
@@ -325,26 +333,52 @@ void AssemblyGenerator::Visit(IRGetElementPtrPrimeInstructionNode *node) {
   auto index_reg = VariableToReg(node->index_, 2, "i32");
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
   assert(!node->type_->length_.empty());
-  os_ << "\tli\tt1, " << node->type_->allocated_size_ / node->type_->length_[0] << '\n';
-  os_ << "\tmul\tt2, t1, " << index_reg << '\n';
-  os_ << "\tadd " << rd << ", " << ptr_reg << ", t2\n";
+  uint32_t elem_size = node->type_->allocated_size_ / node->type_->length_[0];
+  if (elem_size == 1) {
+    os_ << "\tadd " << rd << ", " << ptr_reg << ", " << index_reg << '\n';
+  } else if ((elem_size & (elem_size - 1)) == 0) {
+    // Power of 2: use shift
+    uint32_t shift = __builtin_ctz(elem_size);
+    os_ << "\tslli\tt1, " << index_reg << ", " << shift << '\n';
+    os_ << "\tadd " << rd << ", " << ptr_reg << ", t1\n";
+  } else {
+    os_ << "\tli\tt1, " << elem_size << '\n';
+    os_ << "\tmul\tt2, t1, " << index_reg << '\n';
+    os_ << "\tadd " << rd << ", " << ptr_reg << ", t2\n";
+  }
   RegToVariable(node->storage_type_, node->address_, rd, "ptr");
 }
 
 void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
   os_ << "\t# Compare Instruction " << node->result_ << '\n';
+
+  auto [type1, addr1] = GetVariableAddress(node->operand1_);
+  auto [type2, addr2] = GetVariableAddress(node->operand2_);
+  bool op1_const = (type1 == kConst);
+  bool op2_const = (type2 == kConst);
+
   auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
   auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
+
   if (node->op_ == IRCompareInstructionNode::kEq) {
-    os_ << "\tslt t3, " << rs1 << ", " << rs2 << '\n';
-    os_ << "\tslt t4, " << rs2 << ", " << rs1 << '\n';
-    os_ << "\tor\tt3, t3, t4\n";
-    PrintIA(os_, "xori", rd, "t3", 1);
+    if (op1_const && node->operand1_ == "0") {
+      os_ << "\tsltiu\t" << rd << ", " << rs2 << ", 1\n";
+    } else if (op2_const && node->operand2_ == "0") {
+      os_ << "\tsltiu\t" << rd << ", " << rs1 << ", 1\n";
+    } else {
+      os_ << "\tsub\tt0, " << rs1 << ", " << rs2 << '\n';
+      os_ << "\tsltiu\t" << rd << ", t0, 1\n";
+    }
   } else if (node->op_ == IRCompareInstructionNode::kNe) {
-    os_ << "\tslt t3, " << rs1 << ", " << rs2 << '\n';
-    os_ << "\tslt t4, " << rs2 << ", " << rs1 << '\n';
-    os_ << "\tor\t" << rd << ", t3, t4\n";
+    if (op1_const && node->operand1_ == "0") {
+      os_ << "\tsltu\t" << rd << ", x0, " << rs2 << '\n';
+    } else if (op2_const && node->operand2_ == "0") {
+      os_ << "\tsltu\t" << rd << ", x0, " << rs1 << '\n';
+    } else {
+      os_ << "\tsub\tt0, " << rs1 << ", " << rs2 << '\n';
+      os_ << "\tsltu\t" << rd << ", x0, t0\n";
+    }
   } else if (node->op_ == IRCompareInstructionNode::kUgt) {
     os_ << "\tsltu\t" << rd << ", " << rs2 << ", " << rs1 << '\n';
   } else if (node->op_ == IRCompareInstructionNode::kUge) {
