@@ -64,6 +64,7 @@ public:
   void AddDef(uint32_t, IRInstructionNode *);
   void AddDefBlock(uint32_t, uint32_t);
   void AddUse(uint32_t, IRInstructionNode *);
+  uint32_t GetVarCount() const { return variable_map_.name_.size(); }
   void CalcInOut();
 
   void CalcDominatorTree();

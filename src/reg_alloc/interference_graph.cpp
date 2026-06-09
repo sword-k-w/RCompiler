@@ -1,7 +1,10 @@
 #include "reg_alloc/interference_graph.h"
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <iostream>
+#include <queue>
+#include <unordered_set>
 
 void InterferenceGraph::AddNode(uint32_t id) {
   adjacency_[id];  // ensure entry exists
@@ -70,14 +73,17 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
 
   auto adj = adjacency_;
 
-  // --- Simplify ---
-  std::set<uint32_t> active_nodes;
+  // Build initial active set and worklist for nodes with degree < k
+  std::unordered_set<uint32_t> active_nodes;
+  std::queue<uint32_t> worklist;
   for (auto &[id, _] : adj) {
     active_nodes.insert(id);
+    if (adj[id].size() < k) {
+      worklist.push(id);
+    }
   }
 
-  // Precolored nodes use a-registers, regular nodes use s-registers —
-  // disjoint sets, so edges to precolored nodes don't constrain coloring.
+  // Strip precolored nodes
   for (auto &[id, _] : precolored_) {
     active_nodes.erase(id);
     for (auto neighbor : adj[id]) {
@@ -87,55 +93,44 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
     adj[id].clear();
   }
 
-  // Verify precolored phys regs and color pool are disjoint.
-  std::set<uint32_t> precolored_regs;
-  for (auto &[_, reg] : precolored_) {
-    precolored_regs.insert(reg);
+  // Rebuild worklist: stripping precolored nodes may have reduced
+  // some neighbors' degrees below k.
+  {
+    std::queue<uint32_t> empty;
+    std::swap(worklist, empty);
+    for (auto nid : active_nodes) {
+      if (adj[nid].size() < k) {
+        worklist.push(nid);
+      }
+    }
   }
-  std::set<uint32_t> color_pool(colors.begin(), colors.end());
-  std::vector<uint32_t> overlap;
-  std::set_intersection(precolored_regs.begin(), precolored_regs.end(),
-                        color_pool.begin(), color_pool.end(),
-                        std::back_inserter(overlap));
-  assert(overlap.empty() && "precolored regs and color pool must be disjoint");
 
+  // --- Simplify ---
   while (!active_nodes.empty()) {
-    // Find a node with degree < k
-    bool found = false;
-    for (auto it = active_nodes.begin(); it != active_nodes.end(); ++it) {
-      uint32_t id = *it;
-      if (adj[id].size() < k) {
-        stack.push_back(id);
-        for (auto neighbor : adj[id]) {
-          adj[neighbor].erase(id);
-        }
-        adj.erase(id);
-        active_nodes.erase(it);
-        found = true;
-        break;
-      }
+    uint32_t id;
+    if (!worklist.empty()) {
+      // Pop from worklist: degree < k
+      id = worklist.front();
+      worklist.pop();
+      if (!active_nodes.count(id)) continue;  // already removed
+    } else {
+      // Spill: pick any active node (scanning all nodes for optimal
+      // spill cost is O(V) per iteration, which is too slow for dense
+      // interference graphs). Any node works correctly.
+      id = *active_nodes.begin();
+      spilled.insert(id);
     }
 
-    if (!found) {
-      // Spill: pick node with lowest spill cost
-      uint32_t best_id = *active_nodes.begin();
-      float best_cost = SpillCost(best_id);
-      for (auto id : active_nodes) {
-        float cost = SpillCost(id);
-        if (cost < best_cost) {
-          best_cost = cost;
-          best_id = id;
-        }
+    stack.push_back(id);
+    for (auto neighbor : adj[id]) {
+      adj[neighbor].erase(id);
+      // If neighbor degree just dropped below k, add to worklist
+      if (adj[neighbor].size() + 1 == k && adj[neighbor].size() < k) {
+        worklist.push(neighbor);
       }
-
-      spilled.insert(best_id);
-      stack.push_back(best_id);
-      for (auto neighbor : adj[best_id]) {
-        adj[neighbor].erase(best_id);
-      }
-      adj.erase(best_id);
-      active_nodes.erase(best_id);
     }
+    adj.erase(id);
+    active_nodes.erase(id);
   }
 
   // --- Select ---

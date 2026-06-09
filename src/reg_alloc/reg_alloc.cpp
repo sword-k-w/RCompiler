@@ -3,6 +3,7 @@
 #include "liveness_analysis/CFG.h"
 #include "liveness_analysis/CFG_builder.h"
 #include "codegen/register.h"
+#include "common/bit_set.h"
 #include <iostream>
 
 static const std::vector<uint32_t> kColorPool = {9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
@@ -66,9 +67,8 @@ void RegAlloc::Visit(IRFunctionNode *node) {
   }
 
   // Step 1: Compute the set of promotable variable IDs upfront.
-  // A variable is promotable if any def of it comes from a
-  // promotable instruction type (i32/i1/ptr, no arrays).
-  std::unordered_set<uint32_t> promotable_vars;
+  BitSet promotable_vars;
+  promotable_vars.Resize(cfg->GetVarCount() + 256);
   for (auto &block : node->blocks_) {
     for (auto &inst : block->instructions_) {
       auto *ins = inst.get();
@@ -77,23 +77,20 @@ void RegAlloc::Visit(IRFunctionNode *node) {
       for (auto def_id : ins->def_) {
         auto [not_alloc, name] = cfg->GetName(def_id);
         if (not_alloc) {
-          promotable_vars.insert(def_id);
+          promotable_vars.Set(def_id);
         }
       }
     }
   }
 
-  // Step 2: Per block, compute instruction-level liveness following
-  // the same pattern as CFG::CalcInOut (out = ∪ in[succ],
-  // in = use ∪ (out − def)), then build interference edges.
-  // For each def, add edges from the def to the instruction's liveIn
-  // (the set of variables live immediately before the instruction).
+  // Step 2: Per block, compute instruction-level liveness and build edges.
+  uint32_t var_count = cfg->GetVarCount();
   for (auto &block : node->blocks_) {
-    // live = out[block] (variables live at block exit)
-    std::unordered_set<uint32_t> live;
+    BitSet live;
+    live.Resize(var_count + 256);
     block->out_.ForEach([&](uint32_t id) {
       auto [not_alloc, name] = cfg->GetName(id);
-      if (not_alloc && promotable_vars.count(id)) live.insert(id);
+      if (not_alloc && promotable_vars.Test(id)) live.Set(id);
     });
 
     auto &insts = block->instructions_;
@@ -101,42 +98,39 @@ void RegAlloc::Visit(IRFunctionNode *node) {
       auto *ins = it->get();
       if (ins->removed_) continue;
 
-      // liveOut = current live (before processing this instruction)
       // Process defs: killed going backwards (remove from live)
       for (auto def_id : ins->def_) {
-        if (promotable_vars.count(def_id)) {
-          live.erase(def_id);
+        if (promotable_vars.Test(def_id)) {
+          live.ClearBit(def_id);
         }
       }
       // Process uses: become live going backwards (add to live)
       for (auto use_id : ins->use_) {
-        if (promotable_vars.count(use_id)) {
-          live.insert(use_id);
+        if (promotable_vars.Test(use_id)) {
+          live.Set(use_id);
         }
       }
-      // 'live' is now liveIn — variables live immediately before
-      // this instruction in forward execution.
 
       // Build edges: for each promotable def, add interference
       // edges to every other variable in liveIn.
       for (auto def_id : ins->def_) {
         auto [not_alloc, name] = cfg->GetName(def_id);
         if (!not_alloc) continue;
-        if (!promotable_vars.count(def_id)) continue;
+        if (!promotable_vars.Test(def_id)) continue;
 
         ig.AddNode(def_id);
         ig.IncDefCount(def_id);
-        for (auto other : live) {
+        live.ForEach([&](uint32_t other) {
           if (other != def_id) {
             ig.AddNode(other);
             ig.AddEdge(def_id, other);
           }
-        }
+        });
       }
 
       // Add use counts for promotable uses
       for (auto use_id : ins->use_) {
-        if (promotable_vars.count(use_id)) {
+        if (promotable_vars.Test(use_id)) {
           ig.AddNode(use_id);
           ig.IncUseCount(use_id);
         }
