@@ -203,19 +203,19 @@ void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
   auto label = [&](uint32_t id) {
     return ".L" + current_func_name_ + "_" + std::to_string(id);
   };
+
+  if (!large_function_) {
+    os_ << "\tbnez\t" << rs << ", " << label(node->true_branch_) << '\n';
+    os_ << "\tj " << label(node->false_branch_) << '\n';
+    return;
+  }
+
   auto true_lbl  = label(node->true_branch_);
   auto false_lbl = label(node->false_branch_);
 
-  // Long-branch pattern: bnez uses a local forward branch to avoid
-  // the +/-4KB B-type limit, then lui+addi+jalr for arbitrary range.
-  //   bnez rs, 1f
-  //   lui t5, %hi(false_label)
-  //   addi t5, t5, %lo(false_label)
-  //   jalr x0, t5, 0
-  // 1:
-  //   lui t5, %hi(true_label)
-  //   addi t5, t5, %lo(true_label)
-  //   jalr x0, t5, 0
+  // Long-branch pattern for huge functions.
+  // bnez jumps to a local forward label (always within +/-4KB),
+  // then lui+addi+jalr handles the arbitrary-distance jump.
   os_ << "\tbnez\t" << rs << ", 1f\n";
   os_ << "\tlui\tt5, %hi(" << false_lbl << ")\n";
   os_ << "\taddi\tt5, t5, %lo(" << false_lbl << ")\n";
@@ -229,6 +229,10 @@ void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
 void AssemblyGenerator::Visit(IRJumpInstructionNode *node) {
   os_ << "\t# Jump Instruction\n";
   auto lbl = ".L" + current_func_name_ + "_" + std::to_string(node->destination_);
+  if (!large_function_) {
+    os_ << "\tj " << lbl << '\n';
+    return;
+  }
   os_ << "\tlui\tt5, %hi(" << lbl << ")\n";
   os_ << "\taddi\tt5, t5, %lo(" << lbl << ")\n";
   os_ << "\tjalr\tx0, t5, 0\n";
@@ -540,6 +544,24 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   variable_storage_ = &node->variable_storage_;
 
   cur_func_ = node;
+
+  // Estimate function code size: count non-removed instructions.
+  // If the function is very large (e.g. a huge expression producing
+  // thousands of basic blocks), intra-function j/bnez may exceed the
+  // RISC-V range limits (jal: +/-1MB, B-type: +/-4KB).  We switch to
+  // a long-jump pattern (lui+addi+jalr) only when needed.
+  {
+    uint32_t total_ins = 0;
+    for (auto &block : node->blocks_) {
+      for (auto &ins : block->instructions_) {
+        if (!ins->removed_) ++total_ins;
+      }
+    }
+    // ~5 bytes per instruction on average; 40000 ins ≈ 200KB, or
+    // 800+ blocks, both safely under the 1MB jal limit.  Either
+    // condition triggers the long-jump pattern.
+    large_function_ = (total_ins > 40000 || node->blocks_.size() > 800);
+  }
 
   // save used s-registers at the bottom of the frame
   {

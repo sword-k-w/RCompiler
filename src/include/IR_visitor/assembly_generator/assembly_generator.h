@@ -44,6 +44,8 @@ private:
 
   uint32_t branch_cnt_{0};
 
+  bool large_function_{false};
+
   IRFunctionNode *cur_func_;
   uint32_t cur_block_;
 
