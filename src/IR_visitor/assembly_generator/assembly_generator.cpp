@@ -82,9 +82,9 @@ void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address
 }
 
 void AssemblyGenerator::SaveRegister() {
-  // Save a0~aN, ra, and t1 at the top of the frame (within the
-  // 64-byte reserved area).  s-regs live at the bottom of the frame
-  // and are handled by the prologue/epilogue.
+  // Save a0~aN, ra, and t1 at the top of the frame.
+  // t3/t4 hold known constants; we reload them via li after the
+  // call instead of saving/restoring to memory.
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
     PrintMem(os_, "sd", "a" + std::to_string(i), "sp", current_stack_ - 56 - 8 * i);
   }
@@ -98,6 +98,10 @@ void AssemblyGenerator::RestoreRegister() {
   }
   PrintMem(os_, "ld", "ra", "sp", current_stack_ - 56 - 64);
   PrintMem(os_, "ld", "t1", "sp", current_stack_ - 8);
+  // Reload hoisted constants (caller-saved t3/t4 are clobbered by calls).
+  for (auto &[val, reg] : const_cache_) {
+    os_ << "\tli\t" << reg << ",\t" << val << '\n';
+  }
 }
 
 void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, uint32_t to_address, std::shared_ptr<IRArrayNode> type) {
@@ -122,8 +126,7 @@ void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, u
       PrintIA(os_, "addi", "a1", "sp", current_stack_ - from_address);
       os_ << "\tli\ta2, " << type->allocated_size_ << '\n';
       os_ << "\tcall\tbuiltin_memcpy\n";
-      const_cache_.clear();
-      RestoreRegister();
+RestoreRegister();
     }
   }
 }
@@ -565,7 +568,6 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
     }
   }
   os_ << "\tcall\t" << node->function_name_ << '\n';
-  const_cache_.clear();
   if (!node->result_type_->IsEmpty()) {
     RegToVariable(node->storage_type_, node->address_, "a0", node->result_type_->base_type_);
   }
@@ -652,28 +654,33 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
     }
 
     // Pre-scan: hoist large constants (>12-bit) into t3 and t4.
-    // Currently disabled — the infrastructure is in place but needs
-    // debugging for cross-function register clobbering (test 3 fails).
-    if (false) {
+    {
       std::set<int64_t> cs;
       for (auto &block : node->blocks_) {
         for (auto &ins : block->instructions_) {
           if (ins->removed_) continue;
+          auto scan = [&](const std::string &s) {
+            if (!s.empty() && (s[0] == '-' || std::isdigit(s[0])))
+              cs.insert(std::stoll(s));
+          };
           if (auto *p = dynamic_cast<IRArithmeticInstructionNode *>(ins.get())) {
-            if (!p->operand1_.empty() && p->operand1_[0] != '%') cs.insert(std::stoll(p->operand1_));
-            if (!p->operand2_.empty() && p->operand2_[0] != '%') cs.insert(std::stoll(p->operand2_));
+            scan(p->operand1_); scan(p->operand2_);
           } else if (auto *p = dynamic_cast<IRCompareInstructionNode *>(ins.get())) {
-            if (!p->operand1_.empty() && p->operand1_[0] != '%') cs.insert(std::stoll(p->operand1_));
-            if (!p->operand2_.empty() && p->operand2_[0] != '%') cs.insert(std::stoll(p->operand2_));
+            scan(p->operand1_); scan(p->operand2_);
           } else if (auto *p = dynamic_cast<IRStoreConstInstructionNode *>(ins.get())) {
             cs.insert(p->value_);
           }
         }
       }
-      // TODO: pre-load large constants into t3/t4 — currently disabled.
-      // The approach is sound but needs debugging for cross-function cases
-      // (e.g. test 3 fails with wrong numerical results).
-      (void)cs;
+      uint32_t treg = 3;
+      for (auto v : cs) {
+        if (v >= -2048 && v <= 2047) continue;
+        if (treg > 4) break;
+        std::string r = "t" + std::to_string(treg);
+        os_ << "\tli\t" << r << ",\t" << v << '\n';
+        const_cache_[v] = r;
+        ++treg;
+      }
     }
   }
 
