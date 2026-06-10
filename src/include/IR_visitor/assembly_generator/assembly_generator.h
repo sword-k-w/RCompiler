@@ -48,6 +48,10 @@ private:
 
   std::unordered_map<uint32_t, uint32_t> next_block_map_;
 
+  // Map constant value → register name for pre-loaded constants
+  // (t3, t4 — registers that no other code path writes to).
+  std::unordered_map<int64_t, std::string> const_cache_;
+
   IRFunctionNode *cur_func_;
   uint32_t cur_block_;
 

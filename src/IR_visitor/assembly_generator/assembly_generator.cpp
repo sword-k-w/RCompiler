@@ -41,6 +41,11 @@ std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t r
     return "t" + std::to_string(reg_id);
   }
   if (type == kConst) {
+    int64_t val = std::stoll(name);
+    auto it = const_cache_.find(val);
+    if (it != const_cache_.end()) {
+      return it->second;
+    }
     os_ << "\tli\tt" << reg_id << ",\t" << name << '\n';
     return "t" + std::to_string(reg_id);
   }
@@ -110,6 +115,7 @@ void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, u
       PrintIA(os_, "addi", "a1", "sp", current_stack_ - from_address);
       os_ << "\tli\ta2, " << type->allocated_size_ << '\n';
       os_ << "\tcall\tbuiltin_memcpy\n";
+      const_cache_.clear();
       RestoreRegister();
     }
   }
@@ -327,6 +333,7 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
     }
     os_ << "\tli\ta2, " << node->type_->allocated_size_ << '\n';
     os_ << "\tcall\tbuiltin_memcpy\n";
+    const_cache_.clear();
     RestoreRegister();
   }
 }
@@ -358,6 +365,7 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
     PrintIA(os_, "addi", "a1", "sp", current_stack_ - address);
     os_ << "\tli\ta2, " << node->type_->allocated_size_ << '\n';
     os_ << "\tcall\tbuiltin_memcpy\n";
+    const_cache_.clear();
     RestoreRegister();
   }
 }
@@ -422,51 +430,71 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
 
   auto [type1, addr1] = GetVariableAddress(node->operand1_);
   auto [type2, addr2] = GetVariableAddress(node->operand2_);
-  bool op1_const = (type1 == kConst);
-  bool op2_const = (type2 == kConst);
-
-  auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
-  auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
+  bool op1c = (type1 == kConst);
+  bool op2c = (type2 == kConst);
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
 
+  // Peephole: ==0, !=0 — load only the non-const operand.
   if (node->op_ == IRCompareInstructionNode::kEq) {
-    if (op1_const && node->operand1_ == "0") {
+    if (op1c && node->operand1_ == "0") {
+      auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
       os_ << "\tsltiu\t" << rd << ", " << rs2 << ", 1\n";
-    } else if (op2_const && node->operand2_ == "0") {
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      return;
+    }
+    if (op2c && node->operand2_ == "0") {
+      auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
       os_ << "\tsltiu\t" << rd << ", " << rs1 << ", 1\n";
-    } else {
-      os_ << "\tsub\tt0, " << rs1 << ", " << rs2 << '\n';
-      os_ << "\tsltiu\t" << rd << ", t0, 1\n";
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      return;
     }
-  } else if (node->op_ == IRCompareInstructionNode::kNe) {
-    if (op1_const && node->operand1_ == "0") {
+  }
+  if (node->op_ == IRCompareInstructionNode::kNe) {
+    if (op1c && node->operand1_ == "0") {
+      auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
       os_ << "\tsltu\t" << rd << ", x0, " << rs2 << '\n';
-    } else if (op2_const && node->operand2_ == "0") {
-      os_ << "\tsltu\t" << rd << ", x0, " << rs1 << '\n';
-    } else {
-      os_ << "\tsub\tt0, " << rs1 << ", " << rs2 << '\n';
-      os_ << "\tsltu\t" << rd << ", x0, t0\n";
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      return;
     }
+    if (op2c && node->operand2_ == "0") {
+      auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
+      os_ << "\tsltu\t" << rd << ", x0, " << rs1 << '\n';
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      return;
+    }
+  }
+
+  // General case: load both operands.
+  auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
+  auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
+
+  // Use t0 as the only aux register (was t0+t3, now just t0 frees t3).
+  if (node->op_ == IRCompareInstructionNode::kEq) {
+    os_ << "\tsub\tt0, " << rs1 << ", " << rs2 << '\n';
+    os_ << "\tsltiu\t" << rd << ", t0, 1\n";
+  } else if (node->op_ == IRCompareInstructionNode::kNe) {
+    os_ << "\tsub\tt0, " << rs1 << ", " << rs2 << '\n';
+    os_ << "\tsltu\t" << rd << ", x0, t0\n";
   } else if (node->op_ == IRCompareInstructionNode::kUgt) {
     os_ << "\tsltu\t" << rd << ", " << rs2 << ", " << rs1 << '\n';
   } else if (node->op_ == IRCompareInstructionNode::kUge) {
-    os_ << "\tsltu\tt3, " << rs1 << ", " << rs2 << '\n';
-    PrintIA(os_, "xori", rd, "t3", 1);
+    os_ << "\tsltu\tt0, " << rs1 << ", " << rs2 << '\n';
+    PrintIA(os_, "xori", rd, "t0", 1);
   } else if (node->op_ == IRCompareInstructionNode::kUlt) {
     os_ << "\tsltu\t" << rd << ", " << rs1 << ", " << rs2 << '\n';
   } else if (node->op_ == IRCompareInstructionNode::kUle) {
-    os_ << "\tsltu\tt3, " << rs2 << ", " << rs1 << '\n';
-    PrintIA(os_, "xori", rd, "t3", 1);
+    os_ << "\tsltu\tt0, " << rs2 << ", " << rs1 << '\n';
+    PrintIA(os_, "xori", rd, "t0", 1);
   } else if (node->op_ == IRCompareInstructionNode::kSgt) {
     os_ << "\tslt\t" << rd << ", " << rs2 << ", " << rs1 << '\n';
   } else if (node->op_ == IRCompareInstructionNode::kSge) {
-    os_ << "\tslt\tt3, " << rs1 << ", " << rs2 << '\n';
-    PrintIA(os_, "xori", rd, "t3", 1);
+    os_ << "\tslt\tt0, " << rs1 << ", " << rs2 << '\n';
+    PrintIA(os_, "xori", rd, "t0", 1);
   } else if (node->op_ == IRCompareInstructionNode::kSlt) {
     os_ << "\tslt\t" << rd << ", " << rs1 << ", " << rs2 << '\n';
   } else {
-    os_ << "\tslt\tt3, " << rs2 << ", " << rs1 << '\n';
-    PrintIA(os_, "xori", rd, "t3", 1);
+    os_ << "\tslt\tt0, " << rs2 << ", " << rs1 << '\n';
+    PrintIA(os_, "xori", rd, "t0", 1);
   }
   RegToVariable(node->storage_type_, node->address_, rd, "i1");
 }
@@ -489,6 +517,7 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
       PrintIA(os_, "addi", "a1", "sp", current_stack_ - address);
       os_ << "\tli\ta2, " << para->type_->allocated_size_ << '\n';
       os_ << "\tcall\tbuiltin_memcpy\n";
+      const_cache_.clear();
     }
   }
 
@@ -529,6 +558,7 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
     }
   }
   os_ << "\tcall\t" << node->function_name_ << '\n';
+  const_cache_.clear();
   if (!node->result_type_->IsEmpty()) {
     RegToVariable(node->storage_type_, node->address_, "a0", node->result_type_->base_type_);
   }
@@ -588,6 +618,7 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   variable_storage_ = &node->variable_storage_;
 
   cur_func_ = node;
+  const_cache_.clear();
 
   // Estimate function code size: count non-removed instructions.
   // If the function is very large (e.g. a huge expression producing
@@ -611,6 +642,33 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
     next_block_map_.clear();
     for (size_t i = 0; i + 1 < node->blocks_.size(); ++i) {
       next_block_map_[node->blocks_[i]->id_] = node->blocks_[i + 1]->id_;
+    }
+
+    // Pre-scan: hoist large constants (>12-bit) into t3 and t4.
+    // These registers are never written by any other instruction (t4
+    // was always free; t3 was freed by merging compare's aux into t0).
+    // After a call both are clobbered (caller-saved), so the cache is
+    // cleared at every call site.
+    {
+      std::set<int64_t> cs;
+      for (auto &block : node->blocks_) {
+        for (auto &ins : block->instructions_) {
+          if (ins->removed_) continue;
+          if (auto *p = dynamic_cast<IRArithmeticInstructionNode *>(ins.get())) {
+            if (!p->operand1_.empty() && p->operand1_[0] != '%') cs.insert(std::stoll(p->operand1_));
+            if (!p->operand2_.empty() && p->operand2_[0] != '%') cs.insert(std::stoll(p->operand2_));
+          } else if (auto *p = dynamic_cast<IRCompareInstructionNode *>(ins.get())) {
+            if (!p->operand1_.empty() && p->operand1_[0] != '%') cs.insert(std::stoll(p->operand1_));
+            if (!p->operand2_.empty() && p->operand2_[0] != '%') cs.insert(std::stoll(p->operand2_));
+          } else if (auto *p = dynamic_cast<IRStoreConstInstructionNode *>(ins.get())) {
+            cs.insert(p->value_);
+          }
+        }
+      }
+      // TODO: pre-load large constants into t3/t4 — currently disabled.
+      // The approach is sound but needs debugging for cross-function cases
+      // (e.g. test 3 fails with wrong numerical results).
+      (void)cs;
     }
   }
 
