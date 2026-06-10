@@ -40,7 +40,10 @@ Test cases live in `testcases/` (git submodule). Scripts under `script/IR/` and 
 ### Compiler pipeline
 
 ```
-Source (.rx) → Lexer → Parser → Semantic (3 passes) → IR Generator → [IR Preprocessor → Memory Allocator → mem2reg → Reg Alloc] → Assembly Generator → RISC-V .s
+Source (.rx) → Lexer → Parser → Semantic (3 passes) → IR Generator
+  → mem2reg → EliminateCriticalEdge → ReplacePhiWithMoves
+  → Preprocessor → Memory Allocator → Reg Alloc
+  → Assembly Generator → RISC-V .s
 ```
 
 ### Source layout (under `src/`)
@@ -53,7 +56,7 @@ Source (.rx) → Lexer → Parser → Semantic (3 passes) → IR Generator → [
 - **`IR_visitor/`** — IR passes via `IRVisitorBase`: `preprocessor/`, `memory_allocator/` (stack frame layout), `assembly_generator/` (IR→RISC-V assembly, the final backend).
 - **`liveness_analysis/`** — CFG construction, def-use sets, liveness in/out, dominator tree (for SSA construction). `CalcInOut()` uses a worklist algorithm: when a block's IN set changes, only its predecessors are re-queued (since `OUT[pred] = ∪ IN[succ]`). This avoids full fixed-point scans over all blocks, reducing O(n²) to near-linear for deeply nested control flow.
 - **`mem2reg/`** — Memory-to-register promotion (alloca→SSA registers with phi insertion) and critical edge elimination.
-- **`reg_alloc/`** — Register allocation, currently stub/WIP (interference graph defined).
+- **`reg_alloc/`** — Graph-coloring register allocator. Builds interference graph from per-instruction liveness (reverse block walk), promotes scalar variables (i32/i1/ptr) into s-registers. Uses Chaitin-style simplify/spill/select with worklist. Added Briggs conservative move coalescing: move-related virtual registers are merged into one node if they don't interfere and the merged degree < K, eliminating `mv` instructions.
 - **`codegen/`** — RISC-V assembly emission helpers, register name table (32 regs), phi topological ordering.
 - **`common/`** — Keywords, builtin definitions, error reporting, helpers.
 - **`data_loader/`** — File/stdin input.
@@ -80,10 +83,20 @@ All headers live under `src/include/`, mirroring the source tree structure.
 
 ### RISC-V temp register conventions (codegen)
 
-- t0-t1: arith, neg, br, j, load, store, gete, getep, comp, call, sel, alloca
-- t2: arith, getep, comp
-- t3-t4: comp
-- t5-t6: free
+- **t0**: arith (operand1), compare aux (sub, sltu, slt), data move, call args
+- **t1**: arith (operand2), store const, GEPP (slli, li), saved/restored around calls
+- **t2**: arith result (kMemory), GEPP (mul)
+- **t3**: **constant cache** — pre-loaded at function entry with a large (>12-bit) constant.  Survives calls via `li` reload in RestoreRegister.  (Formerly compare aux; merged into t0.)
+- **t4**: **constant cache** — second pre-loaded constant slot.
+- **t5**: long jumps for large functions (`lui+addi+jalr`)
+- **t6**: `PrintIA`/`PrintIStar`/`PrintMem` fallback for out-of-range immediates
+
+Constants are pre-scanned per-function and up to 2 large constants are
+loaded into t3/t4 at function entry.  `VariableToReg` checks `const_cache_`
+and returns the cached register instead of emitting inline `li`.  After
+each `call`, `RestoreRegister` re-emits `li` to reload the constants
+(t-regs are caller-saved).  Functions without large constants have zero
+overhead.
 
 ### Phi handling
 
@@ -97,10 +110,12 @@ s-reg saves live at the bottom of the frame (near sp), a-reg/ra/t1 saves at the 
 High addresses (sp + total_stack):
   ┌──────────────────────────────┐
   │ t1 save             (off  8) │ ┐
-  │ ra save             (of 120) │ │ SaveRegister / RestoreRegister
-  │ a0 save             (off 56) │ │ fixed offsets from current_stack_
-  │ a1 save             (off 64) │ │
-  │ ...                          │ ┘
+  │ t3 save             (off 16) │ │ t3/t4: constant cache reload
+  │ t4 save             (off 24) │ │ (via li, not ld — slots unused)
+  │ a0 save             (off 56) │ │ SaveRegister / RestoreRegister
+  │ a1 save             (off 64) │ │ fixed offsets from current_stack_
+  │ ...                          │ │
+  │ ra save             (of 120) │ ┘
   ├──────────────────────────────┤ ← top of original stack_size_
   │                              │
   │ local variables & spills     │ ← MemoryAllocator allocations
@@ -114,16 +129,26 @@ Low addresses (sp):
 ```
 
 - `s_save = 8 * |used_s_regs|`, `total_stack = stack_size_ + s_save`
-- `total_stack` is rounded up to the nearest multiple of 16 for RISC-V ABI compliance (sp must be 16-byte aligned at function entry/call sites).
+- `total_stack` is rounded up to the nearest multiple of 16 for RISC-V ABI compliance.
 - s-regs at `sp + 0, sp + 8, ...` (bottom of frame)
 - a-regs at `current_stack_ - 56 - 8*i`, ra at `current_stack_ - 120`, t1 at `current_stack_ - 8` (top of frame)
-- Variable access: `sp + current_stack_ - address`; extending sp and `current_stack_` by `s_save` shifts variable area up by `s_save`, leaving the bottom free for s-regs.
+- t3/t4 slots at offsets 16/24 (reserved but unused — constants are reloaded via `li`, not `ld`)
+- Variable access: `sp + current_stack_ - address`
 
 ### Reg alloc color pool
 
 - **Precolored nodes** (function params): a0–a7 (IDs 10–17), set in `reg_alloc.cpp:61-66`.
 - **Color pool** (for promoted vars): s1–s11 = `{9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27}` (11 registers).
-- The two pools are disjoint; `Color()` asserts this and strips edges between precolored and regular nodes.
+- The two pools are disjoint; `Color()` strips edges between precolored and regular nodes.
+- **Move coalescing**: Before coloring, `Coalesce()` attempts to merge move-related virtual registers using Briggs conservative heuristic (merge only if the combined node has degree < K).  Coalesced nodes share the same physical register, eliminating `mv` instructions.  Currently limited by block-level liveness granularity — intra-block phi moves often show spurious interference and aren't coalesced.
+
+### Assembly Generator optimizations (codegen)
+
+- **Immediate folding**: Small constant operands (12-bit signed) in `+`/`-` are folded into `addiw` directly, avoiding `li + addw`.
+- **Redundant jump elimination**: Unconditional jumps targeting the immediately-following block (in layout order) are elided.  Branch false-targets that fall through are handled by skipping the trailing `j`.
+- **Constant hoisting**: Functions are pre-scanned for large constants (>12-bit).  Up to 2 are loaded into t3/t4 at function entry.  `VariableToReg` returns the cached register instead of emitting inline `li`.  After each call, `RestoreRegister` re-emits `li` to reload.
+- **Compare peephole**: `==0`/`!=0` checks use `sltiu`/`sltu` with immediate 1 or x0, avoiding `li t1, 0` entirely.  The peephole fires BEFORE `VariableToReg` so the constant operand is never loaded.
+- **Long jumps**: Functions with >40000 instructions or >800 blocks use `lui+addi+jalr` (3 ins, ±2GB range) instead of `j` (1 ins, ±1MB) for intra-function jumps and branches.
 
 ## Performance tracking
 

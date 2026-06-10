@@ -42,7 +42,8 @@ RegAlloc pass inserted after MemoryAllocator, before AssemblyGenerator in both `
 
 ## Remaining Work
 
-1. **Move coalescing**: After coloring, eliminate no-op moves where source and dest share the same register
-2. **Expand color pool**: Consider adding a0–a7 to the pool with proper save/restore around calls
-3. **Performance validation**: Compare cycle counts with baseline (all-memory) using `performance/visualize.py` — version 3 data collected, analysis pending
-4. **Stack frame reservation**: The MemoryAllocator reserves 64 bytes at the top for a-reg/ra/t1 saves, but this is insufficient when both s-reg and a-reg usage is high (e.g. 11 s-regs + 8 a-regs = 84 bytes needed). Currently works for typical cases but needs a dynamic reservation.
+1. ~~**Move coalescing**: After coloring, eliminate no-op moves where source and dest share the same register~~ ✓ Done (Briggs conservative coalescing in `reg_alloc/`).  Currently limited by block-level liveness — intra-block phi moves often show spurious interference.
+2. **Instruction-level liveness**: Block-level CFG liveness causes spurious interference between old/new versions of the same variable within a block (e.g. `%phi..1` used by add, then redefined by move).  Finer-grained liveness would allow coalescing of these move pairs, eliminating `mv` in tight loops.
+3. **Expand color pool**: Consider adding a0–a7 to the pool with proper save/restore around calls
+4. **Stack frame reservation**: The MemoryAllocator reserves 120 bytes at the top for a-reg/ra/t1 saves. Currently sufficient for typical cases; dynamic reservation may be needed for high register pressure.
+5. **Codegen peephole**: `addw tX, sA, sB; mv sA, tX` → `addw sA, sA, sB` when the temp isn't reused. Could be done in `Visit(IRMoveInstructionNode)` by rewriting the preceding arithmetic's destination register.
