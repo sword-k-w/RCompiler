@@ -159,5 +159,47 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
     }
   }
 
+  // Propagate colors to coalesced nodes
+  for (auto &[src, dst] : coalesced_) {
+    if (phys_reg_.count(dst)) {
+      phys_reg_[src] = phys_reg_[dst];
+    }
+  }
+
   return spilled;
+}
+
+void InterferenceGraph::AddMovePair(uint32_t src_id, uint32_t dst_id) {
+  if (src_id != dst_id) {
+    move_pairs_.emplace_back(src_id, dst_id);
+  }
+}
+
+void InterferenceGraph::Coalesce(uint32_t k) {
+  for (auto &[src, dst] : move_pairs_) {
+    if (!adjacency_.count(src) || !adjacency_.count(dst)) continue;
+    if (coalesced_.count(src) || coalesced_.count(dst)) continue;
+    if (adjacency_[src].count(dst)) continue;
+
+    std::unordered_set<uint32_t> merged_adj = adjacency_[src];
+    for (auto n : adjacency_[dst]) merged_adj.insert(n);
+    merged_adj.erase(src);
+    merged_adj.erase(dst);
+    if (merged_adj.size() >= k) continue;
+
+    for (auto n : adjacency_[src]) {
+      if (n != dst) {
+        adjacency_[n].erase(src);
+        adjacency_[n].insert(dst);
+      }
+    }
+    adjacency_[dst].erase(src);
+    for (auto n : adjacency_[src]) {
+      if (n != dst) adjacency_[dst].insert(n);
+    }
+    adjacency_.erase(src);
+    def_count_[dst] += def_count_[src];
+    use_count_[dst] += use_count_[src];
+    coalesced_[src] = dst;
+  }
 }

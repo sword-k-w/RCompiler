@@ -111,6 +111,13 @@ void RegAlloc::Visit(IRFunctionNode *node) {
         }
       }
 
+      // Collect move pairs for coalescing
+      if (auto *mv = dynamic_cast<IRMoveInstructionNode *>(ins)) {
+        if (!mv->def_.empty() && !mv->use_.empty()) {
+          ig.AddMovePair(*mv->use_.begin(), *mv->def_.begin());
+        }
+      }
+
       // Build edges: for each promotable def, add interference
       // edges to every other variable in liveIn.
       for (auto def_id : ins->def_) {
@@ -138,7 +145,8 @@ void RegAlloc::Visit(IRFunctionNode *node) {
     }
   }
 
-  // 3. Color
+  // 3. Coalesce move-related nodes, then color
+  ig.Coalesce(kNumColors);
   auto spilled = ig.Color(kNumColors, kColorPool);
 
   // 4. Rewrite storage for colored variables (both variable_storage_ and instruction fields)
