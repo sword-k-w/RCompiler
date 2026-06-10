@@ -46,6 +46,8 @@ private:
 
   bool large_function_{false};
 
+  std::unordered_map<uint32_t, uint32_t> next_block_map_;
+
   IRFunctionNode *cur_func_;
   uint32_t cur_block_;
 

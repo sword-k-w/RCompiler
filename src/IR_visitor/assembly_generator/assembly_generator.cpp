@@ -132,9 +132,31 @@ void AssemblyGenerator::Visit(IRStructNode *node) {}
 
 void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
   os_ << "\t# Arithmetic Instruction " << node->result_ << '\n';
+  auto rd = GetResultReg(node->storage_type_, node->address_, 2);
+
+  // Fold small constant operands into immediate instruction forms.
+  // This turns "li tX, c; op rd, rs, tX" (2 ins) into "opi rd, rs, c" (1 ins).
+  {
+    auto [op2_type, _] = GetVariableAddress(node->operand2_);
+    if (op2_type == kConst) {
+      int32_t imm = std::stoi(node->operand2_);
+      if (node->op_ == "+" && imm >= -2048 && imm <= 2047) {
+        auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
+        os_ << "\taddiw\t" << rd << ", " << rs1 << ", " << imm << '\n';
+        RegToVariable(node->storage_type_, node->address_, rd, node->type_);
+        return;
+      }
+      if (node->op_ == "-" && imm >= -2048 && imm <= 2047) {
+        auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
+        os_ << "\taddiw\t" << rd << ", " << rs1 << ", " << -imm << '\n';
+        RegToVariable(node->storage_type_, node->address_, rd, node->type_);
+        return;
+      }
+    }
+  }
+
   auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
   auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
-  auto rd = GetResultReg(node->storage_type_, node->address_, 2);
   os_ << "\t";
   if (node->op_ == "+") {
     os_ << "addw";
@@ -205,6 +227,23 @@ void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
   };
 
   if (!large_function_) {
+    // Elide redundant fall-through jumps.
+    auto get_next = [&]() -> uint32_t {
+      auto it = next_block_map_.find(cur_block_);
+      return (it != next_block_map_.end()) ? it->second : UINT32_MAX;
+    };
+    uint32_t nid = get_next();
+
+    if (node->false_branch_ == nid) {
+      // false target is next block; just branch to true.
+      os_ << "\tbnez\t" << rs << ", " << label(node->true_branch_) << '\n';
+      return;
+    }
+    if (node->true_branch_ == nid) {
+      // true target is next block; invert and branch to false.
+      os_ << "\tbeqz\t" << rs << ", " << label(node->false_branch_) << '\n';
+      return;
+    }
     os_ << "\tbnez\t" << rs << ", " << label(node->true_branch_) << '\n';
     os_ << "\tj " << label(node->false_branch_) << '\n';
     return;
@@ -230,6 +269,11 @@ void AssemblyGenerator::Visit(IRJumpInstructionNode *node) {
   os_ << "\t# Jump Instruction\n";
   auto lbl = ".L" + current_func_name_ + "_" + std::to_string(node->destination_);
   if (!large_function_) {
+    auto it = next_block_map_.find(cur_block_);
+    if (it != next_block_map_.end() && it->second == node->destination_) {
+      // destination is the next block, no jump needed.
+      return;
+    }
     os_ << "\tj " << lbl << '\n';
     return;
   }
@@ -561,6 +605,13 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
     // 800+ blocks, both safely under the 1MB jal limit.  Either
     // condition triggers the long-jump pattern.
     large_function_ = (total_ins > 40000 || node->blocks_.size() > 800);
+
+    // Map each block to its successor in layout order, for
+    // eliminating redundant fall-through jumps.
+    next_block_map_.clear();
+    for (size_t i = 0; i + 1 < node->blocks_.size(); ++i) {
+      next_block_map_[node->blocks_[i]->id_] = node->blocks_[i + 1]->id_;
+    }
   }
 
   // save used s-registers at the bottom of the frame
