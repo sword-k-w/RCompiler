@@ -203,15 +203,35 @@ void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
   auto label = [&](uint32_t id) {
     return ".L" + current_func_name_ + "_" + std::to_string(id);
   };
-  // bnez may be out of range; the assembler/linker will relax it to
-  // beqz+j if needed.  The trailing j handles the false-target case.
-  os_ << "\tbnez\t" << rs << ", " << label(node->true_branch_) << '\n';
-  os_ << "\tj " << label(node->false_branch_) << '\n';
+  auto true_lbl  = label(node->true_branch_);
+  auto false_lbl = label(node->false_branch_);
+
+  // Long-branch pattern: bnez uses a local forward branch to avoid
+  // the +/-4KB B-type limit, then lui+addi+jalr for arbitrary range.
+  //   bnez rs, 1f
+  //   lui t5, %hi(false_label)
+  //   addi t5, t5, %lo(false_label)
+  //   jalr x0, t5, 0
+  // 1:
+  //   lui t5, %hi(true_label)
+  //   addi t5, t5, %lo(true_label)
+  //   jalr x0, t5, 0
+  os_ << "\tbnez\t" << rs << ", 1f\n";
+  os_ << "\tlui\tt5, %hi(" << false_lbl << ")\n";
+  os_ << "\taddi\tt5, t5, %lo(" << false_lbl << ")\n";
+  os_ << "\tjalr\tx0, t5, 0\n";
+  os_ << "1:\n";
+  os_ << "\tlui\tt5, %hi(" << true_lbl << ")\n";
+  os_ << "\taddi\tt5, t5, %lo(" << true_lbl << ")\n";
+  os_ << "\tjalr\tx0, t5, 0\n";
 }
 
 void AssemblyGenerator::Visit(IRJumpInstructionNode *node) {
   os_ << "\t# Jump Instruction\n";
-  os_ << "\tj " << ".L" << current_func_name_ << "_" << node->destination_ << '\n';
+  auto lbl = ".L" + current_func_name_ + "_" + std::to_string(node->destination_);
+  os_ << "\tlui\tt5, %hi(" << lbl << ")\n";
+  os_ << "\taddi\tt5, t5, %lo(" << lbl << ")\n";
+  os_ << "\tjalr\tx0, t5, 0\n";
 }
 
 void AssemblyGenerator::Visit(IRReturnInstructionNode *node) {
