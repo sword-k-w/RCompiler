@@ -6,8 +6,12 @@
 #include "common/bit_set.h"
 #include <iostream>
 
-static const std::vector<uint32_t> kColorPool = {9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
-static const uint32_t kNumColors = 11;
+// s1-s11 (callee-saved, preferred) then a0-a7 (caller-saved, fallback)
+static const std::vector<uint32_t> kColorPool = {
+    9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,  // s1-s11
+    10, 11, 12, 13, 14, 15, 16, 17                 // a0-a7
+};
+static const uint32_t kNumColors = 19;
 
 bool RegAlloc::IsPromotableType(IRInstructionNode *ins) {
   if (auto *arith = dynamic_cast<IRArithmeticInstructionNode *>(ins)) return true;
@@ -66,6 +70,17 @@ void RegAlloc::Visit(IRFunctionNode *node) {
     }
   }
 
+  // Build a set of precolored parameter IDs so they can be tracked
+  // in liveness and properly interfere with promotable variables.
+  BitSet precolored_ids;
+  precolored_ids.Resize(cfg->GetVarCount() + 256);
+  for (auto &parameter : node->parameters_) {
+    if (parameter->storage_type_ == kRegister) {
+      auto id = cfg->Query(parameter->name_);
+      precolored_ids.Set(id);
+    }
+  }
+
   // Step 1: Compute the set of promotable variable IDs upfront.
   BitSet promotable_vars;
   promotable_vars.Resize(cfg->GetVarCount() + 256);
@@ -91,6 +106,7 @@ void RegAlloc::Visit(IRFunctionNode *node) {
     block->out_.ForEach([&](uint32_t id) {
       auto [not_alloc, name] = cfg->GetName(id);
       if (not_alloc && promotable_vars.Test(id)) live.Set(id);
+      else if (precolored_ids.Test(id)) live.Set(id);
     });
 
     auto &insts = block->instructions_;
@@ -102,11 +118,15 @@ void RegAlloc::Visit(IRFunctionNode *node) {
       for (auto def_id : ins->def_) {
         if (promotable_vars.Test(def_id)) {
           live.ClearBit(def_id);
+        } else if (precolored_ids.Test(def_id)) {
+          live.ClearBit(def_id);
         }
       }
       // Process uses: become live going backwards (add to live)
       for (auto use_id : ins->use_) {
         if (promotable_vars.Test(use_id)) {
+          live.Set(use_id);
+        } else if (precolored_ids.Test(use_id)) {
           live.Set(use_id);
         }
       }
@@ -168,12 +188,20 @@ void RegAlloc::Visit(IRFunctionNode *node) {
     }
   }
 
-  // Record used s-registers
+  // Record used s-registers and update a-reg count for caller-save.
+  // a_reg_used_cnt_ was set by MemoryAllocator from param count; bump
+  // it if the allocator assigned additional a-regs to regular variables
+  // so SaveRegister/RestoreRegister covers them around calls.
+  uint32_t max_a_reg_used = node->a_reg_used_cnt_;
   for (auto &[var_id, phys_reg] : ig.GetPhysRegs()) {
-    if (!ig.IsPrecolored(var_id)) {
+    if (ig.IsPrecolored(var_id)) continue;
+    if (phys_reg >= 10 && phys_reg <= 17) {
+      max_a_reg_used = std::max(max_a_reg_used, phys_reg - 10 + 1);
+    } else {
       node->used_s_regs_.insert(phys_reg);
     }
   }
+  node->a_reg_used_cnt_ = max_a_reg_used;
 }
 
 void RegAlloc::Visit(IRRootNode *node) {

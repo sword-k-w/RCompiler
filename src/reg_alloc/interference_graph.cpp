@@ -83,12 +83,13 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
     }
   }
 
-  // Strip precolored nodes
+  // Strip precolored nodes from the working copy (adj) only.
+  // Keep adjacency_ untouched so the Select phase can see precolored
+  // colors as forbidden and avoid assigning them to interfering nodes.
   for (auto &[id, _] : precolored_) {
     active_nodes.erase(id);
     for (auto neighbor : adj[id]) {
       adj[neighbor].erase(id);
-      adjacency_[neighbor].erase(id);
     }
     adj[id].clear();
   }

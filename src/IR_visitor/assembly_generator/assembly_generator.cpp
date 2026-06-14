@@ -568,11 +568,20 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
     }
   }
   os_ << "\tcall\t" << node->function_name_ << '\n';
-  if (!node->result_type_->IsEmpty()) {
-    RegToVariable(node->storage_type_, node->address_, "a0", node->result_type_->base_type_);
+
+  // Stash the return value in t0 before RestoreRegister, which would
+  // otherwise restore a0 from the save slot and clobber the result.
+  // t0 survives RestoreRegister (it only touches a0-aN, ra, and t1).
+  bool has_result = !node->result_type_->IsEmpty();
+  if (has_result) {
+    os_ << "\tmv\tt0, a0\n";
   }
 
   RestoreRegister();
+
+  if (has_result) {
+    RegToVariable(node->storage_type_, node->address_, "t0", node->result_type_->base_type_);
+  }
 }
 
 void AssemblyGenerator::Visit(IRMoveInstructionNode *node) {
