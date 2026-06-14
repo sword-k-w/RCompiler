@@ -17,6 +17,7 @@
 #include "IR/struct_map.h"
 #include "IR/function_map.h"
 #include "IR_visitor/phi_eliminator/phi_eliminator.h"
+#include "IR_visitor/empty_block_eliminator/empty_block_eliminator.h"
 #include "reg_alloc/reg_alloc.h"
 
 void TestCode(const std::string &code, std::ostream &out) {
@@ -40,6 +41,8 @@ void TestCode(const std::string &code, std::ostream &out) {
     root->Accept(&gen);
 
     ReplacePhiWithMoves(IR_root);
+
+    EliminateEmptyBlocks(IR_root);
 
     Preprocessor preprocessor;
     IR_root->Accept(&preprocessor);
