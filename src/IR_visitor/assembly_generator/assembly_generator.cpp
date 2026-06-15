@@ -57,6 +57,12 @@ std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t r
     os_ << "\tli\tt" << reg_id << ",\t0\n";
     return "t" + std::to_string(reg_id);
   }
+  // a-reg values are stale after a call; load from save slot
+  if (address >= 10 && address <= 17 && registers_saved_) {
+    uint32_t save_off = 56 + 8 * (address - 10);
+    TransferToTreg(save_off, reg_id, val_type);
+    return "t" + std::to_string(reg_id);
+  }
   return "x" + std::to_string(address);
 }
 
@@ -67,6 +73,7 @@ void AssemblyGenerator::VariableForceToReg(const std::string &name, const std::s
   } else if (type == kConst) {
     os_ << "\tli\t" << reg << ", " << name << '\n';
   } else {
+    if (address >= 10 && address <= 17) FlushSavedRegisters();
     if (!SameRegister(address, reg)) {
       os_ << "\tmv\t" << reg << ", x" << address << '\n';
     }
@@ -83,6 +90,7 @@ void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address
 }
 
 void AssemblyGenerator::SaveRegister() {
+  if (registers_saved_) return;
   // Save a0~aN, ra, and t1 at the top of the frame.
   // t3/t4 hold known constants; we reload them via li after the
   // call instead of saving/restoring to memory.
@@ -91,6 +99,7 @@ void AssemblyGenerator::SaveRegister() {
   }
   PrintMem(os_, "sd", "ra", "sp", current_stack_ - 56 - 64);
   PrintMem(os_, "sd", "t1", "sp", current_stack_ - 8);
+  registers_saved_ = true;
 }
 
 void AssemblyGenerator::RestoreRegister() {
@@ -103,10 +112,18 @@ void AssemblyGenerator::RestoreRegister() {
   for (auto &[val, reg] : const_cache_) {
     os_ << "\tli\t" << reg << ",\t" << val << '\n';
   }
+  registers_saved_ = false;
+}
+
+void AssemblyGenerator::FlushSavedRegisters() {
+  if (registers_saved_) RestoreRegister();
 }
 
 void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, uint32_t to_address, std::shared_ptr<IRArrayNode> type) {
   auto [from_type, from_address] = GetVariableAddress(from);
+  if (from_type == kRegister && from_address >= 10 && from_address <= 17) {
+    FlushSavedRegisters();
+  }
   if (from_type == kConst) {
     if (to_type == kRegister) {
       os_ << "\tli\tx" << to_address << ", " << from << '\n';
@@ -359,6 +376,7 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
     auto [_, s_ins] = LoadStoreType(node->type_->base_type_);
     PrintMem(os_, s_ins, "t1", ptr_reg, 0);
   } else if (type == kRegister) {
+    if (address >= 10 && address <= 17) FlushSavedRegisters();
     auto [_, s_ins] = LoadStoreType(node->type_->base_type_);
     PrintMem(os_, s_ins, "x" + std::to_string(address), ptr_reg, 0);
   } else {
@@ -614,7 +632,13 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
     os_ << "\tmv\tt0, a0\n";
   }
 
-  RestoreRegister();
+  if (NextInstructionIsCall()) {
+    for (auto &[val, reg] : const_cache_) {
+      os_ << "\tli\t" << reg << ",\t" << val << '\n';
+    }
+  } else {
+    RestoreRegister();
+  }
 
   if (has_result) {
     RegToVariable(node->storage_type_, node->address_, "t0", node->result_type_->base_type_);
@@ -640,12 +664,22 @@ void AssemblyGenerator::Visit(IRBlockNode *node) {
   if (node->id_ != 0) {
     os_ << ".L" << current_func_name_ << "_" << node->id_ << ":\n";
   }
-  for (auto &instruction : node->instructions_) {
-    if (instruction->removed_) {
-      continue;
-    }
+  cur_instructions_ = &node->instructions_;
+  for (cur_ins_index_ = 0; cur_ins_index_ < node->instructions_.size(); ++cur_ins_index_) {
+    auto &instruction = node->instructions_[cur_ins_index_];
+    if (instruction->removed_) continue;
     instruction->Accept(this);
   }
+  cur_instructions_ = nullptr;
+}
+
+bool AssemblyGenerator::NextInstructionIsCall() {
+  if (!cur_instructions_) return false;
+  for (size_t i = cur_ins_index_ + 1; i < cur_instructions_->size(); ++i) {
+    if ((*cur_instructions_)[i]->removed_) continue;
+    return dynamic_cast<IRCallInstructionNode *>((*cur_instructions_)[i].get()) != nullptr;
+  }
+  return false;
 }
 
 void AssemblyGenerator::Visit(IRParameterNode *node) {}
@@ -669,6 +703,7 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   current_stack_ = total_stack;
   current_func_name_ = node->name_;
   current_a_reg_used_ = node->a_reg_used_cnt_;
+  registers_saved_ = false;
   current_variables_ = &node->variables_;
   variable_storage_ = &node->variable_storage_;
 

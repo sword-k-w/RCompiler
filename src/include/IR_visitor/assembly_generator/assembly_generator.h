@@ -54,6 +54,11 @@ private:
 
   IRFunctionNode *cur_func_;
   uint32_t cur_block_;
+  bool registers_saved_{false};
+  uint32_t cur_ins_index_{0};
+  std::deque<std::shared_ptr<IRInstructionNode>> *cur_instructions_{nullptr};
+
+  bool NextInstructionIsCall();
 
   std::pair<StorageType, uint32_t> GetVariableAddress(const std::string &);
   void TransferToTreg(uint32_t, uint32_t, const std::string &);
@@ -63,6 +68,7 @@ private:
   void RegToVariable(StorageType, uint32_t, const std::string &, const std::string &);
   void SaveRegister();
   void RestoreRegister();
+  void FlushSavedRegisters();
   void DataMove(const std::string &, StorageType, uint32_t, std::shared_ptr<IRArrayNode>);
   void DataMoveFromReg(const std::string &, StorageType, uint32_t, std::shared_ptr<IRArrayNode>);
 };
