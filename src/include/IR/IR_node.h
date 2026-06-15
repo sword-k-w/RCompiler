@@ -476,6 +476,7 @@ private:
 
   std::set<uint32_t> used_s_regs_;
   uint32_t a_reg_used_cnt_;
+  bool has_calls_ = false;
 };
 
 class IRRootNode : public IRNode {

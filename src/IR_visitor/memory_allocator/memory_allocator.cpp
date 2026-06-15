@@ -106,7 +106,56 @@ void MemoryAllocator::Visit(IRParameterNode *node) {
 }
 
 void MemoryAllocator::Visit(IRFunctionNode *node) {
-  node->stack_size_ += 56 + 64;
+  // Determine if the function (or its generated assembly) contains any call
+  // instructions: explicit IRCallInstructionNode, as well as struct/array
+  // loads, stores, and moves that the assembly generator lowers to
+  // builtin_memcpy calls.
+  for (auto &block : node->blocks_) {
+    for (auto &ins : block->instructions_) {
+      if (dynamic_cast<IRCallInstructionNode *>(ins.get())) {
+        node->has_calls_ = true;
+        break;
+      }
+      {
+        std::shared_ptr<IRArrayNode> type;
+        if (auto *load = dynamic_cast<IRLoadInstructionNode *>(ins.get()))
+          type = load->type_;
+        else if (auto *store = dynamic_cast<IRStoreVariableInstructionNode *>(ins.get()))
+          type = store->type_;
+        else if (auto *move = dynamic_cast<IRMoveInstructionNode *>(ins.get()))
+          type = move->type_;
+        if (type && (!type->length_.empty() ||
+                     (!type->base_type_.empty() && type->base_type_ != "i32" &&
+                      type->base_type_ != "i1" && type->base_type_ != "ptr" &&
+                      type->base_type_ != "void" &&
+                      StructMap::Instance().Query(type->base_type_)))) {
+          node->has_calls_ = true;
+          break;
+        }
+      }
+    }
+    if (node->has_calls_) break;
+  }
+  // Check whether all parameters fit in a-regs.  If any parameter must go
+  // on the stack, treat the function as if it has calls to keep parameter
+  // addresses (used by both caller and callee) unchanged.
+  if (!node->has_calls_) {
+    uint32_t preg = 10;
+    for (auto &parameter : node->parameters_) {
+      if (parameter->type_->length_.empty() && preg < 18
+          && (parameter->type_->base_type_ == "i32"
+              || parameter->type_->base_type_ == "ptr"
+              || parameter->type_->base_type_ == "i1")) {
+        ++preg;
+      } else {
+        node->has_calls_ = true;
+        break;
+      }
+    }
+  }
+  if (node->has_calls_) {
+    node->stack_size_ += 56 + 64;
+  }
   current_stack_ = &node->stack_size_;
   current_parameter_register_ = 10;
   variable_storage_ = &node->variable_storage_;
