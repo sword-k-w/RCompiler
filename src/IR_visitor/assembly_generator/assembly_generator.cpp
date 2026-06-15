@@ -73,6 +73,7 @@ void AssemblyGenerator::VariableForceToReg(const std::string &name, const std::s
   } else if (type == kConst) {
     os_ << "\tli\t" << reg << ", " << name << '\n';
   } else {
+    if (address >= 10 && address <= 17) FlushSavedRegisters();
     if (!SameRegister(address, reg)) {
       os_ << "\tmv\t" << reg << ", x" << address << '\n';
     }
@@ -376,6 +377,7 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
     auto [_, s_ins] = LoadStoreType(node->type_->base_type_);
     PrintMem(os_, s_ins, "t1", ptr_reg, 0);
   } else if (type == kRegister) {
+    if (address >= 10 && address <= 17) FlushSavedRegisters();
     auto [_, s_ins] = LoadStoreType(node->type_->base_type_);
     PrintMem(os_, s_ins, "x" + std::to_string(address), ptr_reg, 0);
   } else {
