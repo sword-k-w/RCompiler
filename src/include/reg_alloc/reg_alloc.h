@@ -31,4 +31,5 @@ public:
   void Visit(IRRootNode *) override;
 private:
   static bool IsPromotableType(IRInstructionNode *);
+  static std::vector<uint32_t> LeafColorPool(const IRFunctionNode *);
 };

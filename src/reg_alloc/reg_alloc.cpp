@@ -13,6 +13,29 @@ static const std::vector<uint32_t> kColorPool = {
 };
 static const uint32_t kNumColors = 19;
 
+// Leaf functions (no calls) can safely use caller-saved registers for
+// promoted variables since they're never clobbered.  We build a pool
+// that puts unused a-regs (beyond parameters) and t5 before s-regs,
+// eliminating s-reg save/restore for small leaf functions.
+// t5 is only used for long jumps in 40000+-ins functions (CLAUDE.md
+// temp-register conventions), so it's safe in leaf functions.
+// t3-t4 are reserved for the constant cache; t0-t2 and t6 are temp regs.
+std::vector<uint32_t> RegAlloc::LeafColorPool(const IRFunctionNode *node) {
+  std::vector<uint32_t> pool;
+  // t5 is safe for leaf functions (only used for long jumps in huge functions)
+  pool.push_back(30);
+  // a-regs beyond the parameter count are caller-saved but safe in leaf fns
+  for (uint32_t r = 10 + node->a_reg_used_cnt_; r <= 17; ++r)
+    pool.push_back(r);
+  // s1-s11 as fallback
+  for (uint32_t r : {9u, 18u, 19u, 20u, 21u, 22u, 23u, 24u, 25u, 26u, 27u})
+    pool.push_back(r);
+  // parameter a-regs (a0-a<n-1>) as last resort
+  for (uint32_t r = 10; r < 10 + node->a_reg_used_cnt_; ++r)
+    pool.push_back(r);
+  return pool;
+}
+
 bool RegAlloc::IsPromotableType(IRInstructionNode *ins) {
   if (auto *arith = dynamic_cast<IRArithmeticInstructionNode *>(ins)) return true;
   if (auto *neg = dynamic_cast<IRNegationInstructionNode *>(ins)) return true;
@@ -166,8 +189,11 @@ void RegAlloc::Visit(IRFunctionNode *node) {
   }
 
   // 3. Coalesce move-related nodes, then color
-  ig.Coalesce(kNumColors);
-  auto spilled = ig.Color(kNumColors, kColorPool);
+  bool is_leaf = !node->has_calls_;
+  auto color_pool = is_leaf ? LeafColorPool(node) : kColorPool;
+  uint32_t num_colors = color_pool.size();
+  ig.Coalesce(num_colors);
+  auto spilled = ig.Color(num_colors, color_pool);
 
   // 4. Rewrite storage for colored variables (both variable_storage_ and instruction fields)
   for (auto &block : node->blocks_) {
@@ -192,12 +218,14 @@ void RegAlloc::Visit(IRFunctionNode *node) {
   // a_reg_used_cnt_ was set by MemoryAllocator from param count; bump
   // it if the allocator assigned additional a-regs to regular variables
   // so SaveRegister/RestoreRegister covers them around calls.
+  // Only callee-saved s-regs (x9=s1, x18-x27=s2-s11) need prologue
+  // save/restore; caller-saved t/a-regs are safe in leaf functions.
   uint32_t max_a_reg_used = node->a_reg_used_cnt_;
   for (auto &[var_id, phys_reg] : ig.GetPhysRegs()) {
     if (ig.IsPrecolored(var_id)) continue;
     if (phys_reg >= 10 && phys_reg <= 17) {
       max_a_reg_used = std::max(max_a_reg_used, phys_reg - 10 + 1);
-    } else {
+    } else if (phys_reg == 9 || (phys_reg >= 18 && phys_reg <= 27)) {
       node->used_s_regs_.insert(phys_reg);
     }
   }
