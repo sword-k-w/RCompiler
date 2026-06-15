@@ -6,6 +6,12 @@
 #include "IR/IR_node.h"
 #include "IR/name_allocator.h"
 
+struct BranchContext {
+  bool active = false;
+  int true_label;
+  int false_label;
+};
+
 class IRGenerator : public VisitorBase {
 public:
   IRGenerator() = delete;
@@ -87,4 +93,5 @@ private:
   std::stack<std::shared_ptr<IRBlockNode>> loop_condition_block_;
   std::stack<std::shared_ptr<IRBlockNode>> loop_body_block_;
   std::stack<std::shared_ptr<IRBlockNode>> loop_end_block_;
+  BranchContext branch_ctx_;
 };

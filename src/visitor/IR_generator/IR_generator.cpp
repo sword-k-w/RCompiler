@@ -94,11 +94,15 @@ void IRGenerator::Visit(PredicateLoopExpressionNode *node) {
     loop_end_block_.emplace(loop_end);
     cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(loop_condition->GetID()));
     cur_block_ = loop_condition;
+    branch_ctx_ = {true, static_cast<int>(loop_body->GetID()), static_cast<int>(loop_end->GetID())};
     node->conditions_->Accept(this);
-    std::string cond = name_allocator_.Allocate("%tmp.");
-    cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, std::make_shared<IRArrayNode>("i1"),
-      node->conditions_->IR_name_));
-    cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, loop_body->GetID(), loop_end->GetID()));
+    branch_ctx_.active = false;
+    if (!node->conditions_->IR_name_.empty()) {
+      std::string cond = name_allocator_.Allocate("%tmp.");
+      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, std::make_shared<IRArrayNode>("i1"),
+        node->conditions_->IR_name_));
+      cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, loop_body->GetID(), loop_end->GetID()));
+    }
     cur_block_ = loop_body;
     node->block_expr_->Accept(this);
     cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(loop_condition->GetID()));
@@ -127,10 +131,6 @@ void IRGenerator::Visit(IfExpressionNode *node) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
       first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, GetIRTypeNode(node->type_info_.get())));
     }
-    node->conditions_->Accept(this);
-    std::string cond = name_allocator_.Allocate("%tmp.");
-    cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, std::make_shared<IRArrayNode>("i1"),
-      node->conditions_->IR_name_));
     auto true_block = std::make_shared<IRBlockNode>(cur_tag_cnt_);
     cur_function_->AddBlock(true_block);
     ++cur_tag_cnt_;
@@ -138,7 +138,15 @@ void IRGenerator::Visit(IfExpressionNode *node) {
     cur_function_->AddBlock(end_block);
     ++cur_tag_cnt_;
     if (node->block_expr2_ == nullptr && node->if_expr_ == nullptr) {
-      cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, true_block->GetID(), end_block->GetID()));
+      branch_ctx_ = {true, static_cast<int>(true_block->GetID()), static_cast<int>(end_block->GetID())};
+      node->conditions_->Accept(this);
+      branch_ctx_.active = false;
+      if (!node->conditions_->IR_name_.empty()) {
+        std::string cond = name_allocator_.Allocate("%tmp.");
+        cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, std::make_shared<IRArrayNode>("i1"),
+          node->conditions_->IR_name_));
+        cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, true_block->GetID(), end_block->GetID()));
+      }
       cur_block_ = true_block;
       node->block_expr1_->Accept(this);
       cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(end_block->GetID()));
@@ -147,7 +155,15 @@ void IRGenerator::Visit(IfExpressionNode *node) {
       auto false_block = std::make_shared<IRBlockNode>(cur_tag_cnt_);
       cur_function_->AddBlock(false_block);
       ++cur_tag_cnt_;
-      cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, true_block->GetID(), false_block->GetID()));
+      branch_ctx_ = {true, static_cast<int>(true_block->GetID()), static_cast<int>(false_block->GetID())};
+      node->conditions_->Accept(this);
+      branch_ctx_.active = false;
+      if (!node->conditions_->IR_name_.empty()) {
+        std::string cond = name_allocator_.Allocate("%tmp.");
+        cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, std::make_shared<IRArrayNode>("i1"),
+          node->conditions_->IR_name_));
+        cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, true_block->GetID(), false_block->GetID()));
+      }
       cur_block_ = true_block;
       node->block_expr1_->Accept(this);
       if (!node->IR_name_.empty()) {
@@ -335,19 +351,39 @@ void IRGenerator::Visit(ExpressionNode *node) {
       node->expr1_->Accept(this);
       Dereference(node->IR_name_, node->expr1_->IR_name_);
     } else if (node->type_ == kNegationExpr) {
-      node->IR_name_ = name_allocator_.Allocate("%tmp.");
-      node->expr1_->Accept(this);
-      std::string IR_type = "i32";
-      if (node->type_info_->type_name_ == "bool") {
-        IR_type = "i1";
+      if (branch_ctx_.active && node->type_info_->type_name_ == "bool") {
+        if (node->expr1_->type_ == kNegationExpr) {
+          node->expr1_->expr1_->Accept(this);
+          node->IR_name_ = node->expr1_->expr1_->IR_name_;
+        } else {
+          auto saved_ctx = branch_ctx_;
+          branch_ctx_ = {true, saved_ctx.false_label, saved_ctx.true_label};
+          node->expr1_->Accept(this);
+          branch_ctx_ = saved_ctx;
+          if (!node->expr1_->IR_name_.empty()) {
+            std::string operand = name_allocator_.Allocate("%tmp.");
+            cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand, std::make_shared<IRArrayNode>("i1"), node->expr1_->IR_name_));
+            std::string tmp = name_allocator_.Allocate("%tmp.");
+            cur_block_->AddInstruction(std::make_shared<IRNegationInstructionNode>(tmp, false, "i1", operand));
+            cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(tmp, saved_ctx.true_label, saved_ctx.false_label));
+          }
+          node->IR_name_.clear();
+        }
+      } else {
+        node->IR_name_ = name_allocator_.Allocate("%tmp.");
+        node->expr1_->Accept(this);
+        std::string IR_type = "i32";
+        if (node->type_info_->type_name_ == "bool") {
+          IR_type = "i1";
+        }
+        auto IR_type_node = std::make_shared<IRArrayNode>(IR_type);
+        first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type_node));
+        std::string tmp = name_allocator_.Allocate("%tmp.");
+        std::string operand = name_allocator_.Allocate("%tmp.");
+        cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand, IR_type_node, node->expr1_->IR_name_));
+        cur_block_->AddInstruction(std::make_shared<IRNegationInstructionNode>(tmp, node->op_ == "-", IR_type, operand));
+        cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type_node, tmp, node->IR_name_));
       }
-      auto IR_type_node = std::make_shared<IRArrayNode>(IR_type);
-      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type_node));
-      std::string tmp = name_allocator_.Allocate("%tmp.");
-      std::string operand = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand, IR_type_node, node->expr1_->IR_name_));
-      cur_block_->AddInstruction(std::make_shared<IRNegationInstructionNode>(tmp, node->op_ == "-", IR_type, operand));
-      cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type_node, tmp, node->IR_name_));
     } else if (node->type_ == kArithmeticOrLogicExpr) {
       node->IR_name_ = name_allocator_.Allocate("%tmp.");
       node->expr1_->Accept(this);
@@ -367,71 +403,149 @@ void IRGenerator::Visit(ExpressionNode *node) {
         node->type_info_->type_name_ == "u32" || node->type_info_->type_name_ == "usize"));
       cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type_node, tmp, node->IR_name_));
     } else if (node->type_ == kComparisonExpr) {
-      node->IR_name_ = name_allocator_.Allocate("%tmp.");
-      node->expr1_->Accept(this);
-      node->expr2_->Accept(this);
-      auto IR_type = std::make_shared<IRArrayNode>("i1");
-      std::string son_type = "i32";
-      if (node->expr1_->type_info_->type_name_ == "bool") {
-        son_type = "i1";
-      }
-      auto son_type_node = std::make_shared<IRArrayNode>(son_type);
-      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
-      std::string tmp = name_allocator_.Allocate("%tmp.");
-      std::string operand1 = name_allocator_.Allocate("%tmp.");
-      std::string operand2 = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand1, son_type_node, node->expr1_->IR_name_));
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand2, son_type_node, node->expr2_->IR_name_));
-      if (node->op_ == "==") {
-        cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
-          tmp, IRCompareInstructionNode::Operator::kEq, son_type, operand1, operand2));
-      } else if (node->op_ == "!=") {
-        cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
-          tmp, IRCompareInstructionNode::Operator::kNe, son_type, operand1, operand2));
-      } else {
-        bool is_unsigned = (node->expr1_->type_info_->type_name_ == "u32" || node->expr1_->type_info_->type_name_ == "usize");
-        if (node->op_ == ">") {
-          cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
-          tmp, is_unsigned ? IRCompareInstructionNode::Operator::kUgt : IRCompareInstructionNode::Operator::kSgt,
-          son_type, operand1, operand2));
-        } else if (node->op_ == "<") {
-          cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
-          tmp, is_unsigned ? IRCompareInstructionNode::Operator::kUlt : IRCompareInstructionNode::Operator::kSlt,
-          son_type, operand1, operand2));
-        } else if (node->op_ == ">=") {
-          cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
-          tmp, is_unsigned ? IRCompareInstructionNode::Operator::kUge : IRCompareInstructionNode::Operator::kSge,
-          son_type, operand1, operand2));
-        } else {
-          cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
-          tmp, is_unsigned ? IRCompareInstructionNode::Operator::kUle : IRCompareInstructionNode::Operator::kSle,
-          son_type, operand1, operand2));
+      if (branch_ctx_.active) {
+        int saved_true = branch_ctx_.true_label;
+        int saved_false = branch_ctx_.false_label;
+        branch_ctx_.active = false;
+        node->expr1_->Accept(this);
+        node->expr2_->Accept(this);
+        branch_ctx_.active = true;
+        std::string son_type = "i32";
+        if (node->expr1_->type_info_->type_name_ == "bool") {
+          son_type = "i1";
         }
-      }
-      cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type, tmp, node->IR_name_));
-    } else if (node->type_ == kLazyBooleanExpr) {
-      node->IR_name_ = name_allocator_.Allocate("%tmp.");
-      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, std::make_shared<IRArrayNode>("i1")));
-      node->expr1_->Accept(this);
-      auto extra_block = std::make_shared<IRBlockNode>(cur_tag_cnt_);
-      cur_function_->AddBlock(extra_block);
-      ++cur_tag_cnt_;
-      auto end_block = std::make_shared<IRBlockNode>(cur_tag_cnt_);
-      cur_function_->AddBlock(end_block);
-      ++cur_tag_cnt_;
-      std::string cond = name_allocator_.Allocate("%tmp.");
-      cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, std::make_shared<IRArrayNode>("i1"), node->expr1_->IR_name_));
-      Copy(node->IR_name_, node->expr1_->IR_name_, node->type_info_.get());
-      if (node->op_ == "&&") {
-        cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, extra_block->GetID(), end_block->GetID()));
+        auto son_type_node = std::make_shared<IRArrayNode>(son_type);
+        std::string tmp = name_allocator_.Allocate("%tmp.");
+        std::string operand1 = name_allocator_.Allocate("%tmp.");
+        std::string operand2 = name_allocator_.Allocate("%tmp.");
+        cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand1, son_type_node, node->expr1_->IR_name_));
+        cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand2, son_type_node, node->expr2_->IR_name_));
+        if (node->op_ == "==") {
+          cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+            tmp, IRCompareInstructionNode::Operator::kEq, son_type, operand1, operand2));
+        } else if (node->op_ == "!=") {
+          cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+            tmp, IRCompareInstructionNode::Operator::kNe, son_type, operand1, operand2));
+        } else {
+          bool is_unsigned = (node->expr1_->type_info_->type_name_ == "u32" || node->expr1_->type_info_->type_name_ == "usize");
+          if (node->op_ == ">") {
+            cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+            tmp, is_unsigned ? IRCompareInstructionNode::Operator::kUgt : IRCompareInstructionNode::Operator::kSgt,
+            son_type, operand1, operand2));
+          } else if (node->op_ == "<") {
+            cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+            tmp, is_unsigned ? IRCompareInstructionNode::Operator::kUlt : IRCompareInstructionNode::Operator::kSlt,
+            son_type, operand1, operand2));
+          } else if (node->op_ == ">=") {
+            cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+            tmp, is_unsigned ? IRCompareInstructionNode::Operator::kUge : IRCompareInstructionNode::Operator::kSge,
+            son_type, operand1, operand2));
+          } else {
+            cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+            tmp, is_unsigned ? IRCompareInstructionNode::Operator::kUle : IRCompareInstructionNode::Operator::kSle,
+            son_type, operand1, operand2));
+          }
+        }
+        cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(tmp, saved_true, saved_false));
+        node->IR_name_.clear();
       } else {
-        cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, end_block->GetID(), extra_block->GetID()));
+        node->IR_name_ = name_allocator_.Allocate("%tmp.");
+        node->expr1_->Accept(this);
+        node->expr2_->Accept(this);
+        auto IR_type = std::make_shared<IRArrayNode>("i1");
+        std::string son_type = "i32";
+        if (node->expr1_->type_info_->type_name_ == "bool") {
+          son_type = "i1";
+        }
+        auto son_type_node = std::make_shared<IRArrayNode>(son_type);
+        first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, IR_type));
+        std::string tmp = name_allocator_.Allocate("%tmp.");
+        std::string operand1 = name_allocator_.Allocate("%tmp.");
+        std::string operand2 = name_allocator_.Allocate("%tmp.");
+        cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand1, son_type_node, node->expr1_->IR_name_));
+        cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(operand2, son_type_node, node->expr2_->IR_name_));
+        if (node->op_ == "==") {
+          cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+            tmp, IRCompareInstructionNode::Operator::kEq, son_type, operand1, operand2));
+        } else if (node->op_ == "!=") {
+          cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+            tmp, IRCompareInstructionNode::Operator::kNe, son_type, operand1, operand2));
+        } else {
+          bool is_unsigned = (node->expr1_->type_info_->type_name_ == "u32" || node->expr1_->type_info_->type_name_ == "usize");
+          if (node->op_ == ">") {
+            cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+            tmp, is_unsigned ? IRCompareInstructionNode::Operator::kUgt : IRCompareInstructionNode::Operator::kSgt,
+            son_type, operand1, operand2));
+          } else if (node->op_ == "<") {
+            cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+            tmp, is_unsigned ? IRCompareInstructionNode::Operator::kUlt : IRCompareInstructionNode::Operator::kSlt,
+            son_type, operand1, operand2));
+          } else if (node->op_ == ">=") {
+            cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+            tmp, is_unsigned ? IRCompareInstructionNode::Operator::kUge : IRCompareInstructionNode::Operator::kSge,
+            son_type, operand1, operand2));
+          } else {
+            cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+            tmp, is_unsigned ? IRCompareInstructionNode::Operator::kUle : IRCompareInstructionNode::Operator::kSle,
+            son_type, operand1, operand2));
+          }
+        }
+        cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type, tmp, node->IR_name_));
       }
-      cur_block_ = extra_block;
-      node->expr2_->Accept(this);
-      Copy(node->IR_name_, node->expr2_->IR_name_, node->type_info_.get());
-      cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(end_block->GetID()));
-      cur_block_ = end_block;
+    } else if (node->type_ == kLazyBooleanExpr) {
+      if (branch_ctx_.active) {
+        auto parent_ctx = branch_ctx_;
+        auto rhs_block = std::make_shared<IRBlockNode>(cur_tag_cnt_);
+        cur_function_->AddBlock(rhs_block);
+        ++cur_tag_cnt_;
+        if (node->op_ == "&&") {
+          branch_ctx_ = {true, static_cast<int>(rhs_block->GetID()), parent_ctx.false_label};
+        } else {
+          branch_ctx_ = {true, parent_ctx.true_label, static_cast<int>(rhs_block->GetID())};
+        }
+        node->expr1_->Accept(this);
+        if (!node->expr1_->IR_name_.empty()) {
+          std::string cond = name_allocator_.Allocate("%tmp.");
+          cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, std::make_shared<IRArrayNode>("i1"), node->expr1_->IR_name_));
+          if (node->op_ == "&&") {
+            cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, rhs_block->GetID(), parent_ctx.false_label));
+          } else {
+            cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, parent_ctx.true_label, rhs_block->GetID()));
+          }
+        }
+        cur_block_ = rhs_block;
+        branch_ctx_ = parent_ctx;
+        node->expr2_->Accept(this);
+        if (!node->expr2_->IR_name_.empty()) {
+          std::string cond = name_allocator_.Allocate("%tmp.");
+          cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, std::make_shared<IRArrayNode>("i1"), node->expr2_->IR_name_));
+          cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, parent_ctx.true_label, parent_ctx.false_label));
+        }
+        node->IR_name_.clear();
+      } else {
+        node->IR_name_ = name_allocator_.Allocate("%tmp.");
+        first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(node->IR_name_, std::make_shared<IRArrayNode>("i1")));
+        node->expr1_->Accept(this);
+        auto extra_block = std::make_shared<IRBlockNode>(cur_tag_cnt_);
+        cur_function_->AddBlock(extra_block);
+        ++cur_tag_cnt_;
+        auto end_block = std::make_shared<IRBlockNode>(cur_tag_cnt_);
+        cur_function_->AddBlock(end_block);
+        ++cur_tag_cnt_;
+        std::string cond = name_allocator_.Allocate("%tmp.");
+        cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(cond, std::make_shared<IRArrayNode>("i1"), node->expr1_->IR_name_));
+        Copy(node->IR_name_, node->expr1_->IR_name_, node->type_info_.get());
+        if (node->op_ == "&&") {
+          cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, extra_block->GetID(), end_block->GetID()));
+        } else {
+          cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(cond, end_block->GetID(), extra_block->GetID()));
+        }
+        cur_block_ = extra_block;
+        node->expr2_->Accept(this);
+        Copy(node->IR_name_, node->expr2_->IR_name_, node->type_info_.get());
+        cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(end_block->GetID()));
+        cur_block_ = end_block;
+      }
     } else if (node->type_ == kTypeCastExpr) {
       node->expr1_->Accept(this);
       if (node->expr1_->type_info_->type_name_ == "bool") {
