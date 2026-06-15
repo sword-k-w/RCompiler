@@ -45,6 +45,7 @@ std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t r
     // empty/malformed names that may appear in partially-registered IR).
     if (!name.empty() && (name[0] == '-' || std::isdigit(name[0]))) {
       int64_t val = std::stoll(name);
+      if (val == 0) return "x0";  // use zero register, avoid li
       auto it = const_cache_.find(val);
       if (it != const_cache_.end()) {
         return it->second;
@@ -54,6 +55,12 @@ std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t r
     }
     // Fallback: empty or non-integer name — emit li 0 to avoid asm errors.
     os_ << "\tli\tt" << reg_id << ",\t0\n";
+    return "t" + std::to_string(reg_id);
+  }
+  // a-reg values are stale after a call; load from save slot
+  if (address >= 10 && address <= 17 && registers_saved_) {
+    uint32_t save_off = 56 + 8 * (address - 10);
+    TransferToTreg(save_off, reg_id, val_type);
     return "t" + std::to_string(reg_id);
   }
   return "x" + std::to_string(address);
@@ -82,6 +89,7 @@ void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address
 }
 
 void AssemblyGenerator::SaveRegister() {
+  if (registers_saved_) return;  // still valid in save slots from prior call
   // Save a0~aN, ra, and t1 at the top of the frame.
   // t3/t4 hold known constants; we reload them via li after the
   // call instead of saving/restoring to memory.
@@ -90,6 +98,7 @@ void AssemblyGenerator::SaveRegister() {
   }
   PrintMem(os_, "sd", "ra", "sp", current_stack_ - 56 - 64);
   PrintMem(os_, "sd", "t1", "sp", current_stack_ - 8);
+  registers_saved_ = true;
 }
 
 void AssemblyGenerator::RestoreRegister() {
@@ -102,10 +111,19 @@ void AssemblyGenerator::RestoreRegister() {
   for (auto &[val, reg] : const_cache_) {
     os_ << "\tli\t" << reg << ",\t" << val << '\n';
   }
+  registers_saved_ = false;
+}
+
+void AssemblyGenerator::FlushSavedRegisters() {
+  if (registers_saved_) RestoreRegister();
 }
 
 void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, uint32_t to_address, std::shared_ptr<IRArrayNode> type) {
   auto [from_type, from_address] = GetVariableAddress(from);
+  // If the source is an a-reg and registers are saved (stale), restore first.
+  if (from_type == kRegister && from_address >= 10 && from_address <= 17) {
+    FlushSavedRegisters();
+  }
   if (from_type == kConst) {
     if (to_type == kRegister) {
       os_ << "\tli\tx" << to_address << ", " << from << '\n';
@@ -444,6 +462,24 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
   bool op2c = (type2 == kConst);
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
 
+  // Helper: fold small constant into addi for ==/!=.  Returns true if folded.
+  auto foldConstCmp = [&](bool is_eq, const std::string &const_op,
+                          const std::string &var_op, uint32_t var_reg_id) -> bool {
+    if (const_op.empty() || (const_op[0] != '-' && !std::isdigit(const_op[0])))
+      return false;
+    int64_t val = std::stoll(const_op);
+    if (val == 0 || val < -2048 || val > 2047) return false;
+    int64_t neg = -val;
+    if (neg < -2048 || neg > 2047) return false;
+    auto rs = VariableToReg(var_op, var_reg_id, node->type_);
+    PrintIA(os_, "addi", "t0", rs, neg);
+    if (is_eq)
+      os_ << "\tsltiu\t" << rd << ", t0, 1\n";
+    else
+      os_ << "\tsltu\t" << rd << ", x0, t0\n";
+    return true;
+  };
+
   // Peephole: ==0, !=0 — load only the non-const operand.
   if (node->op_ == IRCompareInstructionNode::kEq) {
     if (op1c && node->operand1_ == "0") {
@@ -458,6 +494,15 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
       RegToVariable(node->storage_type_, node->address_, rd, "i1");
       return;
     }
+    // Peephole: ==small_const — fold into addi (avoids li).
+    if (op2c && foldConstCmp(true, node->operand2_, node->operand1_, 0)) {
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      return;
+    }
+    if (op1c && foldConstCmp(true, node->operand1_, node->operand2_, 1)) {
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      return;
+    }
   }
   if (node->op_ == IRCompareInstructionNode::kNe) {
     if (op1c && node->operand1_ == "0") {
@@ -469,6 +514,15 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
     if (op2c && node->operand2_ == "0") {
       auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
       os_ << "\tsltu\t" << rd << ", x0, " << rs1 << '\n';
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      return;
+    }
+    // Peephole: !=small_const — fold into addi (avoids li).
+    if (op2c && foldConstCmp(false, node->operand2_, node->operand1_, 0)) {
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      return;
+    }
+    if (op1c && foldConstCmp(false, node->operand1_, node->operand2_, 1)) {
       RegToVariable(node->storage_type_, node->address_, rd, "i1");
       return;
     }
@@ -577,7 +631,18 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
     os_ << "\tmv\tt0, a0\n";
   }
 
-  RestoreRegister();
+  // If the next instruction is also a call, keep the saved state so the
+  // next SaveRegister/RestoreRegister pair can be skipped entirely.
+  if (NextInstructionIsCall()) {
+    // registers_saved_ stays true → next call skips SaveRegister.
+    // But reload hoisted constants: the call clobbered t3/t4 and the
+    // cache entries still point to them.
+    for (auto &[val, reg] : const_cache_) {
+      os_ << "\tli\t" << reg << ",\t" << val << '\n';
+    }
+  } else {
+    RestoreRegister();
+  }
 
   if (has_result) {
     RegToVariable(node->storage_type_, node->address_, "t0", node->result_type_->base_type_);
@@ -603,12 +668,22 @@ void AssemblyGenerator::Visit(IRBlockNode *node) {
   if (node->id_ != 0) {
     os_ << ".L" << current_func_name_ << "_" << node->id_ << ":\n";
   }
-  for (auto &instruction : node->instructions_) {
-    if (instruction->removed_) {
-      continue;
-    }
+  cur_instructions_ = &node->instructions_;
+  for (cur_ins_index_ = 0; cur_ins_index_ < node->instructions_.size(); ++cur_ins_index_) {
+    auto &instruction = node->instructions_[cur_ins_index_];
+    if (instruction->removed_) continue;
     instruction->Accept(this);
   }
+  cur_instructions_ = nullptr;
+}
+
+bool AssemblyGenerator::NextInstructionIsCall() {
+  if (!cur_instructions_) return false;
+  for (size_t i = cur_ins_index_ + 1; i < cur_instructions_->size(); ++i) {
+    if ((*cur_instructions_)[i]->removed_) continue;
+    return dynamic_cast<IRCallInstructionNode *>((*cur_instructions_)[i].get()) != nullptr;
+  }
+  return false;
 }
 
 void AssemblyGenerator::Visit(IRParameterNode *node) {}
