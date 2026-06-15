@@ -85,8 +85,12 @@ void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address
   if (storage_type == kMemory) {
     PrintMem(os_, LoadStoreType(val_type).second, reg, "sp", current_stack_ - address);
   } else if (!SameRegister(address, reg)) {
-    if (address >= 10 && address <= 17) FlushSavedRegisters();
-    os_ << "\tmv\tx" << address << ", " << reg << '\n';
+    if (address >= 10 && address <= 17 && registers_saved_) {
+      uint32_t save_off = 56 + 8 * (address - 10);
+      PrintMem(os_, "sd", reg, "sp", current_stack_ - save_off);
+    } else {
+      os_ << "\tmv\tx" << address << ", " << reg << '\n';
+    }
   }
 }
 
@@ -154,8 +158,12 @@ void AssemblyGenerator::DataMoveFromReg(const std::string &from, StorageType to_
   auto [l_ins, s_ins] = LoadStoreType(type->base_type_);
   if (to_type == kRegister) {
     if (!SameRegister(to_address, from)) {
-      if (to_address >= 10 && to_address <= 17) FlushSavedRegisters();
-      os_ << "\tmv\tx" << to_address << ", " << from << '\n';
+      if (to_address >= 10 && to_address <= 17 && registers_saved_) {
+        uint32_t save_off = 56 + 8 * (to_address - 10);
+        PrintMem(os_, "sd", from, "sp", current_stack_ - save_off);
+      } else {
+        os_ << "\tmv\tx" << to_address << ", " << from << '\n';
+      }
     }
   } else {
     PrintMem(os_, s_ins, from, "sp", current_stack_ - to_address);
@@ -346,9 +354,12 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
   os_ << "\t# Load Instruction " << node->result_ << '\n';
   auto ptr_reg = VariableToReg(node->pointer_, 0, "ptr");
   if (node->storage_type_ == kRegister) {
-    if (node->address_ >= 10 && node->address_ <= 17) FlushSavedRegisters();
     auto [l_ins, _] = LoadStoreType(node->type_->base_type_);
     PrintMem(os_, l_ins, "x" + std::to_string(node->address_), ptr_reg, 0);
+    if (node->address_ >= 10 && node->address_ <= 17 && registers_saved_) {
+      uint32_t save_off = 56 + 8 * (node->address_ - 10);
+      PrintMem(os_, "sd", "x" + std::to_string(node->address_), "sp", current_stack_ - save_off);
+    }
   } else {
     SaveRegister();
     PrintIA(os_, "addi", "a0", "sp", current_stack_ - node->address_);
