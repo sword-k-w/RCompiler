@@ -707,6 +707,7 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   current_stack_ = total_stack;
   current_func_name_ = node->name_;
   current_a_reg_used_ = node->a_reg_used_cnt_;
+  registers_saved_ = false;   // fresh save state per function
   current_variables_ = &node->variables_;
   variable_storage_ = &node->variable_storage_;
 
