@@ -54,12 +54,6 @@ private:
 
   IRFunctionNode *cur_func_;
   uint32_t cur_block_;
-  bool registers_saved_{false};   // true when a0..aN, ra, t1 are valid in save slots
-  uint32_t cur_ins_index_{0};     // index within current block's instruction list
-  std::deque<std::shared_ptr<IRInstructionNode>> *cur_instructions_{nullptr};
-
-  // Returns true if the next non-removed instruction in the current block is a call.
-  bool NextInstructionIsCall();
 
   std::pair<StorageType, uint32_t> GetVariableAddress(const std::string &);
   void TransferToTreg(uint32_t, uint32_t, const std::string &);
@@ -69,7 +63,6 @@ private:
   void RegToVariable(StorageType, uint32_t, const std::string &, const std::string &);
   void SaveRegister();
   void RestoreRegister();
-  void FlushSavedRegisters();  // restore if registers_saved_, called before non-call reads
   void DataMove(const std::string &, StorageType, uint32_t, std::shared_ptr<IRArrayNode>);
   void DataMoveFromReg(const std::string &, StorageType, uint32_t, std::shared_ptr<IRArrayNode>);
 };
