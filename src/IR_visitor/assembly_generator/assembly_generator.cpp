@@ -45,6 +45,7 @@ std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t r
     // empty/malformed names that may appear in partially-registered IR).
     if (!name.empty() && (name[0] == '-' || std::isdigit(name[0]))) {
       int64_t val = std::stoll(name);
+      if (val == 0) return "x0";  // use zero register, avoid li
       auto it = const_cache_.find(val);
       if (it != const_cache_.end()) {
         return it->second;
@@ -444,6 +445,24 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
   bool op2c = (type2 == kConst);
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
 
+  // Helper: fold small constant into addi for ==/!=.  Returns true if folded.
+  auto foldConstCmp = [&](bool is_eq, const std::string &const_op,
+                          const std::string &var_op, uint32_t var_reg_id) -> bool {
+    if (const_op.empty() || (const_op[0] != '-' && !std::isdigit(const_op[0])))
+      return false;
+    int64_t val = std::stoll(const_op);
+    if (val == 0 || val < -2048 || val > 2047) return false;
+    int64_t neg = -val;
+    if (neg < -2048 || neg > 2047) return false;
+    auto rs = VariableToReg(var_op, var_reg_id, node->type_);
+    PrintIA(os_, "addi", "t0", rs, neg);
+    if (is_eq)
+      os_ << "\tsltiu\t" << rd << ", t0, 1\n";
+    else
+      os_ << "\tsltu\t" << rd << ", x0, t0\n";
+    return true;
+  };
+
   // Peephole: ==0, !=0 — load only the non-const operand.
   if (node->op_ == IRCompareInstructionNode::kEq) {
     if (op1c && node->operand1_ == "0") {
@@ -458,6 +477,15 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
       RegToVariable(node->storage_type_, node->address_, rd, "i1");
       return;
     }
+    // Peephole: ==small_const — fold into addi (avoids li).
+    if (op2c && foldConstCmp(true, node->operand2_, node->operand1_, 0)) {
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      return;
+    }
+    if (op1c && foldConstCmp(true, node->operand1_, node->operand2_, 1)) {
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      return;
+    }
   }
   if (node->op_ == IRCompareInstructionNode::kNe) {
     if (op1c && node->operand1_ == "0") {
@@ -469,6 +497,15 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
     if (op2c && node->operand2_ == "0") {
       auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
       os_ << "\tsltu\t" << rd << ", x0, " << rs1 << '\n';
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      return;
+    }
+    // Peephole: !=small_const — fold into addi (avoids li).
+    if (op2c && foldConstCmp(false, node->operand2_, node->operand1_, 0)) {
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      return;
+    }
+    if (op1c && foldConstCmp(false, node->operand1_, node->operand2_, 1)) {
       RegToVariable(node->storage_type_, node->address_, rd, "i1");
       return;
     }
