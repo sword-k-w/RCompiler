@@ -367,6 +367,7 @@ class IRMoveInstructionNode : public IRInstructionNode {
   friend class CFGBuilder;
   friend class CFG;
   friend class PhiTopo;
+  friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
 public:
   IRMoveInstructionNode() = delete;
   IRMoveInstructionNode(const std::string &dest, const std::string &src,
