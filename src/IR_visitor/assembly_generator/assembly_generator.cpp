@@ -59,7 +59,7 @@ std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t r
   }
   // a-reg values are stale after a call; load from save slot
   if (address >= 10 && address <= 17 && registers_saved_) {
-    uint32_t save_off = 56 + 8 * (address - 10);
+    uint32_t save_off = 8 * (address - 9);
     TransferToTreg(save_off, reg_id, val_type);
     return "t" + std::to_string(reg_id);
   }
@@ -86,7 +86,7 @@ void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address
     PrintMem(os_, LoadStoreType(val_type).second, reg, "sp", current_stack_ - address);
   } else if (!SameRegister(address, reg)) {
     if (address >= 10 && address <= 17 && registers_saved_) {
-      uint32_t save_off = 56 + 8 * (address - 10);
+      uint32_t save_off = 8 * (address - 9);
       PrintMem(os_, "sd", reg, "sp", current_stack_ - save_off);
     } else {
       os_ << "\tmv\tx" << address << ", " << reg << '\n';
@@ -96,23 +96,23 @@ void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address
 
 void AssemblyGenerator::SaveRegister() {
   if (registers_saved_) return;
-  // Save a0~aN, ra, and t1 at the top of the frame.
+  // Save a0~aN and ra at the top of the frame, packed tightly.
+  // t-regs are pure scratch (caller-saved, dead after each instruction)
+  // so no space is reserved for them.
   // t3/t4 hold known constants; we reload them via li after the
   // call instead of saving/restoring to memory.
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
-    PrintMem(os_, "sd", "a" + std::to_string(i), "sp", current_stack_ - 56 - 8 * i);
+    PrintMem(os_, "sd", "a" + std::to_string(i), "sp", current_stack_ - 8 - 8 * i);
   }
-  PrintMem(os_, "sd", "ra", "sp", current_stack_ - 56 - 64);
-  PrintMem(os_, "sd", "t1", "sp", current_stack_ - 8);
+  PrintMem(os_, "sd", "ra", "sp", current_stack_ - 8 - 8 * current_a_reg_used_);
   registers_saved_ = true;
 }
 
 void AssemblyGenerator::RestoreRegister() {
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
-    PrintMem(os_, "ld", "a" + std::to_string(i), "sp", current_stack_ - 56 - 8 * i);
+    PrintMem(os_, "ld", "a" + std::to_string(i), "sp", current_stack_ - 8 - 8 * i);
   }
-  PrintMem(os_, "ld", "ra", "sp", current_stack_ - 56 - 64);
-  PrintMem(os_, "ld", "t1", "sp", current_stack_ - 8);
+  PrintMem(os_, "ld", "ra", "sp", current_stack_ - 8 - 8 * current_a_reg_used_);
   // Reload hoisted constants (caller-saved t3/t4 are clobbered by calls).
   for (auto &[val, reg] : const_cache_) {
     os_ << "\tli\t" << reg << ",\t" << val << '\n';
@@ -159,7 +159,7 @@ void AssemblyGenerator::DataMoveFromReg(const std::string &from, StorageType to_
   if (to_type == kRegister) {
     if (!SameRegister(to_address, from)) {
       if (to_address >= 10 && to_address <= 17 && registers_saved_) {
-        uint32_t save_off = 56 + 8 * (to_address - 10);
+        uint32_t save_off = 8 * (to_address - 9);
         PrintMem(os_, "sd", from, "sp", current_stack_ - save_off);
       } else {
         os_ << "\tmv\tx" << to_address << ", " << from << '\n';
@@ -359,7 +359,7 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
     auto [l_ins, _] = LoadStoreType(node->type_->base_type_);
     PrintMem(os_, l_ins, "x" + std::to_string(node->address_), ptr_reg, 0);
     if (node->address_ >= 10 && node->address_ <= 17 && registers_saved_) {
-      uint32_t save_off = 56 + 8 * (node->address_ - 10);
+      uint32_t save_off = 8 * (node->address_ - 9);
       PrintMem(os_, "sd", "x" + std::to_string(node->address_), "sp", current_stack_ - save_off);
     }
   } else {
@@ -368,7 +368,7 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
     bool flag = true;
     for (uint32_t i = 10; i < 18; ++i) {
       if (SameRegister(i, ptr_reg)) {
-        PrintMem(os_, "ld", "a1", "sp", current_stack_ - 56 - 8 * (i - 10));
+        PrintMem(os_, "ld", "a1", "sp", current_stack_ - 8 * (i - 9));
         flag = false;
       }
     }
@@ -400,7 +400,7 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
     bool flag = true;
     for (uint32_t i = 10; i < 18; ++i) {
       if (SameRegister(i, ptr_reg)) {
-        PrintMem(os_, "ld", "a0", "sp", current_stack_ - 56 - 8 * (i - 10));
+        PrintMem(os_, "ld", "a0", "sp", current_stack_ - 8 * (i - 9));
         flag = false;
       }
     }
@@ -617,9 +617,9 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
       auto [l_ins, s_ins] = LoadStoreType(para->type_->base_type_);
       if (address >= 10 && address < 18) { // The correct values are in the memory.
         if (para->storage_type_ == kRegister) {
-          PrintMem(os_, l_ins, "x" + std::to_string(para->address_), "sp", current_stack_ - 56 - 8 * (address - 10));
+          PrintMem(os_, l_ins, "x" + std::to_string(para->address_), "sp", current_stack_ - 8 * (address - 9));
         } else {
-          PrintMem(os_, l_ins, "t0", "sp", current_stack_ - 56 - 8 * (address - 10));
+          PrintMem(os_, l_ins, "t0", "sp", current_stack_ - 8 * (address - 9));
           PrintMem(os_, s_ins, "t0", "sp", -static_cast<int32_t>(para->address_));
         }
       } else {

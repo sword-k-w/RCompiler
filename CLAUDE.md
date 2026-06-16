@@ -104,21 +104,19 @@ Phis in the same block are calculated in parallel (see `codegen/phi_topo.cpp`).
 
 ### Stack frame layout (codegen)
 
-s-reg saves live at the bottom of the frame (near sp), a-reg/ra/t1 saves at the top (within the MemoryAllocator's 120-byte reserved area). The two areas never overlap.
+s-reg saves live at the bottom of the frame (near sp), a-reg/ra saves at the top (within a 72-byte reserved area). The two areas never overlap.
 
 ```
 High addresses (sp + total_stack):
   ┌──────────────────────────────┐
-  │ t1 save             (off  8) │ ┐
-  │ t3 save             (off 16) │ │ t3/t4: constant cache reload
-  │ t4 save             (off 24) │ │ (via li, not ld — slots unused)
-  │ a0 save             (off 56) │ │ SaveRegister / RestoreRegister
-  │ a1 save             (off 64) │ │ fixed offsets from current_stack_
-  │ ...                          │ │
-  │ ra save             (of 120) │ ┘
+  │ a0 save             (off  8) │ ┐
+  │ a1 save             (off 16) │ │ SaveRegister / RestoreRegister
+  │ ...                          │ │ packed tightly: no t-reg space
+  │ a7 save             (off 64) │ │ t-regs are caller-saved scratch,
+  │ ra save             (off 72) │ ┘   dead after each instruction
   ├──────────────────────────────┤ ← top of original stack_size_
   │                              │
-  │ local variables & spills     │ ← MemoryAllocator allocations
+  │ local variables & spills     │ ← assigned after reg_alloc
   │                              │
   ├──────────────────────────────┤ ← bottom of variable area (sp + s_save)
   │ s1 save             (off  0) │ ┐ prologue / epilogue: s-regs
@@ -131,9 +129,15 @@ Low addresses (sp):
 - `s_save = 8 * |used_s_regs|`, `total_stack = stack_size_ + s_save`
 - `total_stack` is rounded up to the nearest multiple of 16 for RISC-V ABI compliance.
 - s-regs at `sp + 0, sp + 8, ...` (bottom of frame)
-- a-regs at `current_stack_ - 56 - 8*i`, ra at `current_stack_ - 120`, t1 at `current_stack_ - 8` (top of frame)
-- t3/t4 slots at offsets 16/24 (reserved but unused — constants are reloaded via `li`, not `ld`)
+- a-regs at `current_stack_ - 8 - 8*i`, ra at `current_stack_ - 8 - 8*current_a_reg_used_` (top of frame)
+- t-regs are pure scratch (caller-saved, dead after each instruction), no save space reserved
+- t3/t4 constants are reloaded via `li` after calls, not saved to memory
 - Variable access: `sp + current_stack_ - address`
+
+### Memory allocation
+
+MemoryAllocator records sizes without assigning addresses.  After reg_alloc promotes scalar variables to registers, only variables still in memory (`kMemory`) receive contiguous stack addresses.  Promoted variables never occupy stack space, so no compaction is needed.
+
 
 ### Reg alloc color pool
 

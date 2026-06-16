@@ -215,12 +215,35 @@ void RegAlloc::Visit(IRFunctionNode *node) {
     }
   }
 
-  // 5. Assign stack addresses to kMemory variables.  MemoryAllocator
+  // 5. Record used s-registers and update a-reg count for caller-save.
+  // a_reg_used_cnt_ was set by MemoryAllocator from param count; bump
+  // it if the allocator assigned additional a-regs to regular variables
+  // so SaveRegister/RestoreRegister covers them around calls.
+  // Only callee-saved s-regs (x9=s1, x18-x27=s2-s11) need prologue
+  // save/restore; caller-saved t/a-regs are safe in leaf functions.
+  // Must run before address assignment so the save area is sized correctly.
+  uint32_t max_a_reg_used = node->a_reg_used_cnt_;
+  for (auto &[var_id, phys_reg] : ig.GetPhysRegs()) {
+    if (ig.IsPrecolored(var_id)) continue;
+    if (phys_reg >= 10 && phys_reg <= 17) {
+      max_a_reg_used = std::max(max_a_reg_used, phys_reg - 10 + 1);
+    } else if (phys_reg == 9 || (phys_reg >= 18 && phys_reg <= 27)) {
+      node->used_s_regs_.insert(phys_reg);
+    }
+  }
+  node->a_reg_used_cnt_ = max_a_reg_used;
+
+  // 6. Assign stack addresses to kMemory variables.  MemoryAllocator
   // recorded sizes but deferred address assignment until after reg_alloc so
   // that promoted variables never occupy stack space.  Only variables still
   // in memory after promotion get addresses.
   {
-    uint32_t base = node->has_calls_ ? 56 + 64 : 0;
+    // Save area at the top of the frame: ra + a0..a(N-1), packed tightly.
+    // t-regs are pure scratch (caller-saved, dead after each instruction),
+    // so no space is reserved for them.
+    // Save area at the top of the frame: ra + a0..a(N-1), packed
+    // tightly with no t-reg space.  72 = 8 slots for a0-a7 + ra slot.
+    uint32_t base = node->has_calls_ ? 72 : 0;
     uint32_t cur = base;
 
     // Build a set of names already assigned (parameters go first)
@@ -299,22 +322,6 @@ void RegAlloc::Visit(IRFunctionNode *node) {
     }
   }
 
-  // Record used s-registers and update a-reg count for caller-save.
-  // a_reg_used_cnt_ was set by MemoryAllocator from param count; bump
-  // it if the allocator assigned additional a-regs to regular variables
-  // so SaveRegister/RestoreRegister covers them around calls.
-  // Only callee-saved s-regs (x9=s1, x18-x27=s2-s11) need prologue
-  // save/restore; caller-saved t/a-regs are safe in leaf functions.
-  uint32_t max_a_reg_used = node->a_reg_used_cnt_;
-  for (auto &[var_id, phys_reg] : ig.GetPhysRegs()) {
-    if (ig.IsPrecolored(var_id)) continue;
-    if (phys_reg >= 10 && phys_reg <= 17) {
-      max_a_reg_used = std::max(max_a_reg_used, phys_reg - 10 + 1);
-    } else if (phys_reg == 9 || (phys_reg >= 18 && phys_reg <= 27)) {
-      node->used_s_regs_.insert(phys_reg);
-    }
-  }
-  node->a_reg_used_cnt_ = max_a_reg_used;
 }
 
 void RegAlloc::Visit(IRRootNode *node) {

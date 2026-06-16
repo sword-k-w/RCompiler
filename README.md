@@ -110,31 +110,33 @@ TODO: const handle is not complete
 #### t reg usage
 
 - 0: arith, neg, br, j, load, store, gete, getep, comp, call, sel
-- 1: arith, neg, alloca, j, load, store, gete, getep, comp, sel
+- 1: arith, neg, alloca, j, load, store, gete, getep, comp, sel (pure scratch)
 - 2: arith, getep, comp
-- 3: comp
-- 4: comp
-- 5:
-- 6:
+- 3: const cache (pre-loaded large constant)
+- 4: const cache (pre-loaded large constant)
+- 5: long jumps (lui+addi+jalr for large functions)
+- 6: out-of-range immediate fallback
 
 #### Stack frame layout
 
-s-regs at the bottom, a-reg/ra/t1 at the top, variables in between:
+s-regs at the bottom, a-reg/ra at the top, variables in between:
 
 ```
 High addresses (sp + total_stack):
   ┌──────────────────────────────┐
-  │ t1 / ra / a0-a7 saves       │ ← SaveRegister (top)
+  │ ra / a0-a7 saves             │ ← SaveRegister (top)
   ├──────────────────────────────┤ ← top of stack_size_
   │ local variables & spills     │
   ├──────────────────────────────┤ ← bottom of variable area
-  │ s1 / s2 / ... saves         │ ← prologue (sp + 0, 4, ...)
+  │ s1 / s2 / ... saves         │ ← prologue (sp + 0, 8, ...)
   └──────────────────────────────┘
 Low addresses (sp):
 ```
 
-- `s_save = 4 * |used_s_regs|`, `total_stack = stack_size_ + s_save`
-- Extending sp by s_save shifts variable area up, freeing the bottom for s-regs.
+- `s_save = 8 * |used_s_regs|`, `total_stack = stack_size_ + s_save`
+- `total_stack` is rounded up to the nearest multiple of 16 for RISC-V ABI compliance.
+- Memory addresses are assigned after reg_alloc: only variables still in memory get stack slots.
+- t1 is pure scratch (dead after each instruction), no save needed.
 
 ### mem2reg
 
