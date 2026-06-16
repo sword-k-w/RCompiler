@@ -436,7 +436,11 @@ void AssemblyGenerator::Visit(IRGetElementPtrInstructionNode *node) {
         align = 8;
         offset = Align8(offset);
       }
-      offset += struct_node->members_[i]->allocated_size_;
+      auto member_size = struct_node->members_[i]->allocated_size_;
+      if (align == 8 && struct_node->members_[i]->align_ == 1) {
+        member_size = Align8(member_size);
+      }
+      offset += member_size;
     }
     if (struct_node->members_[node->index_]->align_ == 8) {
       offset = Align8(offset);
