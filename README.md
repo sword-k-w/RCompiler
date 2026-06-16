@@ -1,143 +1,149 @@
 # RCompiler
 
-## parser
+A Rust-subset (`.rx`) to RISC-V 64-bit compiler written in C++20. The compiler generates RV64 assembly and runs via `qemu-riscv64`.
 
-### expression handle
+## Build
 
-main idea: Pratt Parsing
+```bash
+# Configure + build all targets into build/
+make build
 
-grammar involved:
+# Or manually:
+mkdir -p build && cd build && cmake .. && cmake --build .
+```
 
-* BorrowExpression = (& | &&) Expression | (& | &&) mut Expression
-* DereferenceExpression = * Expression
-* NegationExpression = - Expression | ! expression
-* ArithmeticOrLogicalExpression = 
-    Expression + Expression
-  | Expression - Expression
-  | Expression * Expression
-  | Expression / Expression
-  | Expression % Expression
-  | Expression & Expression
-  | Expression | Expression
-  | Expression ^ Expression
-  | Expression << Expression
-  | Expression >> Expression
-* ComparisonExpression =
-    Expression == Expression
-  | Expression != Expression
-  | Expression > Expression
-  | Expression < Expression
-  | Expression >= Expression
-  | Expression <= Expression
-* LazyBooleanExpression = Expression || Expression | Expression && Expression
-* TypeCastExpression = Expression as TypeNoBounds
-* AssignmentExpression = Expression = Expression
-* CompoundAssignmentExpression =
-    Expression += Expression
-  | Expression -= Expression
-  | Expression *= Expression
-  | Expression /= Expression
-  | Expression %= Expression
-  | Expression &= Expression
-  | Expression |= Expression
-  | Expression ^= Expression
-  | Expression <<= Expression
-  | Expression >>= Expression
-* GroupedExpression = ( Expression )
-* IndexExpression = Expression [ Expression ]
-* CallExpression = Expression ( CallParams? )
-* MethodCallExpression = Expression . PathExprSegment ( CallParams? )
-* FieldExpression = Expression . IDENTIFIER
-* BreakExpression = break Expression?
-* ReturnExpression = return Expression?
+The CMake build produces 9 targets: `parser_test`, `semantic_test`, `IR_test`, `codegen_test`, `reg_alloc_test`, `IR_single`, `IR_single_optimized`, `codegen_single`, `dominator`.
 
-leaf expression:
+## Test
 
-* LiteralExpression
-* PathExpression
-* ArrayExpression
-* StructExpression
-* ContinueExpression
-* UnderscoreExpression
-* ExpressionWithBlock
+```bash
+# All CTest-registered tests
+cd build && ctest
 
-## Semantic
+# Run a specific GTest suite/case by filter
+./build/codegen_test --gtest_filter=TestSuiteName.TestName
 
-### First Round
+# Run tests in isolation with XML reports (Python runner)
+cd test && python3 run_isolated_tests.py
+```
 
-* build scope tree
-* collect the name of items. (using 0/1 BFS to ensure names in same scope are added successively(maybe not necessary now))
-* bind impl to struct (if trait impl, copy the whole AST substree that is default in trait and is not implemented in impl)
-* check enumeration
+Test cases live in `testcases/` (git submodule). Scripts under `script/IR/` and `script/codegen/` drive end-to-end testing through `qemu-riscv64`. The test scripts require `clang-21`, `lld-21`, and RISC-V Linux cross-compilation libraries (extracted under `tools/riscv64-linux/`).
 
-### Second Round
+## Pipeline
 
-* analyse type and calculate the value of const.
+```
+Source (.rx) → Lexer → Parser → Semantic (3 passes) → IR Generator
+  → mem2reg → EliminateCriticalEdge → ReplacePhiWithMoves
+  → EliminateEmptyBlocks → Preprocessor → Memory Allocator → Reg Alloc
+  → Assembly Generator → RISC-V .s
+```
 
-### Third Round
+## Architecture
 
-* type check
-* check trait type
+### Source layout (under `src/`)
 
-### not do yet
+- **`lexer/`** — Tokenizer: tries each token function at each position, picks the longest match.
+- **`parser/`** — Recursive-descent parser with Pratt parsing for operator precedence.
+- **`semantic/`** — Scope tree, type system with `ConstValue`, builtin types/functions.
+- **`visitor/`** — AST visitors: three checker passes, IR generator, AST pretty-printer.
+- **`IR/`** — Three-address-code IR: functions contain blocks, blocks contain instructions. Values are ptr-based.
+- **`IR_visitor/`** — IR passes: preprocessor, memory allocator, assembly generator, phi eliminator, empty block eliminator.
+- **`liveness_analysis/`** — CFG construction, def-use sets, liveness in/out (worklist algorithm), dominator tree.
+- **`mem2reg/`** — Memory-to-register promotion (alloca→SSA registers with phi insertion) and critical edge elimination.
+- **`reg_alloc/`** — Graph-coloring register allocator with Briggs conservative move coalescing.
+- **`codegen/`** — RISC-V assembly emission helpers, register name table, phi topological ordering.
 
-* trait : default copy
+### IR naming conventions
 
-## IR
+- Function `foo` → `function..foo`
+- Struct `s` → `struct.s`
+- Method `s.foo` → `function..s.foo`
 
-constant : replace it with value directly
+## RISC-V register conventions
 
-IR code = struct definitions + functions
+### t-reg usage (codegen scratch)
 
-function = blocks
+| register | purpose |
+|---|---|
+| **t0** | arith (operand1), compare aux (sub, sltu, slt), data move, call args |
+| **t1** | arith (operand2), store const, GEPP (slli, li), saved/restored around calls |
+| **t2** | arith result (kMemory), GEPP (mul) |
+| **t3** | **constant cache** — pre-loaded at function entry with a large (>12-bit) constant; reloaded via `li` after calls |
+| **t4** | **constant cache** — second pre-loaded constant slot |
+| **t5** | long jumps for large functions (`lui+addi+jalr`); used for promoted variables in leaf functions |
+| **t6** | `PrintIA`/`PrintIStar`/`PrintMem` fallback for out-of-range immediates |
 
-block = instructions
+### Reg alloc color pool
 
-### Name
+- **Precolored nodes** (function params): a0–a7 (IDs 10–17)
+- **Leaf functions**: t5 → unused a-regs → s1–s11 → parameter a-regs (no s-reg save/restore needed)
+- **Non-leaf functions**: s1–s11 (IDs 9, 18–27) → a0–a7 as fallback
+- Briggs conservative move coalescing merges move-related virtual registers that don't interfere
 
-- function : foo -> function..foo
-- struct : s -> struct.s
-- method : s.foo -> function..s.foo
+## Stack frame layout
 
-### Idea
-
-Each variable/expression, use ptr to store its value. Corresponding IR name is the name of ptr. Left values use their own pointer; right value use temporary pointer.
-
-### Codegen
-
-TODO: const handle is not complete
-
-#### t reg usage
-
-- 0: arith, neg, br, j, load, store, gete, getep, comp, call, sel
-- 1: arith, neg, alloca, j, load, store, gete, getep, comp, sel (pure scratch)
-- 2: arith, getep, comp
-- 3: const cache (pre-loaded large constant)
-- 4: const cache (pre-loaded large constant)
-- 5: long jumps (lui+addi+jalr for large functions)
-- 6: out-of-range immediate fallback
-
-#### Stack frame layout
-
-s-regs at the bottom, a-reg/ra at the top, variables in between:
+s-regs at the bottom (sp), a-reg/ra at the top (within 72 bytes). The two areas never overlap.
 
 ```
 High addresses (sp + total_stack):
   ┌──────────────────────────────┐
-  │ ra / a0-a7 saves             │ ← SaveRegister (top)
+  │ a0 save             (off  8) │ ┐
+  │ a1 save             (off 16) │ │ SaveRegister (packed tightly,
+  │ ...                          │ │ no t-reg space — t-regs are
+  │ a7 save             (off 64) │ │ caller-saved scratch, dead
+  │ ra save             (off 72) │ ┘ after each instruction)
   ├──────────────────────────────┤ ← top of stack_size_
-  │ local variables & spills     │
-  ├──────────────────────────────┤ ← bottom of variable area
-  │ s1 / s2 / ... saves         │ ← prologue (sp + 0, 8, ...)
+  │ local variables & spills     │ ← assigned after reg_alloc
+  ├──────────────────────────────┤ ← sp + s_save
+  │ s1 save             (off  0) │ ┐ prologue: s-regs at
+  │ s2 save             (off  8) │ │ sp + 0, 8, 16, ...
+  │ ...                          │ ┘
   └──────────────────────────────┘
 Low addresses (sp):
 ```
 
 - `s_save = 8 * |used_s_regs|`, `total_stack = stack_size_ + s_save`
-- `total_stack` is rounded up to the nearest multiple of 16 for RISC-V ABI compliance.
-- Memory addresses are assigned after reg_alloc: only variables still in memory get stack slots.
-- t1 is pure scratch (dead after each instruction), no save needed.
+- `total_stack` is rounded up to the nearest multiple of 16 for RISC-V ABI compliance
+- Leaf functions (no calls) skip the entire a-reg/ra save area
+- Memory addresses assigned after reg_alloc: only `kMemory` variables get stack slots
+- t3/t4 constants reloaded via `li` after calls, not saved to memory
 
-### mem2reg
+## Key optimizations
 
-phis in the same block are calculated in parallel!
+### Codegen
+
+- **Immediate folding**: Small constants (12-bit signed) in `+`/`-` folded into `addiw`
+- **Redundant jump elimination**: Unconditional jumps to the next block elided; branch false-targets fall through
+- **Constant hoisting**: Up to 2 large constants pre-loaded into t3/t4 at function entry
+- **Compare peephole**: `==0`/`!=0` use `sltiu`/`sltu` with immediate 1 or x0 (no `li t1, 0`)
+- **Long jumps**: Functions with >40k instructions or >800 blocks use `lui+addi+jalr` (±2GB range)
+- **Call-save consolidation**: `RestoreRegister`+`SaveRegister` skipped between consecutive calls
+
+### IR
+
+- **RVO and direct-write**: Struct/array literals write directly into the return buffer or let target, skipping temp allocation and `memcpy`
+- **BranchContext**: Comparison/lazy-boolean results branch directly instead of storing to memory
+- **Leaf function stack**: Skip a-reg/ra save area when no calls and all params fit in registers
+- **Leaf function reg-alloc**: Prefer caller-saved registers (t5, a-regs) over s-regs, eliminating prologue/epilogue save/restore
+
+### Liveness & mem2reg
+
+- **Worklist algorithm**: CalcInOut only re-queues predecessors when a block's IN set changes
+- **Batched SSA rename**: Single dominator tree walk processes all promoted variables simultaneously
+- **Phi-merge elimination**: Blocks containing only a branch on a phi variable are threaded into predecessors, collapsing patterns from `&&`/`||` chains
+
+## RISC-V 64 toolchain
+
+The RV64 linker and cross-compilation libraries are stored under `tools/riscv64-linux/`:
+- `lld/bin/` — extracted `lld-21` package (LLVM linker with RISC-V support)
+- `sysroot/` — extracted cross-compilation libraries
+
+Source `.deb` files are in `tools/debs/`. To set up on a new machine, extract them with `dpkg-deb -x` into `tools/riscv64-linux/`.
+
+## Performance tracking
+
+Cycle counts from the RISC-V simulator across compiler versions are tracked in `performance/`. Run `python3 performance/visualize.py` to generate comparison plots.
+
+## Testcases submodule
+
+Test cases are in the `testcases/` submodule (`github.com/peterzheng98/RCompiler-Testcases`). After cloning, run `git submodule update --init`.

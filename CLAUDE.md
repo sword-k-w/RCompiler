@@ -42,7 +42,7 @@ Test cases live in `testcases/` (git submodule). Scripts under `script/IR/` and 
 ```
 Source (.rx) → Lexer → Parser → Semantic (3 passes) → IR Generator
   → mem2reg → EliminateCriticalEdge → ReplacePhiWithMoves
-  → Preprocessor → Memory Allocator → Reg Alloc
+  → EliminateEmptyBlocks → Preprocessor → Memory Allocator → Reg Alloc
   → Assembly Generator → RISC-V .s
 ```
 
@@ -56,7 +56,9 @@ Source (.rx) → Lexer → Parser → Semantic (3 passes) → IR Generator
 - **`IR_visitor/`** — IR passes via `IRVisitorBase`: `preprocessor/`, `memory_allocator/` (stack frame layout), `assembly_generator/` (IR→RISC-V assembly, the final backend).
 - **`liveness_analysis/`** — CFG construction, def-use sets, liveness in/out, dominator tree (for SSA construction). `CalcInOut()` uses a worklist algorithm: when a block's IN set changes, only its predecessors are re-queued (since `OUT[pred] = ∪ IN[succ]`). This avoids full fixed-point scans over all blocks, reducing O(n²) to near-linear for deeply nested control flow.
 - **`mem2reg/`** — Memory-to-register promotion (alloca→SSA registers with phi insertion) and critical edge elimination.
-- **`reg_alloc/`** — Graph-coloring register allocator. Builds interference graph from per-instruction liveness (reverse block walk), promotes scalar variables (i32/i1/ptr) into s-registers. Uses Chaitin-style simplify/spill/select with worklist. Added Briggs conservative move coalescing: move-related virtual registers are merged into one node if they don't interfere and the merged degree < K, eliminating `mv` instructions.
+- **`IR_visitor/phi_eliminator/`** — Replaces phi instructions with explicit move instructions in predecessor blocks.
+- **`IR_visitor/empty_block_eliminator/`** — Eliminates empty pass-through blocks after phi elimination, including phi-merge blocks (blocks containing only a branch on a phi variable, created by `&&`/`||` chains). Threads the branch into jump-predecessors and removes the merge block.
+- **`reg_alloc/`** — Graph-coloring register allocator. Builds interference graph from per-instruction liveness (reverse block walk), promotes scalar variables (i32/i1/ptr) into registers. Uses Chaitin-style simplify/spill/select with worklist. Added Briggs conservative move coalescing: move-related virtual registers are merged into one node if they don't interfere and the merged degree < K, eliminating `mv` instructions.
 - **`codegen/`** — RISC-V assembly emission helpers, register name table (32 regs), phi topological ordering.
 - **`common/`** — Keywords, builtin definitions, error reporting, helpers.
 - **`data_loader/`** — File/stdin input.
@@ -88,7 +90,7 @@ All headers live under `src/include/`, mirroring the source tree structure.
 - **t2**: arith result (kMemory), GEPP (mul)
 - **t3**: **constant cache** — pre-loaded at function entry with a large (>12-bit) constant.  Survives calls via `li` reload in RestoreRegister.  (Formerly compare aux; merged into t0.)
 - **t4**: **constant cache** — second pre-loaded constant slot.
-- **t5**: long jumps for large functions (`lui+addi+jalr`)
+- **t5**: long jumps for large functions (`lui+addi+jalr`); also used for promoted variables in leaf functions (safe since leaf functions don't need long jumps)
 - **t6**: `PrintIA`/`PrintIStar`/`PrintMem` fallback for out-of-range immediates
 
 Constants are pre-scanned per-function and up to 2 large constants are
@@ -138,12 +140,30 @@ Low addresses (sp):
 
 MemoryAllocator records sizes without assigning addresses.  After reg_alloc promotes scalar variables to registers, only variables still in memory (`kMemory`) receive contiguous stack addresses.  Promoted variables never occupy stack space, so no compaction is needed.
 
+### Leaf function optimizations
+
+Two cooperating optimizations eliminate unnecessary stack frame overhead for leaf functions (functions with no calls):
+
+- **Skip a-reg/ra save area** (IR / MemoryAllocator): Leaf functions whose parameters all fit in a0–a7 don't need the 72-byte caller-save area.  Previously every function allocated this area, causing simple leaf functions to waste ~144 bytes of stack with s-reg save/restore.  After this change, leaf function stack frames shrink to ~16 bytes (just the s-reg save area, if any s-regs are used).  Struct/array Load/Store/Move instructions that lower to `builtin_memcpy` are also detected as calls.
+
+- **Prefer caller-saved registers for promoted vars** (RegAlloc): In leaf functions, the color pool puts t5 and unused a-regs before s-regs since they're never clobbered.  Combined with the above, small leaf functions like `f_add1` compile to 5 instructions with zero s-reg save/restore (was 8 with `sd`/`ld`).
+
+### BranchContext: skip store/load for conditions
+
+When a comparison or lazy-boolean expression is used directly as an `if`/`while` branch condition, the IR generator emits a branch on the comparison result instead of storing to memory and loading back.  A `BranchContext` (carrying the true/false labels) is threaded through expression handlers; handlers save labels locally before evaluating children so nested control-flow constructs don't corrupt the context.
+
+### Call-save consolidation
+
+Between consecutive call instructions in the same basic block, the intermediate `RestoreRegister`+`SaveRegister` pair is skipped.  While `registers_saved_` is true, a-register values in hardware are garbage — only the save slots are valid.  Guards at every code path that reads a-regs (`VariableToReg`, `VariableForceToReg`, `DataMove`, `IRStore`, call arg setup) flush or read from save slots.  Writes to a-regs update the save slot directly without a wasted `mv` to the hardware register.  Constant caches (t3/t4) are reloaded via `li` when the restore is deferred.
+
 
 ### Reg alloc color pool
 
 - **Precolored nodes** (function params): a0–a7 (IDs 10–17), set in `reg_alloc.cpp:61-66`.
-- **Color pool** (for promoted vars): s1–s11 = `{9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27}` (11 registers).
-- The two pools are disjoint; `Color()` strips edges between precolored and regular nodes.
+- **Color pool** depends on whether the function is a leaf:
+  - **Leaf functions** (no calls): t5 (ID 30), unused a-regs beyond parameters, then s1–s11, then parameter a-regs as last resort. Since leaf functions never clobber caller-saved registers, t5 and a-regs are safe — no s-reg save/restore in the prologue/epilogue.
+  - **Non-leaf functions**: s1–s11 = `{9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27}` (11 registers), plus a0–a7 as fallback.
+- The two pools (precolored vs. colorable) are disjoint; `Color()` strips edges between precolored and regular nodes.
 - **Move coalescing**: Before coloring, `Coalesce()` attempts to merge move-related virtual registers using Briggs conservative heuristic (merge only if the combined node has degree < K).  Coalesced nodes share the same physical register, eliminating `mv` instructions.  Currently limited by block-level liveness granularity — intra-block phi moves often show spurious interference and aren't coalesced.
 
 ### Assembly Generator optimizations (codegen)
