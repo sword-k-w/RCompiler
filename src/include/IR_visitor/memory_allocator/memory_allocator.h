@@ -31,9 +31,9 @@ public:
   void Visit(IRFunctionNode *) override;
   void Visit(IRRootNode *) override;
 private:
-  uint32_t *current_stack_;
   uint32_t current_parameter_register_;
   std::unordered_map<std::string, std::pair<StorageType, uint32_t>> *variable_storage_;
+  std::unordered_map<std::string, uint32_t> *variable_size_;
 
-  void AllocateOrReuse(const std::string &, uint32_t, IRInstructionNode *);
+  void RecordSize(const std::string &, uint32_t, IRInstructionNode *);
 };

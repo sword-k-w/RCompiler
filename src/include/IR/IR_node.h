@@ -174,6 +174,7 @@ class IRAllocateInstructionNode : public IRInstructionNode {
   friend class IRPrinter;
   friend class Preprocessor;
   friend class MemoryAllocator;
+  friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
@@ -473,6 +474,7 @@ private:
   uint32_t stack_size_ = 0;
   std::unordered_map<std::string, IRNode *> variables_;
   std::unordered_map<std::string, std::pair<StorageType, uint32_t>> variable_storage_;
+  std::unordered_map<std::string, uint32_t> variable_size_;
 
   std::set<uint32_t> used_s_regs_;
   uint32_t a_reg_used_cnt_;

@@ -4,6 +4,7 @@
 #include "liveness_analysis/CFG_builder.h"
 #include "codegen/register.h"
 #include "common/bit_set.h"
+#include "IR_visitor/memory_allocator/memory_allocator.h"
 #include <iostream>
 
 // s1-s11 (callee-saved, preferred) then a0-a7 (caller-saved, fallback)
@@ -210,6 +211,90 @@ void RegAlloc::Visit(IRFunctionNode *node) {
         ins->storage_type_ = kRegister;
         ins->address_ = phys_reg;
         node->variable_storage_[name] = {kRegister, phys_reg};
+      }
+    }
+  }
+
+  // 5. Assign stack addresses to kMemory variables.  MemoryAllocator
+  // recorded sizes but deferred address assignment until after reg_alloc so
+  // that promoted variables never occupy stack space.  Only variables still
+  // in memory after promotion get addresses.
+  {
+    uint32_t base = node->has_calls_ ? 56 + 64 : 0;
+    uint32_t cur = base;
+
+    // Build a set of names already assigned (parameters go first)
+    std::unordered_set<std::string> assigned;
+
+    // Parameters first, in declaration order
+    for (auto &param : node->parameters_) {
+      if (param->storage_type_ != kMemory) continue;
+      auto sit = node->variable_size_.find(param->name_);
+      uint32_t sz = (sit != node->variable_size_.end()) ? sit->second : 8;
+      uint32_t addr = cur + sz;
+      node->variable_storage_[param->name_] = {kMemory, addr};
+      param->address_ = addr;
+      assigned.insert(param->name_);
+      cur = addr;
+    }
+
+    // Remaining kMemory variables from variable_storage_, in name order
+    // for deterministic layout.
+    std::vector<std::string> mem_names;
+    for (auto &[name, storage] : node->variable_storage_) {
+      if (storage.first == kMemory && !assigned.count(name)) {
+        mem_names.push_back(name);
+      }
+    }
+    std::sort(mem_names.begin(), mem_names.end());
+    for (auto &name : mem_names) {
+      auto sit = node->variable_size_.find(name);
+      if (sit == node->variable_size_.end()) continue;
+      uint32_t sz = sit->second;
+      uint32_t addr = cur + sz;
+      node->variable_storage_[name] = {kMemory, addr};
+      cur = addr;
+    }
+
+    // Alloca inner data (always in memory), in block/instruction order
+    for (auto &block : node->blocks_) {
+      for (auto &ins : block->instructions_) {
+        if (ins->removed_) continue;
+        auto *alloca = dynamic_cast<IRAllocateInstructionNode *>(ins.get());
+        if (!alloca) continue;
+        uint32_t sz = Align8(alloca->type_->allocated_size_);
+        uint32_t addr = cur + sz;
+        alloca->inner_address_ = addr;
+        cur = addr;
+      }
+    }
+    node->stack_size_ = cur;
+
+    // Update instruction address_ fields from variable_storage_.
+    // Use the CFG to map def IDs -> variable names for each instruction.
+    for (auto &block : node->blocks_) {
+      for (auto &ins : block->instructions_) {
+        if (ins->removed_) continue;
+        if (ins->storage_type_ != kMemory) continue;
+
+        // Alloca result pointers: look up by result_ name directly
+        if (auto *alloca = dynamic_cast<IRAllocateInstructionNode *>(ins.get())) {
+          auto it = node->variable_storage_.find(alloca->result_);
+          if (it != node->variable_storage_.end()) {
+            ins->address_ = it->second.second;
+          }
+          continue;
+        }
+
+        // Other kMemory instructions: use CFG def ID -> variable name
+        if (ins->def_.empty()) continue;
+        uint32_t def_id = *ins->def_.begin();
+        auto [not_alloc, name] = cfg->GetName(def_id);
+        if (!not_alloc) continue;
+        auto it = node->variable_storage_.find(name);
+        if (it != node->variable_storage_.end()) {
+          ins->address_ = it->second.second;
+        }
       }
     }
   }

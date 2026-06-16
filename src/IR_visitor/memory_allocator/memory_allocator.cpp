@@ -6,14 +6,14 @@ uint32_t Align8(uint32_t x) {
   return (x + 7) / 8 * 8;
 }
 
-void MemoryAllocator::AllocateOrReuse(const std::string &name, uint32_t size, IRInstructionNode *node) {
+void MemoryAllocator::RecordSize(const std::string &name, uint32_t size, IRInstructionNode *node) {
   auto it = variable_storage_->find(name);
   if (it == variable_storage_->end()) {
-    *current_stack_ += size;
-    (*variable_storage_)[name] = {kMemory, *current_stack_};
+    (*variable_storage_)[name] = {kMemory, 0};
+    (*variable_size_)[name] = size;
   }
   node->storage_type_ = kMemory;
-  node->address_ = (*variable_storage_)[name].second;
+  node->address_ = 0;
 }
 
 void MemoryAllocator::Visit(IRArrayNode *node) {}
@@ -21,11 +21,11 @@ void MemoryAllocator::Visit(IRArrayNode *node) {}
 void MemoryAllocator::Visit(IRStructNode *node) {}
 
 void MemoryAllocator::Visit(IRArithmeticInstructionNode *node) {
-  AllocateOrReuse(node->result_, 8, node);
+  RecordSize(node->result_, 8, node);
 }
 
 void MemoryAllocator::Visit(IRNegationInstructionNode *node) {
-  AllocateOrReuse(node->result_, 8, node);
+  RecordSize(node->result_, 8, node);
 }
 
 void MemoryAllocator::Visit(IRBranchInstructionNode *node) {}
@@ -40,15 +40,13 @@ void MemoryAllocator::Visit(IRReturnInstructionNode *node) {
 }
 
 void MemoryAllocator::Visit(IRAllocateInstructionNode *node) {
-  AllocateOrReuse(node->result_, 8, node);
-
+  RecordSize(node->result_, 8, node);
   node->inner_storage_type_ = kMemory;
-  *current_stack_ += Align8(node->type_->allocated_size_);
-  node->inner_address_ = *current_stack_;
+  node->inner_address_ = 0;
 }
 
 void MemoryAllocator::Visit(IRLoadInstructionNode *node) {
-  AllocateOrReuse(node->result_, Align8(node->type_->allocated_size_), node);
+  RecordSize(node->result_, Align8(node->type_->allocated_size_), node);
 }
 
 void MemoryAllocator::Visit(IRStoreVariableInstructionNode *node) {}
@@ -56,31 +54,31 @@ void MemoryAllocator::Visit(IRStoreVariableInstructionNode *node) {}
 void MemoryAllocator::Visit(IRStoreConstInstructionNode *node) {}
 
 void MemoryAllocator::Visit(IRGetElementPtrInstructionNode *node) {
-  AllocateOrReuse(node->result_, 8, node);
+  RecordSize(node->result_, 8, node);
 }
 
 void MemoryAllocator::Visit(IRGetElementPtrPrimeInstructionNode *node) {
-  AllocateOrReuse(node->result_, 8, node);
+  RecordSize(node->result_, 8, node);
 }
 
 void MemoryAllocator::Visit(IRCompareInstructionNode *node) {
-  AllocateOrReuse(node->result_, 8, node);
+  RecordSize(node->result_, 8, node);
 }
 
 void MemoryAllocator::Visit(IRArgumentNode *node) {}
 
 void MemoryAllocator::Visit(IRCallInstructionNode *node) {
   if (node->result_type_ != nullptr) {
-    AllocateOrReuse(node->result_, Align8(node->result_type_->allocated_size_), node);
+    RecordSize(node->result_, Align8(node->result_type_->allocated_size_), node);
   }
 }
 
 void MemoryAllocator::Visit(IRMoveInstructionNode *node) {
-  AllocateOrReuse(node->result_, Align8(node->type_->allocated_size_), node);
+  RecordSize(node->result_, Align8(node->type_->allocated_size_), node);
 }
 
 void MemoryAllocator::Visit(IRSelectInstructionNode *node) {
-  AllocateOrReuse(node->result_, 8, node);
+  RecordSize(node->result_, 8, node);
 }
 
 void MemoryAllocator::Visit(IRBlockNode *node) {
@@ -99,8 +97,8 @@ void MemoryAllocator::Visit(IRParameterNode *node) {
     node->address_ = current_parameter_register_++;
   } else {
     node->storage_type_ = kMemory;
-    *current_stack_ += Align8(node->type_->allocated_size_);
-    node->address_ = *current_stack_;
+    node->address_ = 0;
+    (*variable_size_)[node->name_] = Align8(node->type_->allocated_size_);
   }
   (*variable_storage_)[node->name_] = {node->storage_type_, node->address_};
 }
@@ -153,12 +151,10 @@ void MemoryAllocator::Visit(IRFunctionNode *node) {
       }
     }
   }
-  if (node->has_calls_) {
-    node->stack_size_ += 56 + 64;
-  }
-  current_stack_ = &node->stack_size_;
+  // No longer grow stack_size_ here.  Addresses are assigned after reg_alloc.
   current_parameter_register_ = 10;
   variable_storage_ = &node->variable_storage_;
+  variable_size_ = &node->variable_size_;
   for (auto &parameter : node->parameters_) {
     parameter->Accept(this);
   }

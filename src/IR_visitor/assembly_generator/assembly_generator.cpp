@@ -339,7 +339,9 @@ void AssemblyGenerator::Visit(IRReturnInstructionNode *node) {
       s_off += 8;
     }
   }
-  PrintIA(os_, "addi", "sp", "sp", current_stack_);
+  if (current_stack_ != 0) {
+    PrintIA(os_, "addi", "sp", "sp", current_stack_);
+  }
   os_ << "\tret\n";
 }
 
@@ -712,7 +714,9 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   uint32_t total_stack = node->stack_size_ + s_save;
   total_stack = (total_stack + 15) / 16 * 16;  // 16-byte alignment for RISC-V ABI
 
-  PrintIA(os_, "addi", "sp", "sp", -static_cast<int32_t>(total_stack));
+  if (total_stack != 0) {
+    PrintIA(os_, "addi", "sp", "sp", -static_cast<int32_t>(total_stack));
+  }
 
   current_stack_ = total_stack;
   current_func_name_ = node->name_;
