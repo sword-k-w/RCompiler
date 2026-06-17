@@ -663,7 +663,11 @@ void IRGenerator::Visit(ExpressionNode *node) {
       if (builtin_function != nullptr) {
         function_name = builtin_function->function_name_;
         if (function_name == "exit") {
-          cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>(std::make_shared<IRArrayNode>("i32"), "0"));
+          if (!return_val_.empty()) {
+            cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(
+                std::make_shared<IRArrayNode>("i32"), "0", return_val_));
+          }
+          cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(return_block_->GetID()));
           return;
         }
       } else {
@@ -775,7 +779,7 @@ void IRGenerator::Visit(ExpressionNode *node) {
         in_return_ = false;
         Return(node->expr1_->type_info_.get(), node->expr1_->IR_name_);
       } else {
-        cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
+        cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(return_block_->GetID()));
       }
     } else {
       if (node->type_ != kExprWithBlock) {
@@ -854,12 +858,35 @@ void IRGenerator::Visit(FunctionNode *node) {
       rvo_target_ = "%pass..pointer";
     }
 
+    // Create a single return block — all returns jump here so the epilogue
+    // (s-reg restore, stack adjust, ret) is emitted only once.
+    return_block_ = std::make_shared<IRBlockNode>(cur_tag_cnt_);
+    cur_function_->AddBlock(return_block_);
+    ++cur_tag_cnt_;
+    if (!pass_result && !IR_type->IsEmpty()) {
+      return_val_ = name_allocator_.Allocate("%return.val");
+      first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(return_val_, IR_type));
+    } else {
+      return_val_.clear();
+    }
+
     if (node->block_expr_->statements_ != nullptr) {
       node->block_expr_->statements_->Accept(this);
     } else {
-      cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
+      cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(return_block_->GetID()));
     }
+
+    // Populate the return block.
+    if (!return_val_.empty()) {
+      std::string loaded = name_allocator_.Allocate("%tmp.");
+      return_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(loaded, IR_type, return_val_));
+      return_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>(IR_type, loaded));
+    } else {
+      return_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
+    }
+
     rvo_target_.clear();
+    return_val_.clear();
   } catch (Error &) { throw; }
 }
 
@@ -933,7 +960,7 @@ void IRGenerator::Visit(StatementsNode *node) {
         Return(trailer_statement->expr_statement_->type_info_.get(), trailer_statement->expr_statement_->expr_with_block_->IR_name_);
       } else {
         trailer_statement->Accept(this);
-        cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
+        cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(return_block_->GetID()));
       }
     }
   } catch (Error &) { throw; }
@@ -979,24 +1006,23 @@ void IRGenerator::Dereference(const std::string &name1, const std::string &name2
 void IRGenerator::Return(Type *type, const std::string &name) {
   try {
     if (type->type_ == kArrayType || type->type_ == kStructType) {
-      if (!rvo_target_.empty() && name == rvo_target_) {
-        cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
-      } else {
+      if (rvo_target_.empty() || name != rvo_target_) {
         Copy("%pass..pointer", name, type);
-        cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
       }
+      cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(return_block_->GetID()));
       return;
     }
     if (type->type_ == kNeverType) {
       return;
     }
     if (type->type_ == kUnitType) {
-      cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>());
+      cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(return_block_->GetID()));
     } else {
       std::string tmp = name_allocator_.Allocate("%tmp.");
       auto IR_type = GetIRTypeNode(type);
       cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(tmp, IR_type, name));
-      cur_block_->AddInstruction(std::make_shared<IRReturnInstructionNode>(IR_type, tmp));
+      cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(IR_type, tmp, return_val_));
+      cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(return_block_->GetID()));
     }
   } catch (Error &) { throw; }
 }

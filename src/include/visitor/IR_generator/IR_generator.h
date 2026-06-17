@@ -90,6 +90,8 @@ private:
   std::string rvo_target_;
   bool in_return_ = false;
   std::string let_target_;
+  std::shared_ptr<IRBlockNode> return_block_;
+  std::string return_val_;
   std::stack<std::shared_ptr<IRBlockNode>> loop_condition_block_;
   std::stack<std::shared_ptr<IRBlockNode>> loop_body_block_;
   std::stack<std::shared_ptr<IRBlockNode>> loop_end_block_;
