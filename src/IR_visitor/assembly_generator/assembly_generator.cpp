@@ -832,7 +832,13 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
       std::sort(sorted_consts.begin(), sorted_consts.end(),
                 [](const auto &a, const auto &b) { return a.second > b.second; });
 
-      uint32_t treg = 3;
+      // BISECT (looong expr / local1 WA): const-cache DISABLED.
+      // Leaving const_cache_ empty makes every consumer fall back to the
+      // inline `li` path: VariableToReg (operand constants), PrintMem /
+      // PrintIA / PrintIStar (large stack offsets), and ReloadConstCache
+      // (no-op).  The call-save deferral is unaffected.  To re-enable,
+      // set treg back to 3.
+      uint32_t treg = 5;  // > 4 → the population loop body never runs
       for (auto &[v, freq] : sorted_consts) {
         if (treg > 4) break;
         std::string r = "t" + std::to_string(treg);
