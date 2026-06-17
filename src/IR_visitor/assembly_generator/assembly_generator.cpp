@@ -808,8 +808,8 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
       }
       // Also count stack offsets used by SaveRegister/RestoreRegister.
       // These are used every time a call is made, so they can be very frequent.
-      // Only add if the function actually has a stack frame and makes calls.
-      if (current_stack_ > 0 && node->a_reg_used_cnt_ > 0) {
+      // Only add if the function actually has a stack frame.
+      if (current_stack_ > 0) {
         for (uint32_t i = 0; i < node->a_reg_used_cnt_; ++i) {
           add_const(static_cast<int32_t>(current_stack_ - 8 - 8 * i));
         }
