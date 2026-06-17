@@ -88,7 +88,7 @@ All headers live under `src/include/`, mirroring the source tree structure.
 - **t0**: arith (operand1), compare aux (sub, sltu, slt), data move, call args
 - **t1**: arith (operand2), store const, GEPP (slli, li), saved/restored around calls
 - **t2**: arith result (kMemory), GEPP (mul)
-- **t3**: **constant cache** — pre-loaded at function entry with a large (>12-bit) constant.  Survives calls via `li` reload in RestoreRegister.  (Formerly compare aux; merged into t0.)
+- **t3**: **constant cache** — pre-loaded at function entry with a large (>12-bit) constant.  Survives calls via `li` reload (`ReloadConstCache`, emitted after every call).  (Formerly compare aux; merged into t0.)
 - **t4**: **constant cache** — second pre-loaded constant slot.
 - **t5**: long jumps for large functions (`lui+addi+jalr`); also used for promoted variables in leaf functions (safe since leaf functions don't need long jumps)
 - **t6**: `PrintIA`/`PrintIStar`/`PrintMem` fallback for out-of-range immediates; also scratch for address computation when using cached constants (`add t6, t3, sp`)
@@ -101,10 +101,12 @@ store-const) **and** stack offsets from `SaveRegister`/`RestoreRegister`
 returns the cached register instead of emitting inline `li`.  `PrintMem`,
 `PrintIA`, and `PrintIStar` also check the cache: when the immediate is
 cached, they emit `add t6, t3, sp` instead of `li t6, <imm>; add t6, t6, sp`,
-saving one instruction per use.  After each `call`, `RestoreRegister`
-re-emits `li` to reload the constants **before** restoring a-regs/ra (since
-the restore may use the cached constants for large stack offsets).  Functions
-without large constants have zero overhead.
+saving one instruction per use.  After each `call`, `ReloadConstCache`
+re-emits `li` to reload the constants, keeping t3/t4 valid while
+`registers_saved_` holds (the cache map is never cleared mid-function, only
+reset at function entry); `RestoreRegister` calls `ReloadConstCache` first so
+its a-reg/ra reloads can use the cached offsets for large stack slots.
+Functions without large constants have zero overhead.
 
 ### Phi handling
 
@@ -160,7 +162,13 @@ When a comparison or lazy-boolean expression is used directly as an `if`/`while`
 
 ### Call-save consolidation
 
-Between consecutive call instructions in the same basic block, the intermediate `RestoreRegister`+`SaveRegister` pair is skipped.  While `registers_saved_` is true, a-register values in hardware are garbage — only the save slots are valid.  Guards at every code path that reads a-regs (`VariableToReg`, `VariableForceToReg`, `DataMove`, `IRStore`, call arg setup) flush or read from save slots.  Writes to a-regs update the save slot directly without a wasted `mv` to the hardware register.  Constant caches (t3/t4) are reloaded via `li` **before** restoring a-regs/ra (since the restore may use cached constants for large stack offsets).
+`SaveRegister`/`RestoreRegister` is **deferred to basic-block terminators** rather than bracketing each call.  A call only clobbers caller-saved registers, so after `SaveRegister` runs once, `registers_saved_` is left true across the rest of the block: every subsequent call (real calls **and** the `builtin_memcpy`s emitted inline by Load/Store/Move/struct-arg setup — including chains of them separated by GEPs and other a-reg-safe ops) reuses the same save and skips its own restore+save pair.  The restore is flushed exactly once, at the block exit (`Visit(IRBranchInstructionNode)`/`Visit(IRJumpInstructionNode)`/`Visit(IRReturnInstructionNode)` all call `FlushSavedRegisters()` first), so hardware a-regs/ra are valid for successors and `ret`.
+
+While `registers_saved_` is true, hardware a-regs hold call garbage — the **save slots are the source of truth**.  Three things keep that consistent across code that previously assumed live hardware a-regs between calls:
+
+  - **Reads** go through slots, not hardware: `VariableToReg`/`VariableForceToReg`/`DataMove`/`IRStore`/call-arg setup load from the save slot when the operand is an a-reg, or flush if they need the hardware value.
+  - **Results** route through a slot too: `GetResultReg` returns a t-reg (not `x<addr>`) for an a-reg result when `registers_saved_` holds, so the producing instruction computes into the t-reg and `RegToVariable` writes it to the slot — otherwise the result would land in the hardware a-reg, invisible to the slot-based reads and clobbered by the next restore.
+  - **Const cache stays valid**: `ReloadConstCache` (the extracted t3/t4 reload loop) runs after *every* call site, and the const-cache map is never cleared mid-function (only reset at function entry).  Clearing it would make the post-call reload a no-op while later `SaveRegister`/`RestoreRegister` `EmitMem`s still rely on the cached offsets for stack slots — a loop's `SaveRegister` would then compute the slot address from a clobbered t4.
 
 
 ### Reg alloc color pool
@@ -176,7 +184,7 @@ Between consecutive call instructions in the same basic block, the intermediate 
 
 - **Immediate folding**: Small constant operands (12-bit signed) in `+`/`-` are folded into `addiw` directly, avoiding `li + addw`.
 - **Redundant jump elimination**: Unconditional jumps targeting the immediately-following block (in layout order) are elided.  Branch false-targets that fall through are handled by skipping the trailing `j`.
-- **Constant hoisting**: Functions are pre-scanned for large constants (>12-bit) using frequency analysis.  The 2 most frequent are loaded into t3/t4 at function entry.  The scan includes IR operands **and** stack offsets from `SaveRegister`/`RestoreRegister` (which dominate in call-heavy code).  `VariableToReg`, `PrintMem`, `PrintIA`, and `PrintIStar` all check the cache: cached immediates avoid `li t6` emission (e.g., `add t6, t3, sp` instead of `li t6, <imm>; add t6, t6, sp`).  After each call, `RestoreRegister` reloads constants **before** restoring a-regs/ra.  Signed 32-bit values stored as unsigned strings (e.g., `"4294967256"` = -40) are correctly interpreted to avoid caching small negatives as large positives.
+- **Constant hoisting**: Functions are pre-scanned for large constants (>12-bit) using frequency analysis.  The 2 most frequent are loaded into t3/t4 at function entry.  The scan includes IR operands **and** stack offsets from `SaveRegister`/`RestoreRegister` (which dominate in call-heavy code).  `VariableToReg`, `PrintMem`, `PrintIA`, and `PrintIStar` all check the cache: cached immediates avoid `li t6` emission (e.g., `add t6, t3, sp` instead of `li t6, <imm>; add t6, t6, sp`).  After each call, `ReloadConstCache` re-emits `li` for the cached constants (the cache map is never cleared mid-function), so t3/t4 stay valid across the deferred-save region.  Signed 32-bit values stored as unsigned strings (e.g., `"4294967256"` = -40) are correctly interpreted to avoid caching small negatives as large positives.
 - **Compare peephole**: `==0`/`!=0` checks use `sltiu`/`sltu` with immediate 1 or x0, avoiding `li t1, 0` entirely.  The peephole fires BEFORE `VariableToReg` so the constant operand is never loaded.
 - **Long jumps**: Functions with >40000 instructions or >800 blocks use `lui+addi+jalr` (3 ins, ±2GB range) instead of `j` (1 ins, ±1MB) for intra-function jumps and branches.
 

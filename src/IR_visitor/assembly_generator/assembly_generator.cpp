@@ -43,6 +43,14 @@ std::string AssemblyGenerator::GetResultReg(StorageType storage_type, uint32_t a
   if (storage_type == kMemory) {
     return "t" + std::to_string(reg_id);
   }
+  // When registers are saved (deferred across calls), hardware a-regs hold
+  // call garbage and the save slots are the source of truth for live a-regs.
+  // Route an a-reg result through a t-reg so RegToVariable writes it to the
+  // slot — writing it straight to the hardware a-reg would be invisible to
+  // the later slot-based reads and would be clobbered by the next restore.
+  if (registers_saved_ && address >= 10 && address <= 17) {
+    return "t" + std::to_string(reg_id);
+  }
   return "x" + std::to_string(address);
 }
 
@@ -120,13 +128,18 @@ void AssemblyGenerator::SaveRegister() {
   registers_saved_ = true;
 }
 
-void AssemblyGenerator::RestoreRegister() {
-  // Reload hoisted constants FIRST (caller-saved t3/t4 are clobbered by calls).
-  // This must happen before restoring a-regs/ra, which may use these cached
-  // constants to compute large stack offsets.
+void AssemblyGenerator::ReloadConstCache() {
+  // t3/t4 are caller-saved and clobbered by every call; reload the cached
+  // constants so they stay valid while registers_saved_ holds (between calls).
   for (auto &[val, reg] : const_cache_) {
     os_ << "\tli\t" << reg << ",\t" << val << '\n';
   }
+}
+
+void AssemblyGenerator::RestoreRegister() {
+  // Reload hoisted constants FIRST. This must happen before restoring
+  // a-regs/ra, which may use these cached constants to compute large stack offsets.
+  ReloadConstCache();
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
     EmitMem( "ld", "a" + std::to_string(i), "sp", current_stack_ - 8 - 8 * i);
   }
@@ -163,7 +176,10 @@ void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, u
       EmitIA( "addi", "a1", "sp", current_stack_ - from_address);
       os_ << "\tli\ta2, " << type->allocated_size_ << '\n';
       os_ << "\tcall\tbuiltin_memcpy\n";
-RestoreRegister();
+      // Defer the a-reg/ra restore to the block terminator: between calls
+      // registers_saved_ stays true and the a-reg guards route access through
+      // the save slots, so consecutive calls skip the redundant save/restore.
+      ReloadConstCache();
     }
   }
 }
@@ -275,6 +291,8 @@ void AssemblyGenerator::Visit(IRNegationInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
+  // Leaving the block: hardware a-regs/ra must be valid for successors.
+  FlushSavedRegisters();
   auto rs = VariableToReg(node->condition_, 0, "i1");
 
   auto label = [&](uint32_t id) {
@@ -321,6 +339,8 @@ void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRJumpInstructionNode *node) {
+  // Leaving the block: hardware a-regs/ra must be valid for successors.
+  FlushSavedRegisters();
   auto lbl = ".L" + std::to_string(block_label_map_[node->destination_]);
   if (!large_function_) {
     auto it = next_block_map_.find(cur_block_);
@@ -337,6 +357,8 @@ void AssemblyGenerator::Visit(IRJumpInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRReturnInstructionNode *node) {
+  // Leaving the function: hardware a-regs/ra must be valid — ra is needed by ret.
+  FlushSavedRegisters();
   if (!node->type_->IsEmpty()) {
     VariableForceToReg(node->name_, "a0", node->type_->base_type_);
   }
@@ -384,8 +406,8 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
     }
     os_ << "\tli\ta2, " << node->type_->allocated_size_ << '\n';
     os_ << "\tcall\tbuiltin_memcpy\n";
-    const_cache_.clear();
-    RestoreRegister();
+    // Defer restore to the block terminator (see DataMove).
+    ReloadConstCache();
   }
 }
 
@@ -416,8 +438,8 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
     EmitIA( "addi", "a1", "sp", current_stack_ - address);
     os_ << "\tli\ta2, " << node->type_->allocated_size_ << '\n';
     os_ << "\tcall\tbuiltin_memcpy\n";
-    const_cache_.clear();
-    RestoreRegister();
+    // Defer restore to the block terminator (see DataMove).
+    ReloadConstCache();
   }
 }
 
@@ -605,7 +627,10 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
       EmitIA( "addi", "a1", "sp", current_stack_ - address);
       os_ << "\tli\ta2, " << para->type_->allocated_size_ << '\n';
       os_ << "\tcall\tbuiltin_memcpy\n";
-      const_cache_.clear();
+      // The call clobbered t3/t4; reload the cached constants (don't clear the
+      // map — SaveRegister/RestoreRegister EmitMem may rely on the cached
+      // offsets, which must stay valid across the loop body and beyond).
+      ReloadConstCache();
     }
   }
 
@@ -655,13 +680,11 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
     os_ << "\tmv\tt0, a0\n";
   }
 
-  if (NextInstructionIsCall()) {
-    for (auto &[val, reg] : const_cache_) {
-      os_ << "\tli\t" << reg << ",\t" << val << '\n';
-    }
-  } else {
-    RestoreRegister();
-  }
+  // Defer the a-reg/ra restore to the block terminator: the call clobbered
+  // the caller-saved registers, but registers_saved_ staying true is exactly
+  // the invariant the a-reg guards expect, so consecutive calls (including
+  // builtin_memcpy separated by GEPs) skip the redundant save/restore pair.
+  ReloadConstCache();
 
   if (has_result) {
     RegToVariable(node->storage_type_, node->address_, "t0", node->result_type_->base_type_);
@@ -685,22 +708,10 @@ void AssemblyGenerator::Visit(IRBlockNode *node) {
   if (node->id_ != 0 && referenced_blocks_.count(node->id_)) {
     os_ << ".L" << block_label_map_[node->id_] << ":\n";
   }
-  cur_instructions_ = &node->instructions_;
-  for (cur_ins_index_ = 0; cur_ins_index_ < node->instructions_.size(); ++cur_ins_index_) {
-    auto &instruction = node->instructions_[cur_ins_index_];
+  for (auto &instruction : node->instructions_) {
     if (instruction->removed_) continue;
     instruction->Accept(this);
   }
-  cur_instructions_ = nullptr;
-}
-
-bool AssemblyGenerator::NextInstructionIsCall() {
-  if (!cur_instructions_) return false;
-  for (size_t i = cur_ins_index_ + 1; i < cur_instructions_->size(); ++i) {
-    if ((*cur_instructions_)[i]->removed_) continue;
-    return dynamic_cast<IRCallInstructionNode *>((*cur_instructions_)[i].get()) != nullptr;
-  }
-  return false;
 }
 
 void AssemblyGenerator::Visit(IRParameterNode *node) {}
