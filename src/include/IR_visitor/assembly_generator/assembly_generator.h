@@ -75,4 +75,9 @@ private:
   void FlushSavedRegisters();
   void DataMove(const std::string &, StorageType, uint32_t, std::shared_ptr<IRArrayNode>);
   void DataMoveFromReg(const std::string &, StorageType, uint32_t, std::shared_ptr<IRArrayNode>);
+
+  // Wrappers that automatically pass the constant cache to PrintMem/PrintIA/PrintIStar.
+  void EmitMem(const std::string &type, const std::string &r, const std::string &rs1, int32_t imm);
+  void EmitIA(const std::string &type, const std::string &rd, const std::string &rs1, int32_t imm);
+  void EmitIStar(const std::string &type, const std::string &rd, const std::string &rs1, int32_t imm);
 };
