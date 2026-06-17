@@ -49,6 +49,8 @@ private:
 
   std::unordered_map<uint32_t, uint32_t> next_block_map_;
   std::set<uint32_t> referenced_blocks_;
+  std::unordered_map<uint32_t, uint32_t> block_label_map_;
+  uint32_t next_label_id_{0};
 
   // Map constant value → register name for pre-loaded constants
   // (t3, t4 — registers that no other code path writes to).

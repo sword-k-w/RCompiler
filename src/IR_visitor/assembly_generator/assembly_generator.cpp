@@ -264,7 +264,7 @@ void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
   auto rs = VariableToReg(node->condition_, 0, "i1");
 
   auto label = [&](uint32_t id) {
-    return ".L" + current_func_name_ + "_" + std::to_string(id);
+    return ".L" + std::to_string(block_label_map_[id]);
   };
 
   if (!large_function_) {
@@ -307,7 +307,7 @@ void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRJumpInstructionNode *node) {
-  auto lbl = ".L" + current_func_name_ + "_" + std::to_string(node->destination_);
+  auto lbl = ".L" + std::to_string(block_label_map_[node->destination_]);
   if (!large_function_) {
     auto it = next_block_map_.find(cur_block_);
     if (it != next_block_map_.end() && it->second == node->destination_) {
@@ -669,7 +669,7 @@ void AssemblyGenerator::Visit(IRSelectInstructionNode *node) {
 void AssemblyGenerator::Visit(IRBlockNode *node) {
   cur_block_ = node->id_;
   if (node->id_ != 0 && referenced_blocks_.count(node->id_)) {
-    os_ << ".L" << current_func_name_ << "_" << node->id_ << ":\n";
+    os_ << ".L" << block_label_map_[node->id_] << ":\n";
   }
   cur_instructions_ = &node->instructions_;
   for (cur_ins_index_ = 0; cur_ins_index_ < node->instructions_.size(); ++cur_ins_index_) {
@@ -743,8 +743,10 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
       next_block_map_[node->blocks_[i]->id_] = node->blocks_[i + 1]->id_;
     }
 
-    // Pre-scan: collect referenced block IDs for label elision.
+    // Pre-scan: collect referenced block IDs for label elision
+    // and assign short global label IDs.
     referenced_blocks_.clear();
+    block_label_map_.clear();
     for (auto &block : node->blocks_) {
       for (auto &ins : block->instructions_) {
         if (ins->removed_) continue;
@@ -755,6 +757,9 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
           referenced_blocks_.insert(j->destination_);
         }
       }
+    }
+    for (auto id : referenced_blocks_) {
+      block_label_map_[id] = next_label_id_++;
     }
 
     // Pre-scan: hoist large constants (>12-bit) into t3 and t4.
