@@ -176,10 +176,9 @@ void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, u
       EmitIA( "addi", "a1", "sp", current_stack_ - from_address);
       os_ << "\tli\ta2, " << type->allocated_size_ << '\n';
       os_ << "\tcall\tbuiltin_memcpy\n";
-      // Defer the a-reg/ra restore to the block terminator: between calls
-      // registers_saved_ stays true and the a-reg guards route access through
-      // the save slots, so consecutive calls skip the redundant save/restore.
-      ReloadConstCache();
+      // BISECT (looong expr / local1 WA): call-save deferral DISABLED —
+      // restore immediately after each call (pre-fadf075 behavior).
+      RestoreRegister();
     }
   }
 }
@@ -406,8 +405,8 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
     }
     os_ << "\tli\ta2, " << node->type_->allocated_size_ << '\n';
     os_ << "\tcall\tbuiltin_memcpy\n";
-    // Defer restore to the block terminator (see DataMove).
-    ReloadConstCache();
+    // BISECT: call-save deferral DISABLED — restore immediately (pre-fadf075).
+    RestoreRegister();
   }
 }
 
@@ -438,8 +437,8 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
     EmitIA( "addi", "a1", "sp", current_stack_ - address);
     os_ << "\tli\ta2, " << node->type_->allocated_size_ << '\n';
     os_ << "\tcall\tbuiltin_memcpy\n";
-    // Defer restore to the block terminator (see DataMove).
-    ReloadConstCache();
+    // BISECT: call-save deferral DISABLED — restore immediately (pre-fadf075).
+    RestoreRegister();
   }
 }
 
@@ -680,11 +679,9 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
     os_ << "\tmv\tt0, a0\n";
   }
 
-  // Defer the a-reg/ra restore to the block terminator: the call clobbered
-  // the caller-saved registers, but registers_saved_ staying true is exactly
-  // the invariant the a-reg guards expect, so consecutive calls (including
-  // builtin_memcpy separated by GEPs) skip the redundant save/restore pair.
-  ReloadConstCache();
+  // BISECT (looong expr / local1 WA): call-save deferral DISABLED —
+  // restore immediately after each call (pre-fadf075 behavior).
+  RestoreRegister();
 
   if (has_result) {
     RegToVariable(node->storage_type_, node->address_, "t0", node->result_type_->base_type_);
