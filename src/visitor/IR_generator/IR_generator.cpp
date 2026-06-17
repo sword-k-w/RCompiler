@@ -283,12 +283,50 @@ void IRGenerator::Visit(ExpressionNode *node) {
             }
           } else {
             son_expr->Accept(this);
-            for (uint32_t i = 0; i < size; ++i) {
-              std::string tmp = name_allocator_.Allocate("%tmp.");
-              cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-                tmp, IR_type, node->IR_name_, i));
-              Copy(tmp, son_expr->IR_name_, inside_type.get());
-            }
+            auto IR_inside_type = GetIRTypeNode(inside_type.get());
+            // Load the scalar value once, then store to each element via a loop.
+            std::string loaded_val = name_allocator_.Allocate("%tmp.");
+            cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(
+              loaded_val, IR_inside_type, son_expr->IR_name_));
+            // Loop index: i32, allocated in the first block to dominate all uses.
+            std::string idx_var = name_allocator_.Allocate("%tmp.");
+            first_block_->AddInstruction(std::make_shared<IRAllocateInstructionNode>(
+              idx_var, std::make_shared<IRArrayNode>("i32")));
+            cur_block_->AddInstruction(std::make_shared<IRStoreConstInstructionNode>(
+              "i32", 0, idx_var));
+            // Build loop: header (check i < size), body (store + inc), end.
+            auto hdr = std::make_shared<IRBlockNode>(cur_tag_cnt_);
+            cur_function_->AddBlock(hdr); ++cur_tag_cnt_;
+            auto body = std::make_shared<IRBlockNode>(cur_tag_cnt_);
+            cur_function_->AddBlock(body); ++cur_tag_cnt_;
+            auto endb = std::make_shared<IRBlockNode>(cur_tag_cnt_);
+            cur_function_->AddBlock(endb); ++cur_tag_cnt_;
+            cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(hdr->GetID()));
+            // Header: idx_cmp = idx < size; branch to body or end.
+            cur_block_ = hdr;
+            std::string idx_val = name_allocator_.Allocate("%tmp.");
+            cur_block_->AddInstruction(std::make_shared<IRLoadInstructionNode>(
+              idx_val, std::make_shared<IRArrayNode>("i32"), idx_var));
+            std::string cmp_r = name_allocator_.Allocate("%tmp.");
+            cur_block_->AddInstruction(std::make_shared<IRCompareInstructionNode>(
+              cmp_r, IRCompareInstructionNode::Operator::kUlt, "i32", idx_val,
+              std::to_string(size)));
+            cur_block_->AddInstruction(std::make_shared<IRBranchInstructionNode>(
+              cmp_r, body->GetID(), endb->GetID()));
+            // Body: store to array[idx], increment, jump back to header.
+            cur_block_ = body;
+            std::string gep = name_allocator_.Allocate("%tmp.");
+            cur_block_->AddInstruction(std::make_shared<IRGetElementPtrPrimeInstructionNode>(
+              gep, IR_type, node->IR_name_, idx_val));
+            cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(
+              IR_inside_type, loaded_val, gep));
+            std::string inc = name_allocator_.Allocate("%tmp.");
+            cur_block_->AddInstruction(std::make_shared<IRArithmeticInstructionNode>(
+              inc, "+", "i32", idx_val, "1", false));
+            cur_block_->AddInstruction(std::make_shared<IRStoreVariableInstructionNode>(
+              std::make_shared<IRArrayNode>("i32"), inc, idx_var));
+            cur_block_->AddInstruction(std::make_shared<IRJumpInstructionNode>(hdr->GetID()));
+            cur_block_ = endb;
           }
         }
       } else {
