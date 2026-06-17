@@ -2,6 +2,7 @@
 
 #include <ostream>
 #include <map>
+#include <set>
 #include "IR_visitor/base/IR_visitor_base.h"
 
 class AssemblyGenerator : public IRVisitorBase {
@@ -47,6 +48,7 @@ private:
   bool large_function_{false};
 
   std::unordered_map<uint32_t, uint32_t> next_block_map_;
+  std::set<uint32_t> referenced_blocks_;
 
   // Map constant value → register name for pre-loaded constants
   // (t3, t4 — registers that no other code path writes to).

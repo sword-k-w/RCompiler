@@ -175,7 +175,6 @@ void AssemblyGenerator::Visit(IRArrayNode *node) {}
 void AssemblyGenerator::Visit(IRStructNode *node) {}
 
 void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
-  os_ << "\t# Arithmetic Instruction " << node->result_ << '\n';
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
 
   // Fold small constant operands into immediate instruction forms.
@@ -239,7 +238,6 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRNegationInstructionNode *node) {
-  os_ << "\t# Negation Instruction " << node->result_ << '\n';
   auto [op_type, op_addr] = GetVariableAddress(node->operand_);
   if (node->is_minus_ && op_type == kConst) {
     auto rd = GetResultReg(node->storage_type_, node->address_, 1);
@@ -263,7 +261,6 @@ void AssemblyGenerator::Visit(IRNegationInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
-  os_ << "\t# Branch Instruction\n";
   auto rs = VariableToReg(node->condition_, 0, "i1");
 
   auto label = [&](uint32_t id) {
@@ -310,7 +307,6 @@ void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRJumpInstructionNode *node) {
-  os_ << "\t# Jump Instruction\n";
   auto lbl = ".L" + current_func_name_ + "_" + std::to_string(node->destination_);
   if (!large_function_) {
     auto it = next_block_map_.find(cur_block_);
@@ -327,7 +323,6 @@ void AssemblyGenerator::Visit(IRJumpInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRReturnInstructionNode *node) {
-  os_ << "\t# Return Instruction\n";
   if (!node->type_->IsEmpty()) {
     VariableForceToReg(node->name_, "a0", node->type_->base_type_);
   }
@@ -346,14 +341,12 @@ void AssemblyGenerator::Visit(IRReturnInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRAllocateInstructionNode *node) {
-  os_ << "\t# Allocate Instruction " << node->result_ << '\n';
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
   PrintIA(os_, "addi", rd, "sp", current_stack_ - node->inner_address_);
   RegToVariable(node->storage_type_, node->address_, rd, "ptr");
 }
 
 void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
-  os_ << "\t# Load Instruction " << node->result_ << '\n';
   auto ptr_reg = VariableToReg(node->pointer_, 0, "ptr");
   if (node->storage_type_ == kRegister) {
     auto [l_ins, _] = LoadStoreType(node->type_->base_type_);
@@ -384,7 +377,6 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
 
 void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
   // After mem2reg, this type of instruction may store const
-  os_ << "\t# Store Instruction\n";
   auto ptr_reg = VariableToReg(node->pointer_, 0, "ptr");
   auto [type, address] = GetVariableAddress(node->value_);
   if (type == kConst) {
@@ -416,7 +408,6 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRStoreConstInstructionNode *node) {
-  os_ << "\t# Store Instruction\n";
   auto ptr_reg = VariableToReg(node->pointer_, 0, "ptr");
   os_ << "\tli\tt1, " << node->value_ << '\n';
   auto [_, s_ins] = LoadStoreType(node->type_);
@@ -424,7 +415,6 @@ void AssemblyGenerator::Visit(IRStoreConstInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRGetElementPtrInstructionNode *node) {
-  os_ << "\t# GetElementPtr Instruction " << node->result_ << '\n';
   auto ptr_reg = VariableToReg(node->ptrval_, 0, "ptr");
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
   uint32_t offset = 0;
@@ -448,12 +438,14 @@ void AssemblyGenerator::Visit(IRGetElementPtrInstructionNode *node) {
   } else {
     offset = node->type_->allocated_size_ / node->type_->length_[0] * node->index_;
   }
-  PrintIA(os_, "addi", rd, ptr_reg, offset);
+  if (offset == 0)
+    os_ << "\tmv\t" << rd << ", " << ptr_reg << '\n';
+  else
+    PrintIA(os_, "addi", rd, ptr_reg, offset);
   RegToVariable(node->storage_type_, node->address_, rd, "ptr");
 }
 
 void AssemblyGenerator::Visit(IRGetElementPtrPrimeInstructionNode *node) {
-  os_ << "\t# GetElementPtr Instruction " << node->result_ << '\n';
   auto ptr_reg = VariableToReg(node->ptrval_, 0, "ptr");
   auto index_reg = VariableToReg(node->index_, 2, "i32");
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
@@ -475,8 +467,6 @@ void AssemblyGenerator::Visit(IRGetElementPtrPrimeInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
-  os_ << "\t# Compare Instruction " << node->result_ << '\n';
-
   auto [type1, addr1] = GetVariableAddress(node->operand1_);
   auto [type2, addr2] = GetVariableAddress(node->operand2_);
   bool op1c = (type1 == kConst);
@@ -587,7 +577,6 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
 void AssemblyGenerator::Visit(IRArgumentNode *node) {}
 
 void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
-  os_ << "\t# Call Instruction " << node->function_name_ << '\n';
   auto function_node = FunctionMap::Instance().Query(node->function_name_);
   auto size = node->arguments_.size();
 
@@ -666,12 +655,10 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRMoveInstructionNode *node) {
-  os_ << "\t# Move " << node->result_ << " <- " << node->source_ << '\n';
   DataMove(node->source_, node->storage_type_, node->address_, node->type_);
 }
 
 void AssemblyGenerator::Visit(IRSelectInstructionNode *node) {
-  os_ << "\t# Select Instruction " << node->result_ << '\n';
   auto rs = VariableToReg(node->cond_, 0, "i1");
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
   PrintIA(os_, "slti", rd, rs, 1);
@@ -681,7 +668,7 @@ void AssemblyGenerator::Visit(IRSelectInstructionNode *node) {
 
 void AssemblyGenerator::Visit(IRBlockNode *node) {
   cur_block_ = node->id_;
-  if (node->id_ != 0) {
+  if (node->id_ != 0 && referenced_blocks_.count(node->id_)) {
     os_ << ".L" << current_func_name_ << "_" << node->id_ << ":\n";
   }
   cur_instructions_ = &node->instructions_;
@@ -754,6 +741,20 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
     next_block_map_.clear();
     for (size_t i = 0; i + 1 < node->blocks_.size(); ++i) {
       next_block_map_[node->blocks_[i]->id_] = node->blocks_[i + 1]->id_;
+    }
+
+    // Pre-scan: collect referenced block IDs for label elision.
+    referenced_blocks_.clear();
+    for (auto &block : node->blocks_) {
+      for (auto &ins : block->instructions_) {
+        if (ins->removed_) continue;
+        if (auto *b = dynamic_cast<IRBranchInstructionNode *>(ins.get())) {
+          referenced_blocks_.insert(b->true_branch_);
+          referenced_blocks_.insert(b->false_branch_);
+        } else if (auto *j = dynamic_cast<IRJumpInstructionNode *>(ins.get())) {
+          referenced_blocks_.insert(j->destination_);
+        }
+      }
     }
 
     // Pre-scan: hoist large constants (>12-bit) into t3 and t4.
