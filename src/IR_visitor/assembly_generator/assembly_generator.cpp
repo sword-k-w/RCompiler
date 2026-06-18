@@ -159,6 +159,13 @@ void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, u
   if (from_type == kConst) {
     if (to_type == kRegister) {
       os_ << "\tli\tx" << to_address << ", " << from << '\n';
+      // When registers_saved_, the hardware a-reg write above bypasses the
+      // save slot that subsequent reads will use — mirror the write to the
+      // save slot (same pattern as DataMoveFromReg and IRLoad).
+      if (to_address >= 10 && to_address <= 17 && registers_saved_) {
+        uint32_t save_off = 8 * (to_address - 9);
+        EmitMem( "sd", "x" + std::to_string(to_address), "sp", current_stack_ - save_off);
+      }
     } else {
       os_ << "\tli\tt0, " << from << '\n';
       auto [_, s_ins] = LoadStoreType(type->base_type_);
@@ -170,15 +177,22 @@ void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, u
     if (to_type == kRegister) {
       auto [l_ins, _] = LoadStoreType(type->base_type_);
       EmitMem( l_ins, "x" + std::to_string(to_address), "sp", current_stack_ - from_address);
+      // When registers_saved_, the load above writes the hardware a-reg but
+      // not the save slot — mirror it (same pattern as IRLoadInstructionNode).
+      if (to_address >= 10 && to_address <= 17 && registers_saved_) {
+        uint32_t save_off = 8 * (to_address - 9);
+        EmitMem( "sd", "x" + std::to_string(to_address), "sp", current_stack_ - save_off);
+      }
     } else {
       SaveRegister();
       EmitIA( "addi", "a0", "sp", current_stack_ - to_address);
       EmitIA( "addi", "a1", "sp", current_stack_ - from_address);
       os_ << "\tli\ta2, " << type->allocated_size_ << '\n';
       os_ << "\tcall\tbuiltin_memcpy\n";
-      // BISECT (looong expr / local1 WA): call-save deferral DISABLED —
-      // restore immediately after each call (pre-fadf075 behavior).
-      RestoreRegister();
+      // Defer the a-reg/ra restore to the block terminator: between calls
+      // registers_saved_ stays true and the a-reg guards route access through
+      // the save slots, so consecutive calls skip the redundant save/restore.
+      ReloadConstCache();
     }
   }
 }
@@ -405,8 +419,8 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
     }
     os_ << "\tli\ta2, " << node->type_->allocated_size_ << '\n';
     os_ << "\tcall\tbuiltin_memcpy\n";
-    // BISECT: call-save deferral DISABLED — restore immediately (pre-fadf075).
-    RestoreRegister();
+    // Defer restore to the block terminator (see DataMove).
+    ReloadConstCache();
   }
 }
 
@@ -437,8 +451,8 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
     EmitIA( "addi", "a1", "sp", current_stack_ - address);
     os_ << "\tli\ta2, " << node->type_->allocated_size_ << '\n';
     os_ << "\tcall\tbuiltin_memcpy\n";
-    // BISECT: call-save deferral DISABLED — restore immediately (pre-fadf075).
-    RestoreRegister();
+    // Defer restore to the block terminator (see DataMove).
+    ReloadConstCache();
   }
 }
 
@@ -679,9 +693,11 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
     os_ << "\tmv\tt0, a0\n";
   }
 
-  // BISECT (looong expr / local1 WA): call-save deferral DISABLED —
-  // restore immediately after each call (pre-fadf075 behavior).
-  RestoreRegister();
+  // Defer the a-reg/ra restore to the block terminator: the call clobbered
+  // the caller-saved registers, but registers_saved_ staying true is exactly
+  // the invariant the a-reg guards expect, so consecutive calls (including
+  // builtin_memcpy separated by GEPs) skip the redundant save/restore pair.
+  ReloadConstCache();
 
   if (has_result) {
     RegToVariable(node->storage_type_, node->address_, "t0", node->result_type_->base_type_);
@@ -829,13 +845,8 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
       std::sort(sorted_consts.begin(), sorted_consts.end(),
                 [](const auto &a, const auto &b) { return a.second > b.second; });
 
-      // BISECT (looong expr / local1 WA): const-cache DISABLED.
-      // Leaving const_cache_ empty makes every consumer fall back to the
-      // inline `li` path: VariableToReg (operand constants), PrintMem /
-      // PrintIA / PrintIStar (large stack offsets), and ReloadConstCache
-      // (no-op).  The call-save deferral is unaffected.  To re-enable,
-      // set treg back to 3.
-      uint32_t treg = 5;  // > 4 → the population loop body never runs
+      // Pre-load the 2 most frequent large constants into t3/t4.
+      uint32_t treg = 3;
       for (auto &[v, freq] : sorted_consts) {
         if (treg > 4) break;
         std::string r = "t" + std::to_string(treg);
