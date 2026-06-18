@@ -755,22 +755,28 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   cur_func_ = node;
   const_cache_.clear();
 
-  // Estimate function code size: count non-removed instructions.
-  // If the function is very large (e.g. a huge expression producing
-  // thousands of basic blocks), intra-function j/bnez may exceed the
-  // RISC-V range limits (jal: +/-1MB, B-type: +/-4KB).  We switch to
-  // a long-jump pattern (lui+addi+jalr) only when needed.
+  // Estimate function code size: count non-removed IR instructions
+  // plus const-cache overhead (ReloadConstCache emits ~2 li per call,
+  // FlushSavedRegisters emits ~2 li per terminating block).  If the
+  // function is very large, intra-function j/bnez may exceed the
+  // RISC-V range limits (B-type: +/-4KB ≈ 1000 insns, jal: +/-1MB).
+  // We switch to a long-jump pattern (lui+addi+jalr) when needed.
   {
     uint32_t total_ins = 0;
+    uint32_t call_cnt = 0;
     for (auto &block : node->blocks_) {
       for (auto &ins : block->instructions_) {
-        if (!ins->removed_) ++total_ins;
+        if (ins->removed_) continue;
+        ++total_ins;
+        if (dynamic_cast<IRCallInstructionNode *>(ins.get())) ++call_cnt;
       }
     }
-    // ~5 bytes per instruction on average; 40000 ins ≈ 200KB, or
-    // 800+ blocks, both safely under the 1MB jal limit.  Either
-    // condition triggers the long-jump pattern.
-    large_function_ = (total_ins > 40000 || node->blocks_.size() > 800);
+    // Each IR insn becomes ~1-3 asm insns; const cache adds ~2 li per
+    // call + ~2 li per block terminator.  The B-type branch limit is
+    // only ±4KB (~1024 insns), so even moderate functions can exceed it
+    // if blocks are far apart.  Use a generous threshold to be safe.
+    uint32_t est_asm = total_ins * 2 + call_cnt * 2 + node->blocks_.size() * 2;
+    large_function_ = (est_asm > 8000 || node->blocks_.size() > 100);
 
     // Map each block to its successor in layout order, for
     // eliminating redundant fall-through jumps.
