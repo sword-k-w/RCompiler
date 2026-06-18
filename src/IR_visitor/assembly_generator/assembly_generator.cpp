@@ -685,13 +685,10 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
   }
   os_ << "\tcall\t" << node->function_name_ << '\n';
 
-  // Stash a0 (return value) in t0 immediately — the call clobbered a0
-  // and we need the result before a0 might be restored from its save slot
-  // by a later EnsureARegValid or FlushSavedRegisters.
+  // With per-register tracking, a0 hardware still holds the return value
+  // after the call (no RestoreRegister runs).  Use a0 directly instead of
+  // stashing to t0 — saves one mv per non-void call.
   bool has_result = !node->result_type_->IsEmpty();
-  if (has_result) {
-    os_ << "\tmv\tt0, a0\n";
-  }
 
   // Defer a-reg restore to the block terminator or on-demand via
   // EnsureARegValid.  Only a-regs that are actually accessed between
@@ -699,7 +696,7 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
   ReloadConstCache();
 
   if (has_result) {
-    RegToVariable(node->storage_type_, node->address_, "t0", node->result_type_->base_type_);
+    RegToVariable(node->storage_type_, node->address_, "a0", node->result_type_->base_type_);
   }
 }
 
