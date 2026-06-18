@@ -2,8 +2,10 @@
 #include "IR/IR_node.h"
 #include "liveness_analysis/dominator_tree.h"
 
+#include <algorithm>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -98,21 +100,138 @@ bool CSE::ReplaceOperands(
 }
 
 // ---------------------------------------------------------------------------
+// Build a map from block ID → set of variable names defined by moves in
+// that block.  These are post-phi-elimination variables with potentially
+// multiple definitions.
+// ---------------------------------------------------------------------------
+CSE::MoveDefMap CSE::BuildMoveDefs(std::shared_ptr<IRFunctionNode> func,
+                                   std::unordered_set<std::string> &all_move_names) {
+  MoveDefMap move_defs;
+  for (auto &block : func->blocks_) {
+    uint32_t bid = block->GetID();
+    for (auto &ins : block->instructions_) {
+      if (ins->removed_) continue;
+      if (auto *mv = dynamic_cast<IRMoveInstructionNode *>(ins.get())) {
+        move_defs[bid].insert(mv->result_);
+        all_move_names.insert(mv->result_);
+      }
+    }
+  }
+  return move_defs;
+}
+
+// ---------------------------------------------------------------------------
+// Encode an operand for the CSE key.  If the operand is a move-defined
+// variable, the reaching definition block is appended so that different
+// definitions produce different keys.
+// ---------------------------------------------------------------------------
+std::string CSE::EncodeOperand(
+    const std::string &name,
+    uint32_t cur_block_id,
+    size_t cur_ins_idx,
+    const MoveDefMap &move_defs,
+    const std::unordered_set<std::string> &all_move_names,
+    const std::unordered_map<uint32_t, uint32_t> &ir_to_pos,
+    const std::vector<int32_t> &idom,
+    const std::vector<std::shared_ptr<IRBlockNode>> &blocks) {
+
+  // Fast path: if this name is never defined by a move, it's an SSA name.
+  if (!all_move_names.count(name)) return name;
+
+  // Walk up the dominator tree from cur_block_id to find the nearest
+  // move-definition of |name| that reaches this use.
+  // For the current block, only moves BEFORE cur_ins_idx count.
+  // For ancestor blocks, any move counts (the whole block executes before
+  // dominated blocks).
+
+  auto pos_of = [&](uint32_t ir_id) -> int32_t {
+    auto it = ir_to_pos.find(ir_id);
+    return (it != ir_to_pos.end()) ? static_cast<int32_t>(it->second) : -1;
+  };
+
+  int32_t cur_pos = pos_of(cur_block_id);
+  if (cur_pos < 0) return name;  // shouldn't happen
+
+  // Build a reverse map: dominator-tree position → IR block ID.
+  // Used for O(1) lookup during the idom walk below.
+  std::unordered_map<int32_t, uint32_t> pos_to_id;
+  for (auto &[id, p] : ir_to_pos) {
+    pos_to_id[static_cast<int32_t>(p)] = id;
+  }
+
+  // Check current block first: look for the LAST move defining |name|
+  // before cur_ins_idx (the most recent definition wins).
+  if (move_defs.count(cur_block_id)) {
+    bool found = false;
+    for (auto &blk : blocks) {
+      if (blk->GetID() != cur_block_id) continue;
+      size_t idx = 0;
+      for (auto &ins : blk->instructions_) {
+        if (idx >= cur_ins_idx) break;
+        if (ins->removed_) { ++idx; continue; }
+        if (auto *mv = dynamic_cast<IRMoveInstructionNode *>(ins.get())) {
+          if (mv->result_ == name) {
+            found = true;  // keep scanning for a later definition
+          }
+        }
+        ++idx;
+      }
+      break;
+    }
+    if (found) return name + "@" + std::to_string(cur_block_id);
+  }
+
+  // Walk up the dominator tree.
+  int32_t pos = idom[cur_pos];
+  while (pos >= 0) {
+    auto it = pos_to_id.find(pos);
+    if (it != pos_to_id.end()) {
+      uint32_t anc_id = it->second;
+      if (move_defs.count(anc_id) &&
+          move_defs.at(anc_id).count(name)) {
+        return name + "@" + std::to_string(anc_id);
+      }
+    }
+    pos = idom[pos];
+  }
+
+  // No move-definition found on the dominator path — the SSA definition
+  // (non-move) dominates this use.  The bare name is sufficient.
+  return name;
+}
+
+// ---------------------------------------------------------------------------
 // Try to compute a {signature, result_name} pair for a pure instruction.
 // Returns {"", ""} for non-CSE-able instructions.
 // ---------------------------------------------------------------------------
-std::pair<std::string, std::string> CSE::TryMakeKey(IRInstructionNode *ins) {
+std::pair<std::string, std::string> CSE::TryMakeKey(
+    IRInstructionNode *ins,
+    uint32_t cur_block_id,
+    size_t cur_ins_idx,
+    const MoveDefMap &move_defs,
+    const std::unordered_set<std::string> &all_move_names,
+    const std::unordered_map<uint32_t, uint32_t> &ir_to_pos,
+    const std::vector<int32_t> &idom,
+    const std::vector<std::shared_ptr<IRBlockNode>> &blocks) {
   if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins)) {
     return {
-      "gep|" + gep->ptrval_ + "|" + TypeEncode(gep->type_) + "|"
-             + std::to_string(gep->index_),
+      "gep|"
+      + EncodeOperand(gep->ptrval_, cur_block_id, cur_ins_idx,
+                       move_defs, all_move_names, ir_to_pos, idom, blocks)
+      + "|" + TypeEncode(gep->type_) + "|"
+      + std::to_string(gep->index_),
       gep->result_
     };
   }
   if (auto *gepp = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins)) {
     return {
-      "gepp|" + gepp->ptrval_ + "|" + gepp->index_ + "|"
-              + TypeEncode(gepp->type_),
+      "gepp|"
+      + EncodeOperand(gepp->ptrval_, cur_block_id, cur_ins_idx,
+                       move_defs, all_move_names, ir_to_pos, idom, blocks)
+      + "|"
+      + EncodeOperand(gepp->index_, cur_block_id, cur_ins_idx,
+                       move_defs, all_move_names, ir_to_pos, idom, blocks)
+      + "|" + TypeEncode(gepp->type_),
       gepp->result_
     };
   }
@@ -180,6 +299,9 @@ public:
     return a == 0;
   }
 
+  const std::vector<int32_t> &idom() const { return idom_; }
+  const std::unordered_map<uint32_t, uint32_t> &ir_to_pos() const { return ir_to_pos_; }
+
 private:
   int32_t Pos(uint32_t ir_id) const {
     auto it = ir_to_pos_.find(ir_id);
@@ -228,6 +350,10 @@ void CSE::Run(std::shared_ptr<IRRootNode> root) {
 
     DomInfo dom_info(nb, succs, pos_to_ir);
 
+    // --- pre-scan move definitions (post-phi-elimination reassignments) ---
+    std::unordered_set<std::string> all_move_names;
+    MoveDefMap move_defs = BuildMoveDefs(func, all_move_names);
+
     std::unordered_map<std::string, std::string> subst;
     std::unordered_map<std::string, std::pair<std::string, uint32_t>> seen;
 
@@ -238,13 +364,17 @@ void CSE::Run(std::shared_ptr<IRRootNode> root) {
       for (auto &block : func->blocks_) {
         uint32_t cur_id = block->GetID();
 
+        size_t ins_idx = 0;
         for (auto &ins : block->instructions_) {
-          if (ins->removed_) continue;
+          if (ins->removed_) { ++ins_idx; continue; }
 
           ReplaceOperands(ins.get(), subst);
 
-          auto [sig, result_name] = TryMakeKey(ins.get());
-          if (sig.empty()) continue;
+          auto [sig, result_name] = TryMakeKey(
+              ins.get(), cur_id, ins_idx,
+              move_defs, all_move_names, dom_info.ir_to_pos(), dom_info.idom(),
+              func->blocks_);
+          if (sig.empty()) { ++ins_idx; continue; }
 
           auto it = seen.find(sig);
           if (it != seen.end()) {
@@ -262,6 +392,7 @@ void CSE::Run(std::shared_ptr<IRRootNode> root) {
           } else {
             seen[sig] = {result_name, cur_id};
           }
+          ++ins_idx;
         }
       }
 
