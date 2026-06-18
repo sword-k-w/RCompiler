@@ -217,19 +217,20 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
 
   // Fold small constant operands into immediate instruction forms.
   // This turns "li tX, c; op rd, rs, tX" (2 ins) into "opi rd, rs, c" (1 ins).
+  bool is_ptr = (node->type_ == "ptr");
   {
     auto [op2_type, _] = GetVariableAddress(node->operand2_);
     if (op2_type == kConst) {
       int32_t imm = std::stoi(node->operand2_);
       if (node->op_ == "+" && imm >= -2048 && imm <= 2047) {
         auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
-        os_ << "\taddiw\t" << rd << ", " << rs1 << ", " << imm << '\n';
+        os_ << "\t" << (is_ptr ? "addi" : "addiw") << "\t" << rd << ", " << rs1 << ", " << imm << '\n';
         RegToVariable(node->storage_type_, node->address_, rd, node->type_);
         return;
       }
       if (node->op_ == "-" && imm >= -2048 && imm <= 2047) {
         auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
-        os_ << "\taddiw\t" << rd << ", " << rs1 << ", " << -imm << '\n';
+        os_ << "\t" << (is_ptr ? "addi" : "addiw") << "\t" << rd << ", " << rs1 << ", " << -imm << '\n';
         RegToVariable(node->storage_type_, node->address_, rd, node->type_);
         return;
       }
@@ -240,9 +241,9 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
   auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
   os_ << "\t";
   if (node->op_ == "+") {
-    os_ << "addw";
+    os_ << (is_ptr ? "add" : "addw");
   } else if (node->op_ == "-") {
-    os_ << "subw";
+    os_ << (is_ptr ? "sub" : "subw");
   } else if (node->op_ == "*") {
     os_ << "mulw";
   } else if (node->op_ == "/") {
