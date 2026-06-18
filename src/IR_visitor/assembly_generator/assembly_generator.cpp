@@ -139,9 +139,16 @@ void AssemblyGenerator::ReloadConstCache() {
 }
 
 void AssemblyGenerator::FlushSavedRegisters() {
-  // Restore any a-regs that are still invalid from the last call, so
-  // successor blocks see valid hardware registers.  Reload const cache
-  // first — the EmitMem calls below may use cached offsets.
+  // Only emit anything if this block actually had a call (some a-reg
+  // is still invalid or ra is saved).  This avoids redundant
+  // ReloadConstCache / restore at terminators in call-free blocks.
+  bool any_invalid = false;
+  for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
+    if (!a_reg_valid_[i]) { any_invalid = true; break; }
+  }
+  if (!any_invalid && !ra_saved_) return;
+
+  // Reload const cache first — the EmitMem calls below may use cached offsets.
   ReloadConstCache();
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
     if (!a_reg_valid_[i]) {
