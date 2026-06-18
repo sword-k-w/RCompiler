@@ -275,11 +275,16 @@ void IRGenerator::Visit(ExpressionNode *node) {
             let_target_ = gep0;
             son_expr->Accept(this);
             let_target_.clear();
+            // Strength-reduce the copy loop: maintain a running pointer
+            // instead of computing GEP(base, i) from scratch each time.
+            uint32_t elem_size = GetTypeSize(inside_type.get()).first;
+            std::string ptr = gep0;
             for (uint32_t i = 1; i < size; ++i) {
-              std::string tmp = name_allocator_.Allocate("%tmp.");
-              cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-                tmp, IR_type, node->IR_name_, i));
-              Copy(tmp, son_expr->IR_name_, inside_type.get());
+              std::string ptr_next = name_allocator_.Allocate("%tmp.");
+              cur_block_->AddInstruction(std::make_shared<IRArithmeticInstructionNode>(
+                ptr_next, "+", "ptr", ptr, std::to_string(elem_size), false));
+              Copy(ptr_next, son_expr->IR_name_, inside_type.get());
+              ptr = ptr_next;
             }
           } else {
             son_expr->Accept(this);
@@ -347,21 +352,28 @@ void IRGenerator::Visit(ExpressionNode *node) {
           }
         }
       } else {
+        // Strength-reduce explicit element list: use a running pointer
+        // instead of GEP(base, i) for each element.
+        uint32_t elem_size = GetTypeSize(inside_type.get()).first;
+        std::string ptr = name_allocator_.Allocate("%tmp.");
+        cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
+          ptr, IR_type, node->IR_name_, 0));
         for (uint32_t i = 0; i < size; ++i) {
           auto son_expr = node->array_expr_->array_elements_->exprs_[i];
           if (son_expr->type_ == kStructExpr || son_expr->type_ == kArrayExpr) {
-            std::string gep = name_allocator_.Allocate("%tmp.");
-            cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-              gep, IR_type, node->IR_name_, i));
-            let_target_ = gep;
+            let_target_ = ptr;
             son_expr->Accept(this);
             let_target_.clear();
           } else {
             son_expr->Accept(this);
-            std::string tmp = name_allocator_.Allocate("%tmp.");
-            cur_block_->AddInstruction(std::make_shared<IRGetElementPtrInstructionNode>(
-              tmp, IR_type, node->IR_name_, i));
-            Copy(tmp, son_expr->IR_name_, inside_type.get());
+            Copy(ptr, son_expr->IR_name_, inside_type.get());
+          }
+          // Advance pointer for next element (skip after last).
+          if (i + 1 < size) {
+            std::string ptr_next = name_allocator_.Allocate("%tmp.");
+            cur_block_->AddInstruction(std::make_shared<IRArithmeticInstructionNode>(
+              ptr_next, "+", "ptr", ptr, std::to_string(elem_size), false));
+            ptr = ptr_next;
           }
         }
       }
