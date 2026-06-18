@@ -21,6 +21,7 @@
 #include "mem2reg/eliminator.h"
 #include "IR_visitor/phi_eliminator/phi_eliminator.h"
 #include "IR_visitor/empty_block_eliminator/empty_block_eliminator.h"
+#include "IR_visitor/cse/cse.h"
 #include "reg_alloc/reg_alloc.h"
 
 void TestCode(const std::string &code, std::ostream &out) {
@@ -54,6 +55,8 @@ void TestCode(const std::string &code, std::ostream &out) {
     ReplacePhiWithMoves(IR_root);
 
     EliminateEmptyBlocks(IR_root);
+
+    CSE::Run(IR_root);
 
     // IRPrinter printer("builtin.ll", std::cerr);
     // IR_root->Accept(&printer);
