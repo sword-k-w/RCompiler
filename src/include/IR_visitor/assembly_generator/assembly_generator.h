@@ -58,7 +58,10 @@ private:
 
   IRFunctionNode *cur_func_;
   uint32_t cur_block_;
-  bool registers_saved_{false};
+  // Per-register liveness: true = hardware a-reg holds the canonical value;
+  // false = hardware is call garbage, the save slot is the source of truth.
+  bool a_reg_valid_[8]{true, true, true, true, true, true, true, true};
+  bool ra_saved_{false};
 
   std::pair<StorageType, uint32_t> GetVariableAddress(const std::string &);
   void TransferToTreg(uint32_t, uint32_t, const std::string &);
@@ -67,7 +70,7 @@ private:
   std::string GetResultReg(StorageType, uint32_t, uint32_t);
   void RegToVariable(StorageType, uint32_t, const std::string &, const std::string &);
   void SaveRegister();
-  void RestoreRegister();
+  void EnsureARegValid(uint32_t addr);
   void ReloadConstCache();
   void FlushSavedRegisters();
   void DataMove(const std::string &, StorageType, uint32_t, std::shared_ptr<IRArrayNode>);

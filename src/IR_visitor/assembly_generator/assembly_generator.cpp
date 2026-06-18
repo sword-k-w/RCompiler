@@ -43,14 +43,9 @@ std::string AssemblyGenerator::GetResultReg(StorageType storage_type, uint32_t a
   if (storage_type == kMemory) {
     return "t" + std::to_string(reg_id);
   }
-  // When registers are saved (deferred across calls), hardware a-regs hold
-  // call garbage and the save slots are the source of truth for live a-regs.
-  // Route an a-reg result through a t-reg so RegToVariable writes it to the
-  // slot — writing it straight to the hardware a-reg would be invisible to
-  // the later slot-based reads and would be clobbered by the next restore.
-  if (registers_saved_ && address >= 10 && address <= 17) {
-    return "t" + std::to_string(reg_id);
-  }
+  // Writing a result to a register makes it valid (overwrites any garbage);
+  // RegToVariable marks it valid.  No t-reg routing needed — the hardware
+  // register is always the canonical target with per-register tracking.
   return "x" + std::to_string(address);
 }
 
@@ -77,12 +72,9 @@ std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t r
     os_ << "\tli\tt" << reg_id << ",\t0\n";
     return "t" + std::to_string(reg_id);
   }
-  // a-reg values are stale after a call; load from save slot
-  if (address >= 10 && address <= 17 && registers_saved_) {
-    uint32_t save_off = 8 * (address - 9);
-    TransferToTreg(save_off, reg_id, val_type);
-    return "t" + std::to_string(reg_id);
-  }
+  // If the a-reg is invalid (has call garbage), restore from the save slot
+  // first so subsequent accesses use the hardware register directly.
+  if (address >= 10 && address <= 17) EnsureARegValid(address);
   return "x" + std::to_string(address);
 }
 
@@ -93,7 +85,7 @@ void AssemblyGenerator::VariableForceToReg(const std::string &name, const std::s
   } else if (type == kConst) {
     os_ << "\tli\t" << reg << ", " << name << '\n';
   } else {
-    if (address >= 10 && address <= 17) FlushSavedRegisters();
+    if (address >= 10 && address <= 17) EnsureARegValid(address);
     if (!SameRegister(address, reg)) {
       os_ << "\tmv\t" << reg << ", x" << address << '\n';
     }
@@ -105,67 +97,73 @@ void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address
   if (storage_type == kMemory) {
     EmitMem( LoadStoreType(val_type).second, reg, "sp", current_stack_ - address);
   } else if (!SameRegister(address, reg)) {
-    if (address >= 10 && address <= 17 && registers_saved_) {
-      uint32_t save_off = 8 * (address - 9);
-      EmitMem( "sd", reg, "sp", current_stack_ - save_off);
-    } else {
-      os_ << "\tmv\tx" << address << ", " << reg << '\n';
-    }
+    os_ << "\tmv\tx" << address << ", " << reg << '\n';
   }
+  // Writing to a register makes it valid: the hardware now holds the canonical
+  // value.  No save-slot mirror needed — the next SaveRegister() will persist
+  // it if it's still valid when a call occurs.
+  if (address >= 10 && address <= 17) a_reg_valid_[address - 10] = true;
 }
 
 void AssemblyGenerator::SaveRegister() {
-  if (registers_saved_) return;
-  // Save a0~aN and ra at the top of the frame, packed tightly.
-  // t-regs are pure scratch (caller-saved, dead after each instruction)
-  // so no space is reserved for them.
-  // t3/t4 hold known constants; we reload them via li after the
-  // call instead of saving/restoring to memory.
+  // Save only valid a-regs — invalid ones already have the correct value in
+  // their save slot (from an earlier save).  After the call all become invalid.
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
-    EmitMem( "sd", "a" + std::to_string(i), "sp", current_stack_ - 8 - 8 * i);
+    if (a_reg_valid_[i]) {
+      EmitMem( "sd", "a" + std::to_string(i), "sp", current_stack_ - 8 - 8 * i);
+      a_reg_valid_[i] = false;
+    }
   }
-  EmitMem( "sd", "ra", "sp", current_stack_ - 8 - 8 * current_a_reg_used_);
-  registers_saved_ = true;
+  // ra is saved at most once per block.
+  if (!ra_saved_) {
+    EmitMem( "sd", "ra", "sp", current_stack_ - 8 - 8 * current_a_reg_used_);
+    ra_saved_ = true;
+  }
+}
+
+void AssemblyGenerator::EnsureARegValid(uint32_t addr) {
+  uint32_t idx = addr - 10;
+  if (!a_reg_valid_[idx]) {
+    uint32_t save_off = 8 * (addr - 9);
+    EmitMem( "ld", "x" + std::to_string(addr), "sp", current_stack_ - save_off);
+    a_reg_valid_[idx] = true;
+  }
 }
 
 void AssemblyGenerator::ReloadConstCache() {
-  // t3/t4 are caller-saved and clobbered by every call; reload the cached
-  // constants so they stay valid while registers_saved_ holds (between calls).
+  // t3/t4 are caller-saved and clobbered by every call; reload cached
+  // constants so they stay valid between calls within the same block.
   for (auto &[val, reg] : const_cache_) {
     os_ << "\tli\t" << reg << ",\t" << val << '\n';
   }
 }
 
-void AssemblyGenerator::RestoreRegister() {
-  // Reload hoisted constants FIRST. This must happen before restoring
-  // a-regs/ra, which may use these cached constants to compute large stack offsets.
+void AssemblyGenerator::FlushSavedRegisters() {
+  // Restore any a-regs that are still invalid from the last call, so
+  // successor blocks see valid hardware registers.  Reload const cache
+  // first — the EmitMem calls below may use cached offsets.
   ReloadConstCache();
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
-    EmitMem( "ld", "a" + std::to_string(i), "sp", current_stack_ - 8 - 8 * i);
+    if (!a_reg_valid_[i]) {
+      EmitMem( "ld", "a" + std::to_string(i), "sp", current_stack_ - 8 - 8 * i);
+      a_reg_valid_[i] = true;
+    }
   }
-  EmitMem( "ld", "ra", "sp", current_stack_ - 8 - 8 * current_a_reg_used_);
-  registers_saved_ = false;
-}
-
-void AssemblyGenerator::FlushSavedRegisters() {
-  if (registers_saved_) RestoreRegister();
+  if (ra_saved_) {
+    EmitMem( "ld", "ra", "sp", current_stack_ - 8 - 8 * current_a_reg_used_);
+    ra_saved_ = false;
+  }
 }
 
 void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, uint32_t to_address, std::shared_ptr<IRArrayNode> type) {
   auto [from_type, from_address] = GetVariableAddress(from);
   if (from_type == kRegister && from_address >= 10 && from_address <= 17) {
-    FlushSavedRegisters();
+    EnsureARegValid(from_address);
   }
   if (from_type == kConst) {
     if (to_type == kRegister) {
       os_ << "\tli\tx" << to_address << ", " << from << '\n';
-      // When registers_saved_, the hardware a-reg write above bypasses the
-      // save slot that subsequent reads will use — mirror the write to the
-      // save slot (same pattern as DataMoveFromReg and IRLoad).
-      if (to_address >= 10 && to_address <= 17 && registers_saved_) {
-        uint32_t save_off = 8 * (to_address - 9);
-        EmitMem( "sd", "x" + std::to_string(to_address), "sp", current_stack_ - save_off);
-      }
+      if (to_address >= 10 && to_address <= 17) a_reg_valid_[to_address - 10] = true;
     } else {
       os_ << "\tli\tt0, " << from << '\n';
       auto [_, s_ins] = LoadStoreType(type->base_type_);
@@ -177,21 +175,15 @@ void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, u
     if (to_type == kRegister) {
       auto [l_ins, _] = LoadStoreType(type->base_type_);
       EmitMem( l_ins, "x" + std::to_string(to_address), "sp", current_stack_ - from_address);
-      // When registers_saved_, the load above writes the hardware a-reg but
-      // not the save slot — mirror it (same pattern as IRLoadInstructionNode).
-      if (to_address >= 10 && to_address <= 17 && registers_saved_) {
-        uint32_t save_off = 8 * (to_address - 9);
-        EmitMem( "sd", "x" + std::to_string(to_address), "sp", current_stack_ - save_off);
-      }
+      if (to_address >= 10 && to_address <= 17) a_reg_valid_[to_address - 10] = true;
     } else {
       SaveRegister();
       EmitIA( "addi", "a0", "sp", current_stack_ - to_address);
       EmitIA( "addi", "a1", "sp", current_stack_ - from_address);
       os_ << "\tli\ta2, " << type->allocated_size_ << '\n';
       os_ << "\tcall\tbuiltin_memcpy\n";
-      // Defer the a-reg/ra restore to the block terminator: between calls
-      // registers_saved_ stays true and the a-reg guards route access through
-      // the save slots, so consecutive calls skip the redundant save/restore.
+      // Defer a-reg restore to the block terminator: only invalid a-regs are
+      // restored on-demand; consecutive calls only save valid a-regs.
       ReloadConstCache();
     }
   }
@@ -201,13 +193,9 @@ void AssemblyGenerator::DataMoveFromReg(const std::string &from, StorageType to_
   auto [l_ins, s_ins] = LoadStoreType(type->base_type_);
   if (to_type == kRegister) {
     if (!SameRegister(to_address, from)) {
-      if (to_address >= 10 && to_address <= 17 && registers_saved_) {
-        uint32_t save_off = 8 * (to_address - 9);
-        EmitMem( "sd", from, "sp", current_stack_ - save_off);
-      } else {
-        os_ << "\tmv\tx" << to_address << ", " << from << '\n';
-      }
+      os_ << "\tmv\tx" << to_address << ", " << from << '\n';
     }
+    if (to_address >= 10 && to_address <= 17) a_reg_valid_[to_address - 10] = true;
   } else {
     EmitMem( s_ins, from, "sp", current_stack_ - to_address);
   }
@@ -400,17 +388,15 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
   if (node->storage_type_ == kRegister) {
     auto [l_ins, _] = LoadStoreType(node->type_->base_type_);
     EmitMem( l_ins, "x" + std::to_string(node->address_), ptr_reg, 0);
-    if (node->address_ >= 10 && node->address_ <= 17 && registers_saved_) {
-      uint32_t save_off = 8 * (node->address_ - 9);
-      EmitMem( "sd", "x" + std::to_string(node->address_), "sp", current_stack_ - save_off);
-    }
+    if (node->address_ >= 10 && node->address_ <= 17) a_reg_valid_[node->address_ - 10] = true;
   } else {
     SaveRegister();
     EmitIA( "addi", "a0", "sp", current_stack_ - node->address_);
     bool flag = true;
     for (uint32_t i = 10; i < 18; ++i) {
       if (SameRegister(i, ptr_reg)) {
-        EmitMem( "ld", "a1", "sp", current_stack_ - 8 * (i - 9));
+        EnsureARegValid(i);
+        os_ << "\tmv\ta1, x" << i << '\n';
         flag = false;
       }
     }
@@ -433,7 +419,7 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
     auto [_, s_ins] = LoadStoreType(node->type_->base_type_);
     EmitMem( s_ins, "t1", ptr_reg, 0);
   } else if (type == kRegister) {
-    if (address >= 10 && address <= 17) FlushSavedRegisters();
+    if (address >= 10 && address <= 17) EnsureARegValid(address);
     auto [_, s_ins] = LoadStoreType(node->type_->base_type_);
     EmitMem( s_ins, "x" + std::to_string(address), ptr_reg, 0);
   } else {
@@ -441,7 +427,8 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
     bool flag = true;
     for (uint32_t i = 10; i < 18; ++i) {
       if (SameRegister(i, ptr_reg)) {
-        EmitMem( "ld", "a0", "sp", current_stack_ - 8 * (i - 9));
+        EnsureARegValid(i);
+        os_ << "\tmv\ta0, x" << i << '\n';
         flag = false;
       }
     }
@@ -641,7 +628,7 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
       os_ << "\tli\ta2, " << para->type_->allocated_size_ << '\n';
       os_ << "\tcall\tbuiltin_memcpy\n";
       // The call clobbered t3/t4; reload the cached constants (don't clear the
-      // map — SaveRegister/RestoreRegister EmitMem may rely on the cached
+      // map — SaveRegister/FlushSavedRegisters EmitMem may rely on the cached
       // offsets, which must stay valid across the loop body and beyond).
       ReloadConstCache();
     }
@@ -660,9 +647,15 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
       }
     } else if (type == kRegister) {
       auto [l_ins, s_ins] = LoadStoreType(para->type_->base_type_);
-      if (address >= 10 && address < 18) { // The correct values are in the memory.
+      if (address >= 10 && address < 18) {
+        // For a-reg sources, the correct value may be in the save slot
+        // (if invalid).  Load directly into the parameter register (or a
+        // temp for memory params) — don't go through EnsureARegValid,
+        // which would restore to the source a-reg hardware and risk
+        // clobbering a previously-set parameter register.
         if (para->storage_type_ == kRegister) {
-          EmitMem( l_ins, "x" + std::to_string(para->address_), "sp", current_stack_ - 8 * (address - 9));
+          EmitMem( l_ins, "x" + std::to_string(para->address_), "sp",
+                  current_stack_ - 8 * (address - 9));
         } else {
           EmitMem( l_ins, "t0", "sp", current_stack_ - 8 * (address - 9));
           EmitMem( s_ins, "t0", "sp", -static_cast<int32_t>(para->address_));
@@ -685,18 +678,17 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
   }
   os_ << "\tcall\t" << node->function_name_ << '\n';
 
-  // Stash the return value in t0 before RestoreRegister, which would
-  // otherwise restore a0 from the save slot and clobber the result.
-  // t0 survives RestoreRegister (it only touches a0-aN, ra, and t1).
+  // Stash a0 (return value) in t0 immediately — the call clobbered a0
+  // and we need the result before a0 might be restored from its save slot
+  // by a later EnsureARegValid or FlushSavedRegisters.
   bool has_result = !node->result_type_->IsEmpty();
   if (has_result) {
     os_ << "\tmv\tt0, a0\n";
   }
 
-  // Defer the a-reg/ra restore to the block terminator: the call clobbered
-  // the caller-saved registers, but registers_saved_ staying true is exactly
-  // the invariant the a-reg guards expect, so consecutive calls (including
-  // builtin_memcpy separated by GEPs) skip the redundant save/restore pair.
+  // Defer a-reg restore to the block terminator or on-demand via
+  // EnsureARegValid.  Only a-regs that are actually accessed between
+  // calls pay the restore cost; consecutive calls only save valid a-regs.
   ReloadConstCache();
 
   if (has_result) {
@@ -750,7 +742,8 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   current_stack_ = total_stack;
   current_func_name_ = node->name_;
   current_a_reg_used_ = node->a_reg_used_cnt_;
-  registers_saved_ = false;
+  for (bool &v : a_reg_valid_) v = true;
+  ra_saved_ = false;
   current_variables_ = &node->variables_;
   variable_storage_ = &node->variable_storage_;
 
@@ -830,7 +823,7 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
           }
         }
       }
-      // Also count stack offsets used by SaveRegister/RestoreRegister.
+      // Also count stack offsets used by SaveRegister/FlushSavedRegisters.
       // These are used every time a call is made, so they can be very frequent.
       // Only add if the function actually has a stack frame and makes calls.
       if (current_stack_ > 0 && node->a_reg_used_cnt_ > 0) {
