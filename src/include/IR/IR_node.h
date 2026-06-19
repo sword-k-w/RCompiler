@@ -69,6 +69,7 @@ class IRInstructionNode : public IRNode {
   friend class MemoryAllocator;
   friend class RegAlloc;
   friend class CFGBuilder;
+  friend class FunctionInliner;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
 public:
   bool removed_{false};
@@ -87,6 +88,7 @@ class IRArithmeticInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
 public:
   IRArithmeticInstructionNode() = delete;
   IRArithmeticInstructionNode(const std::string &, const std::string &, const std::string &,
@@ -108,6 +110,7 @@ class IRNegationInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
 public:
   IRNegationInstructionNode() = delete;
   IRNegationInstructionNode(const std::string &, const bool &, const std::string &, const std::string &);
@@ -126,6 +129,7 @@ class IRBranchInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
   friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
 public:
@@ -144,6 +148,7 @@ class IRJumpInstructionNode : public IRInstructionNode {
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
+  friend class FunctionInliner;
   friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
 public:
@@ -161,6 +166,7 @@ class IRReturnInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
 public:
   IRReturnInstructionNode();
   IRReturnInstructionNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -177,6 +183,7 @@ class IRAllocateInstructionNode : public IRInstructionNode {
   friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
+  friend class FunctionInliner;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
 public:
   IRAllocateInstructionNode() = delete;
@@ -198,6 +205,7 @@ class IRLoadInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
 public:
   IRLoadInstructionNode() = delete;
   IRLoadInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &);
@@ -215,6 +223,7 @@ class IRStoreVariableInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
 public:
   IRStoreVariableInstructionNode() = delete;
@@ -233,6 +242,7 @@ class IRStoreConstInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
 public:
   IRStoreConstInstructionNode() = delete;
@@ -251,6 +261,7 @@ class IRGetElementPtrInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
 public:
   IRGetElementPtrInstructionNode() = delete;
   IRGetElementPtrInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &, const uint32_t &);
@@ -270,6 +281,7 @@ class IRGetElementPtrPrimeInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
 public:
   IRGetElementPtrPrimeInstructionNode() = delete;
   IRGetElementPtrPrimeInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &, const std::string &);
@@ -288,6 +300,7 @@ class IRCompareInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
 public:
   enum Operator {
     kEq, kNe, kUgt, kUge, kUlt, kUle, kSgt, kSge, kSlt, kSle
@@ -311,6 +324,7 @@ class IRArgumentNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
 public:
   IRArgumentNode() = delete;
   IRArgumentNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -328,6 +342,7 @@ class IRCallInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
 public:
   IRCallInstructionNode() = delete;
   IRCallInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &);
@@ -348,6 +363,7 @@ class IRPhiInstructionNode : public IRInstructionNode {
   friend class CFGBuilder;
   friend class CFG;
   friend class PhiTopo;
+  friend class FunctionInliner;
   friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
 public:
   IRPhiInstructionNode() = delete;
@@ -368,6 +384,7 @@ class IRMoveInstructionNode : public IRInstructionNode {
   friend class CFGBuilder;
   friend class CFG;
   friend class PhiTopo;
+  friend class FunctionInliner;
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
 public:
   IRMoveInstructionNode() = delete;
@@ -387,6 +404,7 @@ class IRSelectInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
 public:
   IRSelectInstructionNode() = delete;
   IRSelectInstructionNode(const std::string &, const std::string &);
@@ -404,6 +422,7 @@ class IRBlockNode : public IRNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class CFG;
+  friend class FunctionInliner;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
   friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
@@ -435,6 +454,7 @@ class IRParameterNode : public IRNode {
   friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
+  friend class FunctionInliner;
 public:
   IRParameterNode() = delete;
   IRParameterNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -454,6 +474,7 @@ class IRFunctionNode : public IRNode {
   friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
+  friend class FunctionInliner;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
   friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
@@ -488,6 +509,7 @@ class IRRootNode : public IRNode {
   friend class RegAlloc;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
+  friend class FunctionInliner;
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
   friend void EliminateCriticalEdge(std::shared_ptr<IRRootNode>);
   friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);

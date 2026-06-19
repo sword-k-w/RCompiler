@@ -41,7 +41,13 @@ void Mem2reg(std::shared_ptr<IRRootNode> root) {
     }
 
     std::set<std::string> promoted_names;
-    for (auto &instruction : function_node->blocks_[0]->instructions_) {
+    // Find the real entry block (ID 0), which may not be at blocks_[0]
+    // after function inlining adds blocks.
+    IRBlockNode *entry_block = nullptr;
+    for (auto &b : function_node->blocks_) {
+      if (b->GetID() == 0) { entry_block = b.get(); break; }
+    }
+    for (auto &instruction : entry_block->instructions_) {
       auto ins = instruction.get();
       auto alloca = dynamic_cast<IRAllocateInstructionNode *>(ins);
       if (alloca == nullptr) {

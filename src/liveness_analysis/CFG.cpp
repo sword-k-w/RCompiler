@@ -496,6 +496,14 @@ void CFG::PhiRewriteAll() {
       auto sele = dynamic_cast<IRSelectInstructionNode *>(ins);
       if (sele != nullptr) {
         ReplaceValue(sele->cond_);
+        continue;
+      }
+      auto move = dynamic_cast<IRMoveInstructionNode *>(ins);
+      if (move != nullptr) {
+        ReplaceValue(move->source_);
+        // Note: result_ is defined by this instruction, so it is not
+        // rewritten — only the source operand is replaced.
+        continue;
       }
     }
     for (auto &phi : block->phi_) {
