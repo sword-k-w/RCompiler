@@ -771,11 +771,17 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
         if (dynamic_cast<IRCallInstructionNode *>(ins.get())) ++call_cnt;
       }
     }
+    // For the long-jump threshold, use the pre-CSE instruction count
+    // (if set).  CSE removes instructions, which can reduce the estimate
+    // enough to disable long jumps when they're still needed.
+    uint32_t threshold_ins = (node->pre_cse_ins_count_ > 0)
+                                 ? node->pre_cse_ins_count_
+                                 : total_ins;
     // Each IR insn becomes ~1-3 asm insns; const cache adds ~2 li per
     // call + ~2 li per block terminator.  The B-type branch limit is
     // only ±4KB (~1024 insns), so even moderate functions can exceed it
     // if blocks are far apart.  Use a generous threshold to be safe.
-    uint32_t est_asm = total_ins * 2 + call_cnt * 2 + node->blocks_.size() * 2;
+    uint32_t est_asm = threshold_ins * 2 + call_cnt * 2 + node->blocks_.size() * 2;
     large_function_ = (est_asm > 8000 || node->blocks_.size() > 100);
 
     // Map each block to its successor in layout order, for
