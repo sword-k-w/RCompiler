@@ -20,6 +20,7 @@
 #include "mem2reg/mem2reg.h"
 #include "mem2reg/eliminator.h"
 #include "IR_visitor/function_inliner/function_inliner.h"
+#include "IR_visitor/sccp/sccp.h"
 #include "IR_visitor/phi_eliminator/phi_eliminator.h"
 #include "IR_visitor/empty_block_eliminator/empty_block_eliminator.h"
 #include "reg_alloc/reg_alloc.h"
@@ -52,12 +53,11 @@ void TestCode(const std::string &code, std::ostream &out) {
     Mem2reg(IR_root);
     EliminateCriticalEdge(IR_root);
 
+    SCCP(IR_root);
+
     ReplacePhiWithMoves(IR_root);
 
     EliminateEmptyBlocks(IR_root);
-
-    // IRPrinter printer("builtin.ll", std::cerr);
-    // IR_root->Accept(&printer);
 
     Preprocessor preprocessor;
     IR_root->Accept(&preprocessor);
