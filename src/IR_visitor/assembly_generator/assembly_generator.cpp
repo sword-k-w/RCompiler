@@ -1,5 +1,7 @@
 #include <iostream>
 #include <cassert>
+#include <set>
+#include <functional>
 #include "IR_visitor/assembly_generator/assembly_generator.h"
 #include "IR_visitor/memory_allocator/memory_allocator.h"
 #include "IR/struct_map.h"
@@ -795,6 +797,67 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
     // if blocks are far apart.  Use a generous threshold to be safe.
     uint32_t est_asm = total_ins * 2 + call_cnt * 2 + node->blocks_.size() * 2;
     large_function_ = (est_asm > 8000 || node->blocks_.size() > 100);
+
+    // Reorder blocks to maximize fall-through, minimizing explicit
+    // jumps.  A DFS traversal from the entry block places each block
+    // immediately after its predecessor when the predecessor's
+    // terminator targets it.  For branches, the false target is
+    // preferred as next (so bnez falls through when the condition
+    // is false).  The jump-elimination logic in next_block_map_
+    // and Visit(IRJumpInstructionNode)/Visit(IRBranchInstructionNode)
+    // then removes the now-redundant jumps.
+    {
+      // Index blocks by id for O(1) lookup.
+      std::unordered_map<uint32_t, std::shared_ptr<IRBlockNode>> block_by_id;
+      for (auto &b : node->blocks_) block_by_id[b->id_] = b;
+
+      std::vector<std::shared_ptr<IRBlockNode>> reordered;
+      std::set<uint32_t> placed;
+
+      // DFS: place `id` and then recurse on its preferred successor.
+      std::function<void(uint32_t)> place = [&](uint32_t id) {
+        if (placed.count(id)) return;
+        placed.insert(id);
+        if (block_by_id.count(id))
+          reordered.push_back(block_by_id[id]);
+
+        auto &blk = block_by_id[id];
+        if (!blk) return;
+
+        // Find the terminator to determine successors.
+        IRJumpInstructionNode    *jmp = nullptr;
+        IRBranchInstructionNode  *br  = nullptr;
+        for (auto &ins : blk->instructions_) {
+          if (ins->removed_) continue;
+          if (!jmp) jmp = dynamic_cast<IRJumpInstructionNode *>(ins.get());
+          if (!br)  br  = dynamic_cast<IRBranchInstructionNode *>(ins.get());
+          if (dynamic_cast<IRReturnInstructionNode *>(ins.get())) return;
+        }
+
+        if (jmp) {
+          // Jump: place the target next → fall-through.
+          place(jmp->destination_);
+        } else if (br) {
+          // Branch: place false target next so bnez/beqz falls through
+          // when the condition is false (the common case for if-then).
+          place(br->false_branch_);
+          place(br->true_branch_);
+        }
+      };
+
+      place(0);
+
+      // Append any remaining blocks not reached by the DFS
+      // (e.g. unreachable blocks, or blocks only reachable via
+      //  backwards edges that the DFS placed out of order).
+      for (auto &b : node->blocks_) {
+        if (!placed.count(b->id_)) {
+          reordered.push_back(b);
+        }
+      }
+
+      node->blocks_ = std::move(reordered);
+    }
 
     // Map each block to its successor in layout order, for
     // eliminating redundant fall-through jumps.
