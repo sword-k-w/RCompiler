@@ -798,9 +798,20 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
 
     // Map each block to its successor in layout order, for
     // eliminating redundant fall-through jumps.
+    // Skip blocks whose instructions have all been removed
+    // (merged by EliminateEmptyBlocks).
+    auto empty_block = [](const std::shared_ptr<IRBlockNode> &b) {
+      for (auto &ins : b->instructions_)
+        if (!ins->removed_) return false;
+      return true;
+    };
     next_block_map_.clear();
-    for (size_t i = 0; i + 1 < node->blocks_.size(); ++i) {
-      next_block_map_[node->blocks_[i]->id_] = node->blocks_[i + 1]->id_;
+    for (size_t i = 0; i < node->blocks_.size(); ++i) {
+      if (empty_block(node->blocks_[i])) continue;
+      size_t j = i + 1;
+      while (j < node->blocks_.size() && empty_block(node->blocks_[j])) ++j;
+      if (j < node->blocks_.size())
+        next_block_map_[node->blocks_[i]->id_] = node->blocks_[j]->id_;
     }
 
     // Pre-scan: collect referenced block IDs for label elision
