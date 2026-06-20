@@ -235,6 +235,24 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
         return;
       }
     }
+
+    // Also check operand1 for commutative operations (e.g., SCCP may
+    // propagate a constant into the first operand position).
+    {
+      auto [op1_type, _] = GetVariableAddress(node->operand1_);
+      if (op1_type == kConst) {
+        int32_t imm = std::stoi(node->operand1_);
+        // c + x == x + c (commutative): fold to addi rd, x, c.
+        if (node->op_ == "+" && imm >= -2048 && imm <= 2047) {
+          auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
+          os_ << "\t" << (is_ptr ? "addi" : "addiw") << "\t" << rd << ", " << rs2 << ", " << imm << '\n';
+          RegToVariable(node->storage_type_, node->address_, rd, node->type_);
+          return;
+        }
+        // c - x has no single-instruction RISC-V immediate form (no subi),
+        // so intentionally not folded here.
+      }
+    }
   }
 
   auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
