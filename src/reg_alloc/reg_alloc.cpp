@@ -240,10 +240,27 @@ void RegAlloc::Visit(IRFunctionNode *node) {
   {
     // Save area at the top of the frame: ra + a0..a(N-1), packed tightly.
     // t-regs are pure scratch (caller-saved, dead after each instruction),
-    // so no space is reserved for them.
-    // Save area at the top of the frame: ra + a0..a(N-1), packed
-    // tightly with no t-reg space.  72 = 8 slots for a0-a7 + ra slot.
-    uint32_t base = node->has_calls_ ? 72 : 0;
+    // so no space is reserved for them.  Only reserve what the function
+    // actually uses — a_reg_used_cnt_ was finalized just above (line 234)
+    // so it includes both parameter a-regs and any a-regs assigned to
+    // promoted variables by the allocator.
+    //
+    // For functions with kMemory (stack-passed) parameters we keep the
+    // original base=72 so the caller's outgoing-argument-area offset
+    // (sp - para->address_) matches the callee's access offset
+    // (callee_sp + total_stack - para->address_) under the RISC-V ABI.
+    bool has_mem_param = false;
+    for (auto &p : node->parameters_) {
+      if (p->storage_type_ == kMemory) { has_mem_param = true; break; }
+    }
+    uint32_t base;
+    if (!node->has_calls_) {
+      base = 0;
+    } else if (has_mem_param) {
+      base = 72;
+    } else {
+      base = 8 + 8 * node->a_reg_used_cnt_;
+    }
     uint32_t cur = base;
 
     // Build a set of names already assigned (parameters go first)
