@@ -1,0 +1,11 @@
+// Test: inlining without constant folding opportunity (dynamic values)
+fn dummy(x: i32, flag: i32) -> i32 {
+    if (flag > 0) { x + 1 } else { x * 3 + x * 4 }
+}
+fn main() {
+    let a: i32 = getInt();
+    let b: i32 = getInt();
+    printlnInt(dummy(a, b));
+    printlnInt(42);
+    exit(0);
+}

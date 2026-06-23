@@ -359,5 +359,85 @@ void EliminateEmptyBlocks(std::shared_ptr<IRRootNode> root) {
         changed = true;
       }
     } while (changed);
+
+    // --- Pass 4: Redirect jumps around completely empty blocks ---
+    // After the previous passes, some blocks may have all instructions removed
+    // (e.g. threaded Move+Jump pairs, dead blocks from SCCP).  These empty
+    // blocks break the DFS fall-through chain in the assembly generator
+    // because they have no live terminator to follow.  For each empty block,
+    // we follow the chain of removed jumps to find the first live target,
+    // then redirect all incoming jumps/branches directly there.
+    {
+      // Build predecessor map
+      std::unordered_map<uint32_t, std::vector<uint32_t>> preds;
+      for (auto &block : blocks) {
+        for (auto &ins : block->instructions_) {
+          if (ins->removed_) continue;
+          if (auto *br = dynamic_cast<IRBranchInstructionNode *>(ins.get())) {
+            preds[br->true_branch_].push_back(block->id_);
+            preds[br->false_branch_].push_back(block->id_);
+            break;
+          }
+          if (auto *j = dynamic_cast<IRJumpInstructionNode *>(ins.get())) {
+            preds[j->destination_].push_back(block->id_);
+            break;
+          }
+        }
+      }
+
+      // Helper: check if a block is completely empty (all ins removed)
+      auto is_empty = [&](uint32_t id) -> bool {
+        for (auto &ins : blocks[id]->instructions_)
+          if (!ins->removed_) return false;
+        return true;
+      };
+
+      // Helper: follow chain of removed jumps to find the first live target.
+      // The chain is formed by the last removed jump in each empty block.
+      auto follow_chain = [&](uint32_t id) -> uint32_t {
+        std::set<uint32_t> visited;
+        uint32_t cur = id;
+        while (visited.insert(cur).second) {
+          if (!is_empty(cur)) return cur;  // reached a live block
+          uint32_t next = UINT32_MAX;
+          for (auto &ins : blocks[cur]->instructions_) {
+            if (auto *j = dynamic_cast<IRJumpInstructionNode *>(ins.get()))
+              next = j->destination_;
+          }
+          if (next == UINT32_MAX || next == cur) break;
+          cur = next;
+        }
+        return cur;  // chain ends; return whatever we landed on
+      };
+
+      for (auto &block : blocks) {
+        if (block->id_ == 0) continue;
+        if (!is_empty(block->id_)) continue;
+
+        uint32_t target = follow_chain(block->id_);
+        if (target == block->id_) continue;  // no valid target
+
+        for (auto pred_id : preds[block->id_]) {
+          auto &pred = blocks[pred_id];
+          for (auto &ins : pred->instructions_) {
+            if (ins->removed_) continue;
+            if (auto *pj = dynamic_cast<IRJumpInstructionNode *>(ins.get())) {
+              if (pj->destination_ == block->id_) pj->destination_ = target;
+              break;
+            }
+            if (auto *pbr = dynamic_cast<IRBranchInstructionNode *>(ins.get())) {
+              if (pbr->true_branch_ == block->id_) pbr->true_branch_ = target;
+              if (pbr->false_branch_ == block->id_) pbr->false_branch_ = target;
+              if (pbr->true_branch_ == pbr->false_branch_) {
+                pbr->removed_ = true;
+                pred->instructions_.push_back(
+                    std::make_shared<IRJumpInstructionNode>(pbr->true_branch_));
+              }
+              break;
+            }
+          }
+        }
+      }
+    }
   }
 }

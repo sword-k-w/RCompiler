@@ -1,0 +1,76 @@
+// Test: phi-intensive patterns
+
+// Deep AND chain — many phi nodes from short-circuit
+fn deep_and_10(a1: i32, a2: i32, a3: i32, a4: i32, a5: i32,
+               a6: i32, a7: i32, a8: i32, a9: i32, a10: i32) -> bool {
+    a1 > 0 && a2 > 0 && a3 > 0 && a4 > 0 && a5 > 0
+        && a6 > 0 && a7 > 0 && a8 > 0 && a9 > 0 && a10 > 0
+}
+
+// Short-circuit with function calls — phi + save/restore interaction
+fn is_pos(x: i32) -> bool { x > 0 }
+fn is_small(x: i32) -> bool { x < 100 }
+
+fn shortcircuit_calls(a: i32, b: i32, c: i32) -> bool {
+    is_pos(a) && is_small(b) && is_pos(c)
+}
+
+// Mixed && and || — many phi nodes
+fn mixed_bool(a: i32, b: i32, c: i32, d: i32, e: i32) -> bool {
+    (a > 0 && b > 0) || (c > 0 && d > 0) || e > 0
+}
+
+// Conditional value select
+fn conditional_select(cond: i32, x: i32, y: i32, z: i32) -> i32 {
+    if (cond > 0) {
+        x
+    } else if (x > y) {
+        y
+    } else {
+        z
+    }
+}
+
+// Loop with conditional assignment
+fn loop_conditional_assign(n: i32) -> i32 {
+    let mut s: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        let val: i32 = if (i % 2 == 0) {
+            if (i % 4 == 0) { i } else { i * 2 }
+        } else {
+            -i
+        };
+        s = s + val;
+        i = i + 1;
+    }
+    s
+}
+
+// Multi-return function — many exit blocks
+fn classify_multi(x: i32) -> i32 {
+    if (x < 0) { return -1; }
+    if (x == 0) { return 0; }
+    if (x < 10) { return 1; }
+    if (x < 50) { return 2; }
+    return 3;
+}
+
+fn main() {
+    let mut count: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < 5000) {
+        if (deep_and_10(i, i+1, i+2, i+3, i+4, i+5, i+6, i+7, i+8, i+9)) {
+            count = count + 1;
+        }
+        if (mixed_bool(i, i+1, i+2, i+3, i+4)) {
+            count = count + 1;
+        }
+        i = i + 1;
+    }
+    printlnInt(count);
+    printlnInt(conditional_select(1, 10, 20, 30));
+    printlnInt(loop_conditional_assign(50));
+    printlnInt(classify_multi(25));
+    exit(0);
+}

@@ -1,0 +1,69 @@
+// Test: memory access optimization patterns
+
+struct Vec3 {
+    x: i32,
+    y: i32,
+    z: i32,
+}
+
+// Repeated field access — should reuse GEP/loaded values
+fn vec3_sum(v: &Vec3) -> i32 {
+    v.x + v.y + v.z
+}
+
+fn vec3_squared(v: &Vec3) -> i32 {
+    v.x * v.x + v.y * v.y + v.z * v.z
+}
+
+// Repeated access to same field
+fn vec3_double_x(v: &Vec3) -> i32 {
+    v.x + v.x    // same field twice
+}
+
+// Struct field write then read
+fn vec3_update(v: &mut Vec3, s: i32) -> i32 {
+    v.x = v.x + s;
+    v.y = v.y + s;
+    v.z = v.z + s;
+    v.x + v.y + v.z
+}
+
+// Array stride access
+fn array_strided(arr: &[i32; 100], start: i32, stride: i32) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: i32 = start;
+    while (i < 100) {
+        sum = sum + arr[i as usize];
+        i = i + stride;
+    }
+    sum
+}
+
+// Array of structs vs struct of arrays pattern
+struct Pair {
+    a: i32,
+    b: i32,
+}
+
+fn pair_sum(p: &Pair) -> i32 {
+    p.a + p.b
+}
+
+fn main() {
+    let v: Vec3 = Vec3 { x: 3, y: 4, z: 5 };
+    printlnInt(vec3_sum(&v));
+    printlnInt(vec3_squared(&v));
+    printlnInt(vec3_double_x(&v));
+
+    let mut w: Vec3 = Vec3 { x: 1, y: 2, z: 3 };
+    printlnInt(vec3_update(&mut w, 10));
+
+    let mut arr: [i32; 100] = [0; 100];
+    let mut i: i32 = 0;
+    while (i < 100) { arr[i as usize] = i; i = i + 1; }
+    printlnInt(array_strided(&arr, 0, 3));
+
+    let p: Pair = Pair { a: 10, b: 20 };
+    printlnInt(pair_sum(&p));
+    exit(0);
+}

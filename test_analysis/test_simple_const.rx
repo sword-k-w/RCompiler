@@ -1,0 +1,7 @@
+// Simplest possible repro: let + const expression
+fn main() {
+    let x: i32 = 5 + 1;
+    printlnInt(x);
+    printlnInt(42);
+    exit(0);
+}

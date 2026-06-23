@@ -1,0 +1,66 @@
+// Test: branch optimization patterns
+
+// Diamond: both branches compute x*2 — should be commoned
+fn diamond_common(x: i32, flag: i32) -> i32 {
+    if (flag > 0) {
+        x * 2 + 1
+    } else {
+        x * 2 + 3
+    }
+}
+
+// Multi-way if-else chain (like switch)
+fn switch_like(x: i32) -> i32 {
+    if (x == 1) { return 100; }
+    else if (x == 2) { return 200; }
+    else if (x == 3) { return 300; }
+    else if (x == 4) { return 400; }
+    else if (x == 5) { return 500; }
+    else if (x == 6) { return 600; }
+    else if (x == 7) { return 700; }
+    else if (x == 8) { return 800; }
+    else { return -1; }
+}
+
+// if-else with call in one path, leaf in other
+fn branch_imbalance(x: i32, flag: i32) -> i32 {
+    if (flag > 0) {
+        x + 1
+    } else {
+        x * 3 + x * 4
+    }
+}
+
+// Nested select pattern
+fn nested_select(a: i32, b: i32, c: i32) -> i32 {
+    if (a > 0) {
+        if (b > 0) { a } else { b }
+    } else {
+        if (c > 0) { c } else { -1 }
+    }
+}
+
+// Loop with conditional inside
+fn loop_with_cond(n: i32) -> i32 {
+    let mut s: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        if (i % 2 == 0) {
+            s = s + i;
+        } else {
+            s = s - i;
+        }
+        i = i + 1;
+    }
+    s
+}
+
+fn main() {
+    printlnInt(diamond_common(10, 1));
+    printlnInt(diamond_common(10, 0));
+    printlnInt(switch_like(5));
+    printlnInt(branch_imbalance(5, 1));
+    printlnInt(nested_select(1, 2, 3));
+    printlnInt(loop_with_cond(100));
+    exit(0);
+}

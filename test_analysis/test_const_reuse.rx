@@ -1,0 +1,39 @@
+// Test: does compiler reuse constants across expressions in same block?
+fn const_reuse_same(x: i32) -> i32 {
+    // All use constant 7 — should only need one li t1, 7
+    x * 7 + x * 7 + x * 7
+}
+
+fn const_reuse_mixed(x: i32) -> i32 {
+    // Multiple different small constants: 3, 5, 3, 5
+    let a: i32 = x * 3;
+    let b: i32 = x * 5;
+    let c: i32 = x * 3;  // same as a
+    let d: i32 = x * 5;  // same as b
+    a + b + c + d
+}
+
+fn const_reuse_bound(n: i32) -> i32 {
+    // Bound constant 100 loaded inside loop?
+    let mut sum: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < 100) {
+        sum = sum + i;
+        i = i + 1;
+    }
+    sum
+}
+
+fn many_small_consts(x: i32) -> i32 {
+    // 10 different multiplications with small constants
+    x * 1 + x * 2 + x * 3 + x * 4 + x * 5
+        + x * 6 + x * 7 + x * 8 + x * 9 + x * 10
+}
+
+fn main() {
+    printlnInt(const_reuse_same(5));
+    printlnInt(const_reuse_mixed(2));
+    printlnInt(const_reuse_bound(100));
+    printlnInt(many_small_consts(1));
+    exit(0);
+}

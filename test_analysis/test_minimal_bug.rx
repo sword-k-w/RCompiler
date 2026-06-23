@@ -1,0 +1,9 @@
+// Minimal repro for block layout bug
+fn dummy(x: i32, flag: i32) -> i32 {
+    if (flag > 0) { x + 1 } else { x * 3 + x * 4 }
+}
+fn main() {
+    printlnInt(dummy(5, 1));  // should print 6
+    printlnInt(42);            // should print 42
+    exit(0);
+}

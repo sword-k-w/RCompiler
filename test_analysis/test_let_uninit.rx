@@ -1,0 +1,10 @@
+fn test() -> i32 {
+    let result: i32;
+    result = 42;
+    result
+}
+
+fn main() {
+    printlnInt(test());
+    exit(0);
+}

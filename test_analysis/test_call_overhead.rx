@@ -1,0 +1,64 @@
+// Test: call overhead patterns
+
+// Many small leaf calls in sequence — save/restore should be shared
+fn f1(x: i32) -> i32 { x + 1 }
+fn f2(x: i32) -> i32 { x + 2 }
+fn f3(x: i32) -> i32 { x + 3 }
+fn f4(x: i32) -> i32 { x + 4 }
+fn f5(x: i32) -> i32 { x + 5 }
+
+fn call_chain_5(x: i32) -> i32 {
+    // All leaf functions should be inlined
+    f1(x) + f2(x) + f3(x) + f4(x) + f5(x)
+}
+
+// Non-leaf call chain with values flowing through
+fn add_one(x: i32) -> i32 { x + 1 }
+
+fn call_pipeline(x: i32) -> i32 {
+    // Each call depends on previous result
+    let a: i32 = add_one(x);
+    let b: i32 = add_one(a);
+    let c: i32 = add_one(b);
+    let d: i32 = add_one(c);
+    let e: i32 = add_one(d);
+    e
+}
+
+// Call inside loop (hoistable save/restore?)
+fn call_in_loop(n: i32) -> i32 {
+    let mut s: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        s = s + add_one(i);
+        i = i + 1;
+    }
+    s
+}
+
+// Conditional call
+fn conditional_call(x: i32, flag: bool) -> i32 {
+    if (flag) {
+        add_one(x)
+    } else {
+        add_one(x) + 1
+    }
+}
+
+// Call with many constant args
+fn id5(a: i32, b: i32, c: i32, d: i32, e: i32) -> i32 {
+    a + b + c + d + e
+}
+
+fn call_many_consts() -> i32 {
+    id5(1, 2, 3, 4, 5)
+}
+
+fn main() {
+    printlnInt(call_chain_5(10));
+    printlnInt(call_pipeline(0));
+    printlnInt(call_in_loop(100));
+    printlnInt(conditional_call(5, true));
+    printlnInt(call_many_consts());
+    exit(0);
+}

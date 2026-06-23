@@ -1,0 +1,73 @@
+// Test: loop optimization patterns
+
+// Simple counted loop — induction variable should stay in registers
+fn counted_loop(n: i32) -> i32 {
+    let mut s: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        s = s + i;
+        i = i + 1;
+    }
+    s
+}
+
+// Loop with invariant expression
+fn loop_invariant_expr(x: i32, n: i32) -> i32 {
+    let base: i32 = x * 3 + 5;  // loop invariant
+    let mut s: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        s = s + base;  // base never changes
+        i = i + 1;
+    }
+    s
+}
+
+// Nested loops
+fn nested_loop(n: i32) -> i32 {
+    let mut s: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        let mut j: i32 = 0;
+        while (j < i) {
+            s = s + 1;
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    s
+}
+
+// Loop with stride > 1
+fn strided_loop(n: i32) -> i32 {
+    let mut s: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        s = s + i;
+        i = i + 2;   // stride 2
+    }
+    s
+}
+
+// Two accumulators in one loop
+fn double_accum(n: i32) -> i32 {
+    let mut even: i32 = 0;
+    let mut odd: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        even = even + i;
+        i = i + 1;
+        odd = odd + i;
+        i = i + 1;
+    }
+    even + odd
+}
+
+fn main() {
+    printlnInt(counted_loop(100));
+    printlnInt(loop_invariant_expr(2, 50));
+    printlnInt(nested_loop(50));
+    printlnInt(strided_loop(100));
+    printlnInt(double_accum(100));
+    exit(0);
+}

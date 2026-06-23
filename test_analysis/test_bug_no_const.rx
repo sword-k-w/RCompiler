@@ -1,0 +1,11 @@
+// Test: same pattern but with unknown input (no constant folding)
+fn dummy(x: i32, flag: i32) -> i32 {
+    if (flag > 0) { x + 1 } else { x * 3 + x * 4 }
+}
+fn main() {
+    // getInt provides unknown value — prevents constant folding
+    let f: i32 = getInt();
+    printlnInt(dummy(5, f));
+    printlnInt(42);
+    exit(0);
+}
