@@ -255,6 +255,76 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
         // so intentionally not folded here.
       }
     }
+
+    // Strength reduction: replace mul/div/rem by power-of-2 constants with shifts.
+    // x * (2^k) → slliw rd, x, k   (1 ins instead of li + mulw = 2 ins)
+    // x / (2^k) → srliw rd, x, k   (unsigned only; 1 ins instead of li + divuw = 2 ins)
+    // x % (2^k) → andi rd, x, (2^k - 1)  (unsigned only)
+    {
+      auto try_pow2 = [&](const std::string &const_op, const std::string &var_op,
+                          uint32_t var_reg, bool commutative) {
+        auto [op_type, _] = GetVariableAddress(const_op);
+        if (op_type != kConst) return false;
+        int32_t imm = std::stoi(const_op);
+        if (imm < 1) return false;
+        // Check power-of-2: (imm & (imm - 1)) == 0
+        if ((imm & (imm - 1)) != 0) return false;
+        int k = __builtin_ctz((unsigned)imm);  // log2(imm), k ≥ 0
+
+        auto rs = VariableToReg(var_op, var_reg, node->type_);
+
+        if (node->op_ == "*") {
+          // x * (2^k) → slliw (or mv for k=0)
+          if (k == 0) {
+            os_ << "\tmv\t" << rd << ", " << rs << '\n';
+          } else {
+            os_ << "\tslliw\t" << rd << ", " << rs << ", " << k << '\n';
+          }
+          RegToVariable(node->storage_type_, node->address_, rd, node->type_);
+          return true;
+        }
+        if (node->op_ == "/" && !commutative) {
+          // divisor is 2^k; only valid when const is operand2 (not commutative).
+          if (node->is_unsigned_ && k > 0) {
+            // x /u (2^k) → srliw rd, x, k
+            os_ << "\tsrliw\t" << rd << ", " << rs << ", " << k << '\n';
+            RegToVariable(node->storage_type_, node->address_, rd, node->type_);
+            return true;
+          }
+          // Signed division by power-of-2: use shift with sign correction.
+          // For k ≥ 1:  sraiw t, rs, 31; srliw t, t, (32-k); addw t, rs, t; sraiw rd, t, k
+          if (!node->is_unsigned_ && k > 0 && node->type_ == "i32") {
+            std::string t = "t6";  // scratch
+            os_ << "\tsraiw\t" << t << ", " << rs << ", 31\n";
+            os_ << "\tsrliw\t" << t << ", " << t << ", " << (32 - k) << '\n';
+            os_ << "\taddw\t" << t << ", " << rs << ", " << t << '\n';
+            os_ << "\tsraiw\t" << rd << ", " << t << ", " << k << '\n';
+            RegToVariable(node->storage_type_, node->address_, rd, node->type_);
+            return true;
+          }
+        }
+        if (node->op_ == "%" && !commutative) {
+          // divisor is 2^k; unsigned only.
+          if (node->is_unsigned_ && k > 0 && imm <= 2047) {
+            // x %u (2^k) → andi rd, x, (2^k - 1)
+            os_ << "\tandi\t" << rd << ", " << rs << ", " << (imm - 1) << '\n';
+            RegToVariable(node->storage_type_, node->address_, rd, node->type_);
+            return true;
+          }
+          // For larger 2^k where (2^k - 1) exceeds 12-bit signed immediate,
+          // fall through to the general remuw path (still correct, just not
+          // strength-reduced).
+        }
+        return false;
+      };
+
+      // Try operand2 as constant (the divisor/multiplier).
+      if (try_pow2(node->operand2_, node->operand1_, 0, false)) return;
+      // For commutative ops (*), also try operand1 as constant.
+      if (node->op_ == "*") {
+        if (try_pow2(node->operand1_, node->operand2_, 1, true)) return;
+      }
+    }
   }
 
   auto rs1 = VariableToReg(node->operand1_, 0, node->type_);

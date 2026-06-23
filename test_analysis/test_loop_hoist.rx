@@ -1,0 +1,26 @@
+// Test: Loop-invariant hoisting opportunities
+fn sum_range(n: i32) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        sum = sum + i;
+        i = i + 1;
+    }
+    sum
+}
+
+fn sum_with_const(n: i32) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        sum = sum + i * 3;   // const 3 loaded each iteration
+        i = i + 1;
+    }
+    sum
+}
+
+fn main() {
+    printlnInt(sum_range(100));
+    printlnInt(sum_with_const(100));
+    exit(0);
+}

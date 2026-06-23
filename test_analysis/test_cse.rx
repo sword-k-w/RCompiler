@@ -1,0 +1,41 @@
+// Test 6: CSE and redundancy patterns
+fn common_subexpr(a: i32, b: i32) -> i32 {
+    let x: i32 = a + b;
+    let y: i32 = a + b;  // duplicate of x
+    let z: i32 = a * b;
+    let w: i32 = a * b;  // duplicate of z
+    x + y + z + w
+}
+
+fn loop_invariant(scale: i32, n: i32) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        sum = sum + i * scale;  // scale is loop-invariant
+        i = i + 1;
+    }
+    sum
+}
+
+fn redundant_compute(x: i32) -> i32 {
+    let a: i32 = x * 3 + 5;
+    let b: i32 = x * 3 + 5;  // same as a
+    let c: i32 = x * 3 + 5;  // same as a
+    a + b + c
+}
+
+fn dead_assign(n: i32) -> i32 {
+    let mut x: i32 = n * 2;
+    let mut y: i32 = n + 3;
+    x = n + 1;   // previous x is dead
+    y = x * 2;   // previous y is dead
+    x + y
+}
+
+fn main() {
+    printlnInt(common_subexpr(5, 3));
+    printlnInt(loop_invariant(2, 100));
+    printlnInt(redundant_compute(10));
+    printlnInt(dead_assign(5));
+    exit(0);
+}

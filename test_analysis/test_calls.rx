@@ -1,0 +1,41 @@
+// Test 3: Function calls — leaf, non-leaf, many params
+
+fn leaf_add1(x: i32) -> i32 { x + 1 }
+
+fn leaf_add2(x: i32, y: i32) -> i32 { x + y }
+
+fn leaf_complex(x: i32, y: i32, z: i32) -> i32 {
+    let t: i32 = x + y;
+    t * z
+}
+
+fn non_leaf(x: i32) -> i32 {
+    let a: i32 = leaf_add1(x);
+    let b: i32 = leaf_add2(a, x);
+    leaf_complex(a, b, x)
+}
+
+fn many_params(p1: i32, p2: i32, p3: i32, p4: i32,
+               p5: i32, p6: i32, p7: i32, p8: i32) -> i32 {
+    p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8
+}
+
+fn many_calls(n: i32) -> i32 {
+    let mut s: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        s = s + leaf_add1(i);
+        i = i + 1;
+    }
+    s
+}
+
+fn main() {
+    printlnInt(leaf_add1(41));
+    printlnInt(leaf_add2(10, 20));
+    printlnInt(leaf_complex(2, 3, 4));
+    printlnInt(non_leaf(10));
+    printlnInt(many_params(1, 2, 3, 4, 5, 6, 7, 8));
+    printlnInt(many_calls(100));
+    exit(0);
+}

@@ -1,0 +1,11 @@
+// Simple array test
+fn main() {
+    let mut arr: [i32; 10] = [0; 10];
+    let mut i: i32 = 0;
+    while (i < 10) {
+        arr[i as usize] = i;
+        i = i + 1;
+    }
+    printlnInt(arr[0 as usize]);
+    exit(0);
+}

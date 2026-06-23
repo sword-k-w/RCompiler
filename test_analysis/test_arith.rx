@@ -1,0 +1,28 @@
+// Test 1: Arithmetic patterns — strength reduction, constant folding
+fn arith_simple(x: i32) -> i32 {
+    x * 2 + x * 4 + x * 8   // x*2 + x*4 + x*8 = x*14
+}
+
+fn arith_const_fold() -> i32 {
+    let a: i32 = 10 * 20;
+    let b: i32 = a + 30;
+    let c: i32 = b / 5;
+    let d: i32 = c % 3;
+    d
+}
+
+fn arith_power_two(x: i32) -> i32 {
+    x * 16 + x / 8    // could be slli/srai
+}
+
+fn arith_mixed(x: i32, y: i32) -> i32 {
+    (x + y) * (x - y) + x * 2 - y * 3
+}
+
+fn main() {
+    printlnInt(arith_simple(5));
+    printlnInt(arith_const_fold());
+    printlnInt(arith_power_two(100));
+    printlnInt(arith_mixed(10, 3));
+    exit(0);
+}

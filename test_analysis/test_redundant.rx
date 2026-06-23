@@ -1,0 +1,31 @@
+// Test: Redundant expression elimination opportunities
+fn redundant_add(a: i32, b: i32) -> i32 {
+    let x: i32 = a + b;
+    let y: i32 = a + b;
+    x + y
+}
+
+fn redundant_multiple_use(a: i32, b: i32) -> i32 {
+    let t: i32 = a * a + b * b;
+    let u: i32 = a * a + b * b;
+    t + u
+}
+
+fn recompute_param(x: i32) -> i32 {
+    x + x + x + x    // x loaded 4 times
+}
+
+fn recompute_addr(arr: &[i32; 100], i: i32) -> i32 {
+    arr[i as usize] + arr[i as usize]
+}
+
+fn main() {
+    printlnInt(redundant_add(5, 3));
+    printlnInt(redundant_multiple_use(3, 4));
+    printlnInt(recompute_param(10));
+    let mut arr: [i32; 100] = [0; 100];
+    let mut i: i32 = 0;
+    while (i < 100) { arr[i as usize] = i; i = i + 1; }
+    printlnInt(recompute_addr(&arr, 50));
+    exit(0);
+}

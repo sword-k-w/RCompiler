@@ -1,0 +1,45 @@
+// Test 4: Memory access patterns — array, struct
+
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl Point {
+    fn add(&mut self, other: &Point) {
+        self.x = self.x + other.x;
+        self.y = self.y + other.y;
+    }
+}
+
+fn array_sum(arr: &[i32; 100]) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < 100) {
+        sum = sum + arr[i as usize];
+        i = i + 1;
+    }
+    sum
+}
+
+fn point_distance(p1: &Point, p2: &Point) -> i32 {
+    let dx: i32 = p1.x - p2.x;
+    let dy: i32 = p1.y - p2.y;
+    dx * dx + dy * dy
+}
+
+fn main() {
+    let mut arr: [i32; 100] = [0; 100];
+    let mut i: i32 = 0;
+    while (i < 100) {
+        arr[i as usize] = i;
+        i = i + 1;
+    }
+    printlnInt(array_sum(&arr));
+
+    let p1: Point = Point { x: 3, y: 4 };
+    let p2: Point = Point { x: 0, y: 0 };
+    printlnInt(point_distance(&p1, &p2));
+
+    exit(0);
+}

@@ -1,0 +1,14 @@
+// Test: unsigned power-of-2 division and modulo
+fn udiv_pow2(x: i32) -> i32 {
+    (x as u32 / 8 as u32) as i32
+}
+
+fn urem_pow2(x: i32) -> i32 {
+    (x as u32 % 8 as u32) as i32
+}
+
+fn main() {
+    printlnInt(udiv_pow2(100));  // 100/8 = 12
+    printlnInt(urem_pow2(100));  // 100%8 = 4
+    exit(0);
+}

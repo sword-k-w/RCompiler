@@ -1,0 +1,15 @@
+// Test: Power-of-2 strength reduction opportunities
+fn mul_pow2(x: i32) -> i32 { x * 2 }
+fn mul_pow4(x: i32) -> i32 { x * 4 }
+fn mul_pow8(x: i32) -> i32 { x * 8 }
+fn mul_pow16(x: i32) -> i32 { x * 16 }
+fn div_pow2(x: i32) -> i32 { x / 2 }
+
+fn main() {
+    printlnInt(mul_pow2(42));
+    printlnInt(mul_pow4(10));
+    printlnInt(mul_pow8(5));
+    printlnInt(mul_pow16(100));
+    printlnInt(div_pow2(100));
+    exit(0);
+}

@@ -1,0 +1,52 @@
+// Test 2: Control flow — branch chains, nested if
+fn classify(x: i32) -> i32 {
+    if (x < 0) {
+        return -1;
+    } else if (x == 0) {
+        return 0;
+    } else if (x < 10) {
+        return 1;
+    } else if (x < 100) {
+        return 2;
+    } else {
+        return 3;
+    }
+}
+
+fn deeply_nested(a: i32, b: i32, c: i32) -> i32 {
+    if (a > 0) {
+        if (b > 0) {
+            if (c > 0) {
+                return 1;
+            } else {
+                return 2;
+            }
+        } else {
+            return 3;
+        }
+    } else {
+        return 4;
+    }
+}
+
+fn loop_count(n: i32) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: i32 = 0;
+    while (i < n) {
+        sum = sum + i;
+        i = i + 1;
+    }
+    sum
+}
+
+fn main() {
+    printlnInt(classify(-5));
+    printlnInt(classify(0));
+    printlnInt(classify(5));
+    printlnInt(classify(50));
+    printlnInt(classify(500));
+    printlnInt(deeply_nested(1, 2, 3));
+    printlnInt(deeply_nested(0, 2, 3));
+    printlnInt(loop_count(100));
+    exit(0);
+}
