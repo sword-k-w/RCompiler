@@ -13,15 +13,25 @@ AssemblyGenerator::AssemblyGenerator(const std::string &builtin_begin, std::ostr
                                    std::ostream *builtin_os) :
   builtin_begin_(builtin_begin), os_(os), builtin_os_(builtin_os) {}
 
+void AssemblyGenerator::FlushDeferredStore() {
+  if (deferred_store_.addr == UINT32_MAX) return;
+  PrintMem(os_, "sd", deferred_store_.reg, "sp",
+           current_stack_ - deferred_store_.addr, &const_cache_);
+  deferred_store_.addr = UINT32_MAX;
+}
+
 void AssemblyGenerator::EmitMem(const std::string &type, const std::string &r, const std::string &rs1, int32_t imm) {
+  if (!type.empty() && type[0] == 'l') BeforeWrite(r);
   PrintMem(os_, type, r, rs1, imm, &const_cache_);
 }
 
 void AssemblyGenerator::EmitIA(const std::string &type, const std::string &rd, const std::string &rs1, int32_t imm) {
+  BeforeWrite(rd);
   PrintIA(os_, type, rd, rs1, imm, &const_cache_);
 }
 
 void AssemblyGenerator::EmitIStar(const std::string &type, const std::string &rd, const std::string &rs1, int32_t imm) {
+  BeforeWrite(rd);
   PrintIStar(os_, type, rd, rs1, imm, &const_cache_);
 }
 
@@ -54,23 +64,23 @@ std::string AssemblyGenerator::GetResultReg(StorageType storage_type, uint32_t a
 std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t reg_id, const std::string &val_type) {
   auto [type, address] = GetVariableAddress(name);
   if (type == kMemory) {
+    if (deferred_store_.addr == address)
+      return deferred_store_.reg;
+    FlushDeferredStore();
     TransferToTreg(address, reg_id, val_type);
     return "t" + std::to_string(reg_id);
   }
   if (type == kConst) {
-    // Only use the cache for plain integer constants (avoid stoll on
-    // empty/malformed names that may appear in partially-registered IR).
     if (!name.empty() && (name[0] == '-' || std::isdigit(name[0]))) {
       int64_t val = std::stoll(name);
-      if (val == 0) return "x0";  // use zero register, avoid li
+      if (val == 0) return "x0";
       auto it = const_cache_.find(val);
-      if (it != const_cache_.end()) {
-        return it->second;
-      }
+      if (it != const_cache_.end()) return it->second;
+      BeforeWrite("t" + std::to_string(reg_id));
       os_ << "\tli\tt" << reg_id << ",\t" << name << '\n';
       return "t" + std::to_string(reg_id);
     }
-    // Fallback: empty or non-integer name — emit li 0 to avoid asm errors.
+    BeforeWrite("t" + std::to_string(reg_id));
     os_ << "\tli\tt" << reg_id << ",\t0\n";
     return "t" + std::to_string(reg_id);
   }
@@ -97,17 +107,21 @@ void AssemblyGenerator::VariableForceToReg(const std::string &name, const std::s
 void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address, const std::string &reg, const std::string &val_type) {
   assert(storage_type != kConst);
   if (storage_type == kMemory) {
-    EmitMem( LoadStoreType(val_type).second, reg, "sp", current_stack_ - address);
+    if (reg.size() == 2 && reg[0] == 't') {
+      FlushDeferredStore();
+      deferred_store_ = {address, reg};
+    } else {
+      EmitMem( LoadStoreType(val_type).second, reg, "sp", current_stack_ - address);
+    }
   } else if (!SameRegister(address, reg)) {
     os_ << "\tmv\tx" << address << ", " << reg << '\n';
   }
-  // Writing to a register makes it valid: the hardware now holds the canonical
-  // value.  No save-slot mirror needed — the next SaveRegister() will persist
-  // it if it's still valid when a call occurs.
   if (address >= 10 && address <= 17) a_reg_valid_[address - 10] = true;
 }
 
 void AssemblyGenerator::SaveRegister() {
+  // Flush any deferred kMemory store before the call clobbers t-regs.
+  FlushDeferredStore();
   // Save only valid a-regs — invalid ones already have the correct value in
   // their save slot (from an earlier save).  After the call all become invalid.
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
@@ -133,8 +147,9 @@ void AssemblyGenerator::EnsureARegValid(uint32_t addr) {
 }
 
 void AssemblyGenerator::ReloadConstCache() {
-  // t3/t4 are caller-saved and clobbered by every call; reload cached
-  // constants so they stay valid between calls within the same block.
+  // All t-regs are call-clobbered — flush and clear the deferred store.
+  FlushDeferredStore();
+  deferred_store_.addr = UINT32_MAX;
   for (auto &[val, reg] : const_cache_) {
     os_ << "\tli\t" << reg << ",\t" << val << '\n';
   }
@@ -174,6 +189,7 @@ void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, u
       os_ << "\tli\tx" << to_address << ", " << from << '\n';
       if (to_address >= 10 && to_address <= 17) a_reg_valid_[to_address - 10] = true;
     } else {
+    BeforeWrite("t0");
       os_ << "\tli\tt0, " << from << '\n';
       auto [_, s_ins] = LoadStoreType(type->base_type_);
       EmitMem( s_ins, "t0", "sp", current_stack_ - to_address);
@@ -226,12 +242,14 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
       int32_t imm = std::stoi(node->operand2_);
       if (node->op_ == "+" && imm >= -2048 && imm <= 2047) {
         auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
+        BeforeWrite(rd);
         os_ << "\t" << (is_ptr ? "addi" : "addiw") << "\t" << rd << ", " << rs1 << ", " << imm << '\n';
         RegToVariable(node->storage_type_, node->address_, rd, node->type_);
         return;
       }
       if (node->op_ == "-" && imm >= -2048 && imm <= 2047) {
         auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
+        BeforeWrite(rd);
         os_ << "\t" << (is_ptr ? "addi" : "addiw") << "\t" << rd << ", " << rs1 << ", " << -imm << '\n';
         RegToVariable(node->storage_type_, node->address_, rd, node->type_);
         return;
@@ -247,6 +265,7 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
         // c + x == x + c (commutative): fold to addi rd, x, c.
         if (node->op_ == "+" && imm >= -2048 && imm <= 2047) {
           auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
+          BeforeWrite(rd);
           os_ << "\t" << (is_ptr ? "addi" : "addiw") << "\t" << rd << ", " << rs2 << ", " << imm << '\n';
           RegToVariable(node->storage_type_, node->address_, rd, node->type_);
           return;
@@ -276,8 +295,10 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
         if (node->op_ == "*") {
           // x * (2^k) → slliw (or mv for k=0)
           if (k == 0) {
+            BeforeWrite(rd);
             os_ << "\tmv\t" << rd << ", " << rs << '\n';
           } else {
+            BeforeWrite(rd);
             os_ << "\tslliw\t" << rd << ", " << rs << ", " << k << '\n';
           }
           RegToVariable(node->storage_type_, node->address_, rd, node->type_);
@@ -287,6 +308,7 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
           // divisor is 2^k; only valid when const is operand2 (not commutative).
           if (node->is_unsigned_ && k > 0) {
             // x /u (2^k) → srliw rd, x, k
+            BeforeWrite(rd);
             os_ << "\tsrliw\t" << rd << ", " << rs << ", " << k << '\n';
             RegToVariable(node->storage_type_, node->address_, rd, node->type_);
             return true;
@@ -295,9 +317,11 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
           // For k ≥ 1:  sraiw t, rs, 31; srliw t, t, (32-k); addw t, rs, t; sraiw rd, t, k
           if (!node->is_unsigned_ && k > 0 && node->type_ == "i32") {
             std::string t = "t6";  // scratch
+            BeforeWrite(t);
             os_ << "\tsraiw\t" << t << ", " << rs << ", 31\n";
             os_ << "\tsrliw\t" << t << ", " << t << ", " << (32 - k) << '\n';
             os_ << "\taddw\t" << t << ", " << rs << ", " << t << '\n';
+            BeforeWrite(rd);
             os_ << "\tsraiw\t" << rd << ", " << t << ", " << k << '\n';
             RegToVariable(node->storage_type_, node->address_, rd, node->type_);
             return true;
@@ -307,6 +331,7 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
           // divisor is 2^k; unsigned only.
           if (node->is_unsigned_ && k > 0 && imm <= 2047) {
             // x %u (2^k) → andi rd, x, (2^k - 1)
+            BeforeWrite(rd);
             os_ << "\tandi\t" << rd << ", " << rs << ", " << (imm - 1) << '\n';
             RegToVariable(node->storage_type_, node->address_, rd, node->type_);
             return true;
@@ -329,6 +354,7 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
 
   auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
   auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
+  BeforeWrite(rd);
   os_ << "\t";
   if (node->op_ == "+") {
     os_ << (is_ptr ? "add" : "addw");
@@ -371,12 +397,14 @@ void AssemblyGenerator::Visit(IRNegationInstructionNode *node) {
   if (node->is_minus_ && op_type == kConst) {
     auto rd = GetResultReg(node->storage_type_, node->address_, 1);
     int32_t val = std::stoi(node->operand_);
+    BeforeWrite(rd);
     os_ << "\tli\t" << rd << ", " << -val << '\n';
     RegToVariable(node->storage_type_, node->address_, rd, node->type_);
     return;
   }
   auto rs = VariableToReg(node->operand_, 0, node->type_);
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
+  BeforeWrite(rd);
   if (node->is_minus_) {
     os_ << "\tneg\t" << rd << ", " << rs << '\n';
   } else {
@@ -513,9 +541,11 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
   auto ptr_reg = VariableToReg(node->pointer_, 0, "ptr");
   auto [type, address] = GetVariableAddress(node->value_);
   if (type == kConst) {
-    os_ << "\tli\tt1, " << node->value_ << '\n';
+    std::string val_reg = (ptr_reg == "t1") ? "t0" : "t1";
+    BeforeWrite(val_reg);
+    os_ << "\tli\t" << val_reg << ", " << node->value_ << '\n';
     auto [_, s_ins] = LoadStoreType(node->type_->base_type_);
-    EmitMem( s_ins, "t1", ptr_reg, 0);
+    EmitMem( s_ins, val_reg, ptr_reg, 0);
   } else if (type == kRegister) {
     if (address >= 10 && address <= 17) EnsureARegValid(address);
     auto [_, s_ins] = LoadStoreType(node->type_->base_type_);
@@ -543,9 +573,11 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
 
 void AssemblyGenerator::Visit(IRStoreConstInstructionNode *node) {
   auto ptr_reg = VariableToReg(node->pointer_, 0, "ptr");
-  os_ << "\tli\tt1, " << node->value_ << '\n';
+  std::string val_reg = (ptr_reg == "t1") ? "t0" : "t1";
+  BeforeWrite(val_reg);
+  os_ << "\tli\t" << val_reg << ", " << node->value_ << '\n';
   auto [_, s_ins] = LoadStoreType(node->type_);
-  EmitMem( s_ins, "t1", ptr_reg, 0);
+  EmitMem( s_ins, val_reg, ptr_reg, 0);
 }
 
 uint32_t AssemblyGenerator::ComputeGEPOffset(IRGetElementPtrInstructionNode *node) {
@@ -595,10 +627,13 @@ void AssemblyGenerator::Visit(IRGetElementPtrPrimeInstructionNode *node) {
   } else if ((elem_size & (elem_size - 1)) == 0) {
     // Power of 2: use shift
     uint32_t shift = __builtin_ctz(elem_size);
+    BeforeWrite("t1");
     os_ << "\tslli\tt1, " << index_reg << ", " << shift << '\n';
     os_ << "\tadd " << rd << ", " << ptr_reg << ", t1\n";
   } else {
+    BeforeWrite("t1");
     os_ << "\tli\tt1, " << elem_size << '\n';
+    BeforeWrite("t2");
     os_ << "\tmul\tt2, t1, " << index_reg << '\n';
     os_ << "\tadd " << rd << ", " << ptr_reg << ", t2\n";
   }
@@ -744,6 +779,7 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
       if (para->storage_type_ == kRegister) {
         os_ << "\tli\tx" << para->address_ << ", " << node->arguments_[i]->value_ << '\n';
       } else {
+    BeforeWrite("t0");
         os_ << "\tli\tt0, " << node->arguments_[i]->value_ << '\n';
         auto [_, s_ins] = LoadStoreType(para->type_->base_type_);
         EmitMem( s_ins, "t0", "sp", -static_cast<int32_t>(para->address_));
@@ -810,6 +846,7 @@ void AssemblyGenerator::Visit(IRSelectInstructionNode *node) {
 
 void AssemblyGenerator::Visit(IRBlockNode *node) {
   cur_block_ = node->id_;
+  FlushDeferredStore();
   if (node->id_ != 0 && referenced_blocks_.count(node->id_)) {
     os_ << ".L" << block_label_map_[node->id_] << ":\n";
   }
@@ -844,6 +881,7 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   current_a_reg_used_ = node->a_reg_used_cnt_;
   for (bool &v : a_reg_valid_) v = true;
   ra_saved_ = false;
+  deferred_store_.addr = UINT32_MAX;
   current_variables_ = &node->variables_;
   variable_storage_ = &node->variable_storage_;
 
