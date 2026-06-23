@@ -28,6 +28,15 @@ public:
   void Visit(IRParameterNode *) override;
   void Visit(IRFunctionNode *) override;
   void Visit(IRRootNode *) override;
+
+  // Fold zero-index GEP(const) instructions: replace all uses of the result
+  // with the ptrval and remove the GEP.  The index == 0 guarantees the byte
+  // offset is zero, so the values are identical.
+  // Must be called after Preprocessor::Accept (type sizes must be computed).
+  static void FoldZeroOffsetGEPs(std::shared_ptr<IRRootNode> IR_root);
+
 private:
+  static void ReplaceVarInIns(IRInstructionNode *ins, const std::string &old_var,
+                               const std::string &new_var);
   std::unordered_map<std::string, IRNode *> *current_variables_;
 };

@@ -62,6 +62,10 @@ void TestCode(const std::string &code, std::ostream &out) {
     Preprocessor preprocessor;
     IR_root->Accept(&preprocessor);
     FunctionMap::Instance().Accept(&preprocessor);
+
+    // Fold zero-offset GEPs into Moves for register coalescing.
+    Preprocessor::FoldZeroOffsetGEPs(IR_root);
+
     MemoryAllocator memory_allocator;
     IR_root->Accept(&memory_allocator);
     FunctionMap::Instance().Accept(&memory_allocator);

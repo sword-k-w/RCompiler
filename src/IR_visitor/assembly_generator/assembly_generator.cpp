@@ -548,9 +548,7 @@ void AssemblyGenerator::Visit(IRStoreConstInstructionNode *node) {
   EmitMem( s_ins, "t1", ptr_reg, 0);
 }
 
-void AssemblyGenerator::Visit(IRGetElementPtrInstructionNode *node) {
-  auto ptr_reg = VariableToReg(node->ptrval_, 0, "ptr");
-  auto rd = GetResultReg(node->storage_type_, node->address_, 1);
+uint32_t AssemblyGenerator::ComputeGEPOffset(IRGetElementPtrInstructionNode *node) {
   uint32_t offset = 0;
   if (node->type_->length_.empty()) {
     uint32_t align = 1;
@@ -572,6 +570,13 @@ void AssemblyGenerator::Visit(IRGetElementPtrInstructionNode *node) {
   } else {
     offset = node->type_->allocated_size_ / node->type_->length_[0] * node->index_;
   }
+  return offset;
+}
+
+void AssemblyGenerator::Visit(IRGetElementPtrInstructionNode *node) {
+  auto ptr_reg = VariableToReg(node->ptrval_, 0, "ptr");
+  auto rd = GetResultReg(node->storage_type_, node->address_, 1);
+  uint32_t offset = ComputeGEPOffset(node);
   if (offset == 0)
     os_ << "\tmv\t" << rd << ", " << ptr_reg << '\n';
   else

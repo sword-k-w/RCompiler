@@ -1,5 +1,6 @@
 #include "IR_visitor/preprocessor/preprocessor.h"
 #include "IR/struct_map.h"
+#include "IR/IR_node.h"
 #include "IR_visitor/memory_allocator/memory_allocator.h"
 #include <iostream>
 
@@ -153,5 +154,77 @@ void Preprocessor::Visit(IRRootNode *node) {
   }
   for (auto &function_node : node->functions_) {
     function_node->Accept(this);
+  }
+}
+
+void Preprocessor::ReplaceVarInIns(IRInstructionNode *ins, const std::string &old_var,
+                                    const std::string &new_var) {
+  if (auto *arith = dynamic_cast<IRArithmeticInstructionNode *>(ins)) {
+    if (arith->operand1_ == old_var) arith->operand1_ = new_var;
+    if (arith->operand2_ == old_var) arith->operand2_ = new_var;
+  } else if (auto *cmp = dynamic_cast<IRCompareInstructionNode *>(ins)) {
+    if (cmp->operand1_ == old_var) cmp->operand1_ = new_var;
+    if (cmp->operand2_ == old_var) cmp->operand2_ = new_var;
+  } else if (auto *neg = dynamic_cast<IRNegationInstructionNode *>(ins)) {
+    if (neg->operand_ == old_var) neg->operand_ = new_var;
+  } else if (auto *branch = dynamic_cast<IRBranchInstructionNode *>(ins)) {
+    if (branch->condition_ == old_var) branch->condition_ = new_var;
+  } else if (auto *ret = dynamic_cast<IRReturnInstructionNode *>(ins)) {
+    if (ret->name_ == old_var) ret->name_ = new_var;
+  } else if (auto *load = dynamic_cast<IRLoadInstructionNode *>(ins)) {
+    if (load->pointer_ == old_var) load->pointer_ = new_var;
+  } else if (auto *store_v = dynamic_cast<IRStoreVariableInstructionNode *>(ins)) {
+    if (store_v->pointer_ == old_var) store_v->pointer_ = new_var;
+    if (store_v->value_ == old_var) store_v->value_ = new_var;
+  } else if (auto *store_c = dynamic_cast<IRStoreConstInstructionNode *>(ins)) {
+    if (store_c->pointer_ == old_var) store_c->pointer_ = new_var;
+  } else if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins)) {
+    if (gep->ptrval_ == old_var) gep->ptrval_ = new_var;
+  } else if (auto *gepp = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins)) {
+    if (gepp->ptrval_ == old_var) gepp->ptrval_ = new_var;
+    if (gepp->index_ == old_var) gepp->index_ = new_var;
+  } else if (auto *mv = dynamic_cast<IRMoveInstructionNode *>(ins)) {
+    if (mv->source_ == old_var) mv->source_ = new_var;
+  } else if (auto *sel = dynamic_cast<IRSelectInstructionNode *>(ins)) {
+    if (sel->cond_ == old_var) sel->cond_ = new_var;
+  } else if (auto *call = dynamic_cast<IRCallInstructionNode *>(ins)) {
+    for (auto &arg : call->arguments_) {
+      if (arg->value_ == old_var) arg->value_ = new_var;
+    }
+  }
+}
+
+void Preprocessor::FoldZeroOffsetGEPs(std::shared_ptr<IRRootNode> IR_root) {
+  // A GEP(const) with index_ == 0 always has byte offset 0:
+  //   - Struct field 0 is always at offset 0 (first member).
+  //   - Array element 0 has offset 0 * elem_size = 0.
+  // Replace all uses of the result with the ptrval and remove the GEP,
+  // eliminating the intermediate variable entirely.
+  for (auto &func : IR_root->functions_) {
+    for (auto &block : func->blocks_) {
+      for (auto &ins : block->instructions_) {
+        if (ins->removed_) continue;
+        auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get());
+        if (!gep || gep->index_ != 0) continue;
+
+        std::string old_var = gep->result_;
+        std::string new_var = gep->ptrval_;
+
+        // Replace all uses of old_var with new_var across all blocks.
+        for (auto &other_block : func->blocks_) {
+          for (auto &other : other_block->instructions_) {
+            if (other->removed_) continue;
+            ReplaceVarInIns(other.get(), old_var, new_var);
+          }
+        }
+
+        // Remove the GEP and its variable entry.
+        ins->removed_ = true;
+        auto var_it = func->variables_.find(old_var);
+        if (var_it != func->variables_.end()) {
+          func->variables_.erase(var_it);
+        }
+      }
+    }
   }
 }

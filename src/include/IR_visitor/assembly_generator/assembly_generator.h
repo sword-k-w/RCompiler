@@ -80,4 +80,7 @@ private:
   void EmitMem(const std::string &type, const std::string &r, const std::string &rs1, int32_t imm);
   void EmitIA(const std::string &type, const std::string &rd, const std::string &rs1, int32_t imm);
   void EmitIStar(const std::string &type, const std::string &rd, const std::string &rs1, int32_t imm);
+
+  // GEP chain folding: compute the byte offset for a constant-index GEP.
+  uint32_t ComputeGEPOffset(class IRGetElementPtrInstructionNode *node);
 };
