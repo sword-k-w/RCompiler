@@ -3,6 +3,8 @@
 #include "IR/IR_node.h"
 #include "IR_visitor/memory_allocator/memory_allocator.h"
 #include <iostream>
+#include <unordered_set>
+#include <vector>
 
 void Preprocessor::Visit(IRArrayNode *node) {
   if (node->IsEmpty()) {
@@ -195,36 +197,225 @@ void Preprocessor::ReplaceVarInIns(IRInstructionNode *ins, const std::string &ol
 }
 
 void Preprocessor::FoldZeroOffsetGEPs(std::shared_ptr<IRRootNode> IR_root) {
-  // A GEP(const) with index_ == 0 always has byte offset 0:
-  //   - Struct field 0 is always at offset 0 (first member).
-  //   - Array element 0 has offset 0 * elem_size = 0.
-  // Replace all uses of the result with the ptrval and remove the GEP,
-  // eliminating the intermediate variable entirely.
   for (auto &func : IR_root->functions_) {
+    // --- Pass 1: count uses and record GEP(const) defs + offsets ---
+    std::unordered_map<std::string, IRGetElementPtrInstructionNode *> def_map;
+    std::unordered_map<std::string, uint32_t> gep_offset;
+    std::unordered_map<std::string, uint32_t> use_count;
+
+    auto count_use = [&](const std::string &var) {
+      if (!var.empty() && var[0] == '%') use_count[var]++;
+    };
+
+    for (auto &block : func->blocks_) {
+      for (auto &ins : block->instructions_) {
+        if (ins->removed_) continue;
+        if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get())) {
+          count_use(gep->ptrval_);
+          def_map[gep->result_] = gep;
+        } else if (auto *gepp = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get())) {
+          count_use(gepp->ptrval_);
+          count_use(gepp->index_);
+        } else if (auto *load = dynamic_cast<IRLoadInstructionNode *>(ins.get())) {
+          count_use(load->pointer_);
+        } else if (auto *store_v = dynamic_cast<IRStoreVariableInstructionNode *>(ins.get())) {
+          count_use(store_v->pointer_);
+        } else if (auto *store_c = dynamic_cast<IRStoreConstInstructionNode *>(ins.get())) {
+          count_use(store_c->pointer_);
+        } else if (auto *mv = dynamic_cast<IRMoveInstructionNode *>(ins.get())) {
+          count_use(mv->source_);
+        } else if (auto *arith = dynamic_cast<IRArithmeticInstructionNode *>(ins.get())) {
+          count_use(arith->operand1_);
+          count_use(arith->operand2_);
+        } else if (auto *cmp = dynamic_cast<IRCompareInstructionNode *>(ins.get())) {
+          count_use(cmp->operand1_);
+          count_use(cmp->operand2_);
+        } else if (auto *neg = dynamic_cast<IRNegationInstructionNode *>(ins.get())) {
+          count_use(neg->operand_);
+        } else if (auto *branch = dynamic_cast<IRBranchInstructionNode *>(ins.get())) {
+          count_use(branch->condition_);
+        } else if (auto *ret = dynamic_cast<IRReturnInstructionNode *>(ins.get())) {
+          count_use(ret->name_);
+        } else if (auto *sel = dynamic_cast<IRSelectInstructionNode *>(ins.get())) {
+          count_use(sel->cond_);
+        } else if (auto *call = dynamic_cast<IRCallInstructionNode *>(ins.get())) {
+          for (auto &arg : call->arguments_) count_use(arg->value_);
+        }
+      }
+    }
+
+    // Compute offsets for all GEP(const) instructions (now that type sizes
+    // are available from preprocessing).  Do this in a separate loop over
+    // the shared_ptrs in the deque so we have stable pointers.
     for (auto &block : func->blocks_) {
       for (auto &ins : block->instructions_) {
         if (ins->removed_) continue;
         auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get());
-        if (!gep || gep->index_ != 0) continue;
+        if (!gep) continue;
+        // Compute the byte offset: struct field offset or array elem * index.
+        uint32_t offset = 0;
+        if (gep->type_->length_.empty()) {
+          uint32_t align = 1;
+          auto *sn = StructMap::Instance().Query(gep->type_->base_type_);
+          for (uint32_t i = 0; i < gep->index_; ++i) {
+            if (align == 1 && sn->members_[i]->align_ == 8) {
+              align = 8;
+              offset = Align8(offset);
+            }
+            auto ms = sn->members_[i]->allocated_size_;
+            if (align == 8 && sn->members_[i]->align_ == 1)
+              ms = Align8(ms);
+            offset += ms;
+          }
+          if (sn->members_[gep->index_]->align_ == 8)
+            offset = Align8(offset);
+        } else {
+          offset = gep->type_->allocated_size_ / gep->type_->length_[0]
+                 * gep->index_;
+        }
+        gep_offset[gep->result_] = offset;
+      }
+    }
 
-        std::string old_var = gep->result_;
-        std::string new_var = gep->ptrval_;
+    // --- Pass 2: collect fold decisions ---
+    // Only "true terminals" initiate a fold: GEP'(var), Load, Store,
+    // StoreConst, and GEP(const) with use_count > 1 (used outside the
+    // GEP chain).  GEP(const) with use_count == 1 are pure intermediates
+    // that only the true terminal walks through.
+    // Process blocks in reverse instruction order so later instructions
+    // consume intermediates first.
+    struct Fold {
+      IRInstructionNode *terminal;
+      std::string *ptr_field;
+      std::vector<IRGetElementPtrInstructionNode *> intermediates;
+      std::string ultimate_base;
+      int32_t accumulated;
+    };
+    std::vector<Fold> folds;
+    std::unordered_set<IRGetElementPtrInstructionNode *> claimed;
 
-        // Replace all uses of old_var with new_var across all blocks.
-        for (auto &other_block : func->blocks_) {
-          for (auto &other : other_block->instructions_) {
-            if (other->removed_) continue;
-            ReplaceVarInIns(other.get(), old_var, new_var);
+    for (auto &block : func->blocks_) {
+      // Reverse iteration: true terminals appear after their intermediates.
+      for (auto it = block->instructions_.rbegin();
+           it != block->instructions_.rend(); ++it) {
+        auto &ins = *it;
+        if (ins->removed_) continue;
+
+        // Determine if this is a true terminal.
+        bool is_terminal = false;
+        std::string *ptr_field = nullptr;
+        if (auto *gepp = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get())) {
+          is_terminal = true;
+          ptr_field = &gepp->ptrval_;
+        } else if (auto *load = dynamic_cast<IRLoadInstructionNode *>(ins.get())) {
+          is_terminal = true;
+          ptr_field = &load->pointer_;
+        } else if (auto *store_v = dynamic_cast<IRStoreVariableInstructionNode *>(ins.get())) {
+          is_terminal = true;
+          ptr_field = &store_v->pointer_;
+        } else if (auto *store_c = dynamic_cast<IRStoreConstInstructionNode *>(ins.get())) {
+          is_terminal = true;
+          ptr_field = &store_c->pointer_;
+        } else if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get())) {
+          // GEP(const) with use_count > 1 has another consumer; it's a true
+          // terminal.  Otherwise it's a pure intermediate — skip it here.
+          if (use_count[gep->result_] > 1) {
+            is_terminal = true;
+            ptr_field = &gep->ptrval_;
           }
         }
+        if (!is_terminal || !ptr_field || ptr_field->empty() || (*ptr_field)[0] != '%')
+          continue;
 
-        // Remove the GEP and its variable entry.
-        ins->removed_ = true;
-        auto var_it = func->variables_.find(old_var);
-        if (var_it != func->variables_.end()) {
-          func->variables_.erase(var_it);
+        // Walk backward through single-use, unclaimed GEP(const) defs.
+        std::string base = *ptr_field;
+        int32_t accumulated = 0;
+        std::vector<IRGetElementPtrInstructionNode *> intermediates;
+
+        while (true) {
+          auto dit = def_map.find(base);
+          if (dit == def_map.end()) break;
+          IRGetElementPtrInstructionNode *def_gep = dit->second;
+          if (use_count[def_gep->result_] > 1) break;
+          if (claimed.count(def_gep)) break;
+          accumulated += static_cast<int32_t>(gep_offset[def_gep->result_]);
+          base = def_gep->ptrval_;
+          intermediates.push_back(def_gep);
+          claimed.insert(def_gep);
+        }
+
+        if (intermediates.empty()) continue;
+
+        folds.push_back({ins.get(), ptr_field,
+                         std::move(intermediates), base, accumulated});
+      }
+    }
+
+    // --- Pass 3: apply folds ---
+    std::unordered_set<IRGetElementPtrInstructionNode *> removed_geps;
+    for (auto &f : folds) {
+      for (auto *gep : f.intermediates) {
+        gep->removed_ = true;
+        removed_geps.insert(gep);
+      }
+
+      if (f.accumulated == 0) {
+        // Zero accumulated offset: terminal can use ultimate_base directly.
+        *f.ptr_field = f.ultimate_base;
+      } else {
+        // Non-zero: replace the first intermediate with an ADD.
+        auto *first = f.intermediates[0];
+        // Un-remove it — it becomes the ADD instruction.
+        first->removed_ = false;
+        removed_geps.erase(first);
+
+        std::string add_result = first->result_;
+        auto add_ins = std::make_shared<IRArithmeticInstructionNode>(
+            add_result, "+", "ptr", f.ultimate_base,
+            std::to_string(f.accumulated), false);
+
+        // Find and replace in the deque.
+        for (auto &block : func->blocks_) {
+          for (auto &ins : block->instructions_) {
+            if (ins.get() == first) {
+              ins = add_ins;
+              goto replaced;
+            }
+          }
+        }
+        replaced:
+        // Update the function's variables map.
+        auto var_it = func->variables_.find(add_result);
+        if (var_it != func->variables_.end())
+          var_it->second = add_ins.get();
+
+        *f.ptr_field = add_result;
+      }
+    }
+
+    // --- Pass 4: propagate removed intermediates' uses to ultimate base ---
+    // Any remaining references to removed intermediates (e.g. across blocks
+    // via Move instructions) need to be rewritten.
+    for (auto *gep : removed_geps) {
+      std::string old_var = gep->result_;
+      // Find the ultimate base by walking the fold data
+      for (auto &f : folds) {
+        for (auto *intermediate : f.intermediates) {
+          if (intermediate == gep) {
+            for (auto &other_block : func->blocks_) {
+              for (auto &other : other_block->instructions_) {
+                if (other->removed_) continue;
+                ReplaceVarInIns(other.get(), old_var, f.ultimate_base);
+              }
+            }
+            auto var_it = func->variables_.find(old_var);
+            if (var_it != func->variables_.end())
+              func->variables_.erase(var_it);
+            goto next_gep;
+          }
         }
       }
+      next_gep:;
     }
   }
 }
