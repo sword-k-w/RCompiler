@@ -106,6 +106,28 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
     }
   }
 
+  // Pre-sort spill candidates by static weight: spill variables that
+  // are used least often first (low uses+defs).  Among equally-used
+  // variables, prefer higher-degree nodes (they block more neighbors).
+  // The sort key is fully static (uses/defs never change during
+  // simplify), so the ordering stays valid without recalculation —
+  // avoiding the O(V²) cost of scanning for min spill cost each round.
+  std::vector<uint32_t> spill_order;
+  spill_order.reserve(active_nodes.size());
+  for (auto nid : active_nodes) {
+    spill_order.push_back(nid);
+  }
+  std::sort(spill_order.begin(), spill_order.end(),
+            [&](uint32_t a, uint32_t b) {
+              uint32_t wa = (use_count_.count(a) ? use_count_.at(a) : 0) +
+                            (def_count_.count(a) ? def_count_.at(a) : 0);
+              uint32_t wb = (use_count_.count(b) ? use_count_.at(b) : 0) +
+                            (def_count_.count(b) ? def_count_.at(b) : 0);
+              if (wa != wb) return wa < wb;  // cheaper → spill first
+              return adj[a].size() > adj[b].size();  // higher degree → spill first
+            });
+  size_t spill_cursor = 0;
+
   // --- Simplify ---
   while (!active_nodes.empty()) {
     uint32_t id;
@@ -115,10 +137,13 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
       worklist.pop();
       if (!active_nodes.count(id)) continue;  // already removed
     } else {
-      // Spill: pick any active node (scanning all nodes for optimal
-      // spill cost is O(V) per iteration, which is too slow for dense
-      // interference graphs). Any node works correctly.
-      id = *active_nodes.begin();
+      // Spill: pick next best candidate from pre-sorted list.
+      // Skip nodes already removed by prior simplification.
+      while (spill_cursor < spill_order.size() &&
+             !active_nodes.count(spill_order[spill_cursor])) {
+        ++spill_cursor;
+      }
+      id = spill_order[spill_cursor++];
       spilled.insert(id);
     }
 
