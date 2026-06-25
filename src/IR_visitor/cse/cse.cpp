@@ -7,8 +7,8 @@
 // Set to false to disable a specific CSE category and test on OJ.
 
 namespace cse_debug {
-  constexpr bool kCSE_GEP  = true;   // constant-index GEP
-  constexpr bool kCSE_GEPP = false;   // variable-index GEP'
+  constexpr bool kCSE_GEP  = false;   // constant-index GEP
+  constexpr bool kCSE_GEPP = true;   // variable-index GEP'
 }
 
 // ─── CSEr: friended class that does all the work ───────────────────────
