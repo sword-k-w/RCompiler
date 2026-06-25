@@ -13,6 +13,7 @@ namespace cse_debug {
   constexpr bool kGEPP_NoPhiBlocks = false;  // if true, skip GEPP CSE in blocks with phi nodes
   constexpr bool kGEPP_NoRenameOperands = false; // if true, use raw operands (no resolve)
   constexpr bool kCSE_UseMove = true;   // if true, use Move instr instead of rename+remove
+  constexpr bool kCSE_DryRun  = false;  // if true, find duplicates but DON'T modify IR at all
 }
 
 // ─── CSEr: friended class that does all the work ───────────────────────
@@ -170,18 +171,18 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
 
       auto it = available.find(key);
       if (it != available.end()) {
-        std::string old_result = GetResultName(ins.get());
-        if (cse_debug::kCSE_UseMove) {
-          // Replace the duplicate GEP/GEPP with a Move from the canonical.
-          // This keeps old_result alive (it still has a definition) while
-          // avoiding all downstream rename complexity.
-          auto ptr_type = std::make_shared<IRArrayNode>();
-          ptr_type->base_type_ = "ptr";
-          ins = std::make_shared<IRMoveInstructionNode>(
-              old_result, it->second, ptr_type);
-        } else {
-          renames[old_result] = it->second;
-          ins->removed_ = true;
+        if constexpr (!cse_debug::kCSE_DryRun) {
+          std::string old_result = GetResultName(ins.get());
+          if constexpr (cse_debug::kCSE_UseMove) {
+            // Replace the duplicate GEP/GEPP with a Move from the canonical.
+            auto ptr_type = std::make_shared<IRArrayNode>();
+            ptr_type->base_type_ = "ptr";
+            ins = std::make_shared<IRMoveInstructionNode>(
+                old_result, it->second, ptr_type);
+          } else {
+            renames[old_result] = it->second;
+            ins->removed_ = true;
+          }
         }
       } else {
         available[key] = GetResultName(ins.get());
