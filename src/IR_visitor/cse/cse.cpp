@@ -7,8 +7,9 @@
 // Set to false to disable a specific CSE category and test on OJ.
 
 namespace cse_debug {
-  constexpr bool kCSE_GEP  = false;   // constant-index GEP
-  constexpr bool kCSE_GEPP = true;   // variable-index GEP'
+  constexpr bool kCSE_GEP   = true;   // constant-index GEP
+  constexpr bool kCSE_GEPP  = true;   // variable-index GEP'
+  constexpr bool kCrossBlockRename = true;  // propagate renames to other blocks
 }
 
 // ─── CSEr: friended class that does all the work ───────────────────────
@@ -169,7 +170,7 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
   // Apply all renames to every instruction and phi in every block.
   // This handles cross-block uses: a variable defined and CSE-renamed
   // in block A may be used in block B (via SSA dominance or a phi).
-  if (!renames.empty()) {
+  if (cse_debug::kCrossBlockRename && !renames.empty()) {
     for (auto &blk : blocks) {
       for (auto &ins : blk->instructions_) {
         if (ins->removed_) continue;
