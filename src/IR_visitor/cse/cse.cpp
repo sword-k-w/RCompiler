@@ -7,9 +7,11 @@
 // Set to false to disable a specific CSE category and test on OJ.
 
 namespace cse_debug {
-  constexpr bool kCSE_GEP   = false;   // constant-index GEP
+  constexpr bool kCSE_GEP   = true;   // constant-index GEP
   constexpr bool kCSE_GEPP  = true;   // variable-index GEP'
-  constexpr bool kCrossBlockRename = false;  // propagate renames to other blocks
+  constexpr bool kCrossBlockRename = true;  // propagate renames to other blocks
+  constexpr bool kGEPP_NoPhiBlocks = false;  // if true, skip GEPP CSE in blocks with phi nodes
+  constexpr bool kGEPP_NoRenameOperands = false; // if true, use raw operands (no resolve)
 }
 
 // ─── CSEr: friended class that does all the work ───────────────────────
@@ -145,12 +147,22 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
         }
       }
       if (key.empty() && cse_debug::kCSE_GEPP) {
+        // Skip GEPP CSE in blocks with phi nodes when the flag is set.
+        if (cse_debug::kGEPP_NoPhiBlocks && !blk->phi_.empty())
+          goto skip_cse;
         if (auto *gepp =
                    dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get())) {
-          key = "gepp|" + TypeKey(gepp->type_.get()) + "|" +
-                resolve(gepp->ptrval_) + "|" + resolve(gepp->index_);
+          if (cse_debug::kGEPP_NoRenameOperands) {
+            // Use raw operands without resolving through the rename map.
+            key = "gepp|" + TypeKey(gepp->type_.get()) + "|" +
+                  gepp->ptrval_ + "|" + gepp->index_;
+          } else {
+            key = "gepp|" + TypeKey(gepp->type_.get()) + "|" +
+                  resolve(gepp->ptrval_) + "|" + resolve(gepp->index_);
+          }
         }
       }
+      skip_cse:
       if (key.empty()) {
         continue;
       }
