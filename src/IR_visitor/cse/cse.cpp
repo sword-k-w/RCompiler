@@ -10,8 +10,8 @@ namespace cse_debug {
   constexpr bool kCSE_GEP   = false;   // constant-index GEP
   constexpr bool kCSE_GEPP  = true;   // variable-index GEP'
   constexpr bool kCrossBlockRename = true;  // propagate renames to other blocks
-  constexpr bool kGEPP_NoPhiBlocks = true;  // if true, skip GEPP CSE in blocks with phi nodes
-  constexpr bool kGEPP_NoRenameOperands = false; // if true, use raw operands (no resolve)
+  constexpr bool kGEPP_NoPhiBlocks = false;  // if true, skip GEPP CSE in blocks with phi nodes
+  constexpr bool kGEPP_NoRenameOperands = true; // if true, use raw operands (no resolve)
 }
 
 // ─── CSEr: friended class that does all the work ───────────────────────
