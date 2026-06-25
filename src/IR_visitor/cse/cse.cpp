@@ -13,7 +13,7 @@ namespace cse_debug {
   constexpr bool kGEPP_NoPhiBlocks = false;  // if true, skip GEPP CSE in blocks with phi nodes
   constexpr bool kGEPP_NoRenameOperands = false; // if true, use raw operands (no resolve)
   constexpr bool kCSE_UseMove = true;   // if true, use Move instr instead of rename+remove
-  constexpr bool kCSE_DryRun  = false;  // if true, find duplicates but DON'T modify IR at all
+  constexpr bool kCSE_DryRun  = true;  // if true, find duplicates but DON'T modify IR at all
 }
 
 // ─── CSEr: friended class that does all the work ───────────────────────
