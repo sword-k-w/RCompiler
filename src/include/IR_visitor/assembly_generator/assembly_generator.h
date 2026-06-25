@@ -91,6 +91,16 @@ private:
   void EmitIA(const std::string &type, const std::string &rd, const std::string &rs1, int32_t imm);
   void EmitIStar(const std::string &type, const std::string &rd, const std::string &rs1, int32_t imm);
 
+  // Wrappers for instruction patterns not covered by the above.
+  // Each calls BeforeWrite(rd) before emission — no caller should need
+  // to remember.
+  void EmitR(const std::string &op, const std::string &rd,
+             const std::string &rs1, const std::string &rs2);
+  void EmitUnary(const std::string &op, const std::string &rd, const std::string &rs);
+  void EmitLI(const std::string &rd, const std::string &val);
+  void EmitLI(const std::string &rd, int64_t val);
+  void EmitMV(const std::string &rd, const std::string &rs);
+
   // GEP chain folding: compute the byte offset for a constant-index GEP.
   uint32_t ComputeGEPOffset(class IRGetElementPtrInstructionNode *node);
 };
