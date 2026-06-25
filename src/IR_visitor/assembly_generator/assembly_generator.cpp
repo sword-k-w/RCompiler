@@ -64,8 +64,18 @@ std::string AssemblyGenerator::GetResultReg(StorageType storage_type, uint32_t a
 std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t reg_id, const std::string &val_type) {
   auto [type, address] = GetVariableAddress(name);
   if (type == kMemory) {
-    if (deferred_store_.addr == address)
-      return deferred_store_.reg;
+    if (deferred_store_.addr == address) {
+      auto expected = "t" + std::to_string(reg_id);
+      if (deferred_store_.reg == expected)
+        return expected;
+      // The cached value is in a different t-register than expected.
+      // Copy it to the expected register with a cheap `mv` so a
+      // subsequent VariableToReg for a different address won't flush
+      // and then clobber the register we just returned (Bug 1).
+      // The deferred store stays alive — the value is now in two regs.
+      os_ << "\tmv\t" << expected << ", " << deferred_store_.reg << '\n';
+      return expected;
+    }
     FlushDeferredStore();
     TransferToTreg(address, reg_id, val_type);
     return "t" + std::to_string(reg_id);
@@ -93,6 +103,19 @@ std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t r
 void AssemblyGenerator::VariableForceToReg(const std::string &name, const std::string &reg, const std::string &val_type) {
   auto [type, address] = GetVariableAddress(name);
   if (type == kMemory) {
+    if (deferred_store_.addr == address) {
+      // The latest value is still in a deferred t-register, not in memory.
+      // Move it to the requested register instead of loading stale data.
+      if (deferred_store_.reg != reg) {
+        os_ << "\tmv\t" << reg << ", " << deferred_store_.reg << '\n';
+      }
+      // The deferred store is now committed-to-memory by Flush before
+      // the register is overwritten; but we must clear it here since
+      // the value has been consumed.  The caller wants it in `reg`,
+      // which may not be a t-reg at all (e.g. a0 for returns).
+      deferred_store_.addr = UINT32_MAX;
+      return;
+    }
     EmitMem( LoadStoreType(val_type).first, reg, "sp", current_stack_ - address);
   } else if (type == kConst) {
     os_ << "\tli\t" << reg << ", " << name << '\n';
@@ -156,6 +179,10 @@ void AssemblyGenerator::ReloadConstCache() {
 }
 
 void AssemblyGenerator::FlushSavedRegisters() {
+  // Always flush any deferred kMemory store so successor blocks / return
+  // see the correct memory value.
+  FlushDeferredStore();
+
   // Only emit anything if this block actually had a call (some a-reg
   // is still invalid or ra is saved).  This avoids redundant
   // ReloadConstCache / restore at terminators in call-free blocks.
@@ -609,9 +636,10 @@ void AssemblyGenerator::Visit(IRGetElementPtrInstructionNode *node) {
   auto ptr_reg = VariableToReg(node->ptrval_, 0, "ptr");
   auto rd = GetResultReg(node->storage_type_, node->address_, 1);
   uint32_t offset = ComputeGEPOffset(node);
-  if (offset == 0)
+  if (offset == 0) {
+    BeforeWrite(rd);
     os_ << "\tmv\t" << rd << ", " << ptr_reg << '\n';
-  else
+  } else
     EmitIA( "addi", rd, ptr_reg, offset);
   RegToVariable(node->storage_type_, node->address_, rd, "ptr");
 }
@@ -623,6 +651,7 @@ void AssemblyGenerator::Visit(IRGetElementPtrPrimeInstructionNode *node) {
   assert(!node->type_->length_.empty());
   uint32_t elem_size = node->type_->allocated_size_ / node->type_->length_[0];
   if (elem_size == 1) {
+    BeforeWrite(rd);
     os_ << "\tadd " << rd << ", " << ptr_reg << ", " << index_reg << '\n';
   } else if ((elem_size & (elem_size - 1)) == 0) {
     // Power of 2: use shift
@@ -646,6 +675,11 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
   bool op1c = (type1 == kConst);
   bool op2c = (type2 == kConst);
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
+
+  // Flush deferred store before writing rd (t2 for kMemory results).
+  // All paths below — peephole and general — write to rd via raw os_<<
+  // without going through EmitIA/EmitMem wrappers.
+  BeforeWrite(rd);
 
   // Helper: fold small constant into addi for ==/!=.  Returns true if folded.
   auto foldConstCmp = [&](bool is_eq, const std::string &const_op,
