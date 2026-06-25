@@ -900,7 +900,11 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
     // only ±4KB (~1024 insns), so even moderate functions can exceed it
     // if blocks are far apart.  Use a generous threshold to be safe.
     uint32_t est_asm = threshold_ins * 2 + call_cnt * 2 + node->blocks_.size() * 2;
-    large_function_ = (est_asm > 8000 || node->blocks_.size() > 100);
+    // DEBUG: if CSE ran on a non-leaf function, force long jumps to test
+    // whether the threshold flip is the 'f**k RISCV' bug.  Leaf functions
+    // must not use long jumps (t5 is used for promoted variables there).
+    large_function_ = (node->pre_cse_ins_count_ > 0 && node->has_calls_)
+                      || (est_asm > 8000 || node->blocks_.size() > 100);
 
     // Reorder blocks to maximize fall-through, minimizing explicit
     // jumps.  A DFS traversal from the entry block places each block
