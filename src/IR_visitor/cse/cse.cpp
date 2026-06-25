@@ -7,9 +7,9 @@
 // Set to false to disable a specific CSE category and test on OJ.
 
 namespace cse_debug {
-  constexpr bool kCSE_GEP   = true;   // constant-index GEP
+  constexpr bool kCSE_GEP   = false;   // constant-index GEP
   constexpr bool kCSE_GEPP  = true;   // variable-index GEP'
-  constexpr bool kCrossBlockRename = true;  // propagate renames to other blocks
+  constexpr bool kCrossBlockRename = false;  // propagate renames to other blocks
 }
 
 // ─── CSEr: friended class that does all the work ───────────────────────
