@@ -1,4 +1,5 @@
 #include "IR_visitor/cse/cse.h"
+#include "IR/struct_map.h"
 
 #include <string>
 #include <unordered_map>
@@ -25,11 +26,36 @@ class CSEr {
  private:
   static std::string TypeKey(IRArrayNode *type);
   static std::string GetResultName(IRInstructionNode *ins);
+  static void EnsureTypeSize(IRArrayNode *type);
   static void ApplyInIns(
       IRInstructionNode *ins,
       const std::unordered_map<std::string, std::string> &renames);
   void RunOnFunction(IRFunctionNode *func);
 };
+
+// ─── EnsureTypeSize: pre-compute allocated_size_ / align_ for a type ──
+// The Preprocessor normally does this when it visits a GEP/GEPP's type_.
+// When CSE replaces the instruction, the type may never be visited, so we
+// compute it here to keep downstream passes (MemoryAllocator, memset) correct.
+
+void CSEr::EnsureTypeSize(IRArrayNode *type) {
+  if (!type || type->IsEmpty()) return;
+  if (type->allocated_size_ > 0) return;  // already computed
+
+  if (type->base_type_ == "i32" || type->base_type_ == "ptr") {
+    type->align_ = 8;
+    type->allocated_size_ = 8;
+  } else if (type->base_type_ == "i1") {
+    type->align_ = 1;
+    type->allocated_size_ = 1;
+  } else {
+    auto *s = StructMap::Instance().Query(type->base_type_);
+    type->align_ = s->align_;
+    type->allocated_size_ = s->allocated_size_;
+  }
+  for (auto &len : type->length_)
+    type->allocated_size_ *= len;
+}
 
 // ─── TypeKey ──────────────────────────────────────────────────────────
 
@@ -173,10 +199,20 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
       if (it != available.end()) {
         if constexpr (!cse_debug::kCSE_DryRun) {
           std::string old_result = GetResultName(ins.get());
+          // Pre-compute the array/struct type size before replacing the
+          // instruction.  The Preprocessor normally does this when it
+          // visits the GEP/GEPP, but if we replace it the type may never
+          // be visited, leaving allocated_size_ uninitialized.
+          if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get()))
+            EnsureTypeSize(gep->type_.get());
+          else if (auto *gepp = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get()))
+            EnsureTypeSize(gepp->type_.get());
+
           if constexpr (cse_debug::kCSE_UseMove) {
-            // Replace the duplicate GEP/GEPP with a Move from the canonical.
             auto ptr_type = std::make_shared<IRArrayNode>();
             ptr_type->base_type_ = "ptr";
+            ptr_type->allocated_size_ = 8;
+            ptr_type->align_ = 8;
             ins = std::make_shared<IRMoveInstructionNode>(
                 old_result, it->second, ptr_type);
           } else {

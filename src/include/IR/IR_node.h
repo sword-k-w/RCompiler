@@ -55,6 +55,7 @@ class IRStructNode : public IRNode {
   friend class MemoryAllocator;
   friend class AssemblyGenerator;
   friend class CFGBuilder;
+  friend class CSEr;
 public:
   IRStructNode() = delete;
   explicit IRStructNode(const std::string &);
