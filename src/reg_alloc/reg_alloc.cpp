@@ -7,6 +7,12 @@
 #include "IR_visitor/memory_allocator/memory_allocator.h"
 #include <iostream>
 
+// ─── Debug: limit register count to force spilling ───────────────────
+// Set to 0 to use the full 19-register pool.  Set to a small number
+// (e.g. 2) to force most variables into memory for isolating RegAlloc
+// interaction with CSE.
+constexpr uint32_t kDebug_MaxColors = 0;  // 0 = use full pool
+
 // s1-s11 (callee-saved, preferred) then a0-a7 (caller-saved, fallback)
 static const std::vector<uint32_t> kColorPool = {
     9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,  // s1-s11
@@ -193,6 +199,8 @@ void RegAlloc::Visit(IRFunctionNode *node) {
   bool is_leaf = !node->has_calls_;
   auto color_pool = is_leaf ? LeafColorPool(node) : kColorPool;
   uint32_t num_colors = color_pool.size();
+  if (kDebug_MaxColors > 0 && num_colors > kDebug_MaxColors)
+    num_colors = kDebug_MaxColors;  // DEBUG: limit regs to force spills
   ig.Coalesce(num_colors);
   auto spilled = ig.Color(num_colors, color_pool);
 
