@@ -10,13 +10,11 @@ class CSEr {
   void Run(std::shared_ptr<IRRootNode> root);
 
  private:
-  // Generate a type key from an IRArrayNode for GEP identity comparison.
   static std::string TypeKey(IRArrayNode *type);
-
-  // Get the result name of an instruction.
   static std::string GetResultName(IRInstructionNode *ins);
-
-  // Run CSE on one function.
+  static void ApplyInIns(
+      IRInstructionNode *ins,
+      const std::unordered_map<std::string, std::string> &renames);
   void RunOnFunction(IRFunctionNode *func);
 };
 
@@ -47,32 +45,78 @@ std::string CSEr::GetResultName(IRInstructionNode *ins) {
   return "";
 }
 
+// ─── apply operand renames within a single instruction ────────────────
+
+void CSEr::ApplyInIns(
+    IRInstructionNode *ins,
+    const std::unordered_map<std::string, std::string> &renames) {
+  if (renames.empty()) return;
+  auto apply = [&](std::string &s) {
+    auto it = renames.find(s);
+    if (it != renames.end()) s = it->second;
+  };
+
+  if (auto *a = dynamic_cast<IRArithmeticInstructionNode *>(ins)) {
+    apply(a->operand1_); apply(a->operand2_);
+  } else if (auto *c = dynamic_cast<IRCompareInstructionNode *>(ins)) {
+    apply(c->operand1_); apply(c->operand2_);
+  } else if (auto *b = dynamic_cast<IRBranchInstructionNode *>(ins)) {
+    apply(b->condition_);
+  } else if (auto *m = dynamic_cast<IRMoveInstructionNode *>(ins)) {
+    apply(m->source_);
+  } else if (auto *s = dynamic_cast<IRSelectInstructionNode *>(ins)) {
+    apply(s->cond_);
+  } else if (auto *n = dynamic_cast<IRNegationInstructionNode *>(ins)) {
+    apply(n->operand_);
+  } else if (auto *r = dynamic_cast<IRReturnInstructionNode *>(ins)) {
+    apply(r->name_);
+  } else if (auto *cl = dynamic_cast<IRCallInstructionNode *>(ins)) {
+    for (auto &arg : cl->arguments_) apply(arg->value_);
+  } else if (auto *l = dynamic_cast<IRLoadInstructionNode *>(ins)) {
+    apply(l->pointer_);
+  } else if (auto *sv = dynamic_cast<IRStoreVariableInstructionNode *>(ins)) {
+    apply(sv->value_); apply(sv->pointer_);
+  } else if (auto *sc = dynamic_cast<IRStoreConstInstructionNode *>(ins)) {
+    apply(sc->pointer_);
+  } else if (auto *g = dynamic_cast<IRGetElementPtrInstructionNode *>(ins)) {
+    apply(g->ptrval_);
+  } else if (auto *gp = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins)) {
+    apply(gp->ptrval_); apply(gp->index_);
+  }
+}
+
 // ─── RunOnFunction ────────────────────────────────────────────────────
 
 void CSEr::RunOnFunction(IRFunctionNode *func) {
   auto &blocks = func->blocks_;
 
-  // Global rename map: old_name -> canonical_name.
-  // Accumulated across blocks so replacements found in one block propagate
-  // to all other blocks.
+  // Save pre-CSE instruction count so the assembly generator's long-jump
+  // threshold decision is stable regardless of how many insns CSE removes.
+  {
+    uint32_t pre_count = 0;
+    for (auto &blk : blocks)
+      for (auto &ins : blk->instructions_)
+        if (!ins->removed_) ++pre_count;
+    func->pre_cse_ins_count_ = pre_count;
+  }
+
+  // Process each block independently for CSE discovery.  Within a block,
+  // renames are eagerly applied to subsequent instructions via ApplyInIns.
+  // After all blocks are processed, a final pass propagates every rename
+  // to all instructions and phi nodes in all blocks (cross-block uses).
+
+  // Renames accumulate across all blocks.  Within a block, they are
+  // eagerly applied to subsequent instructions (so keys are computed
+  // with canonical operand names).  After all blocks, a final sweep
+  // propagates every rename to all blocks for cross-block uses.
   std::unordered_map<std::string, std::string> renames;
 
-  // Resolve a name through the rename chain to its canonical form.
-  // Includes path compression so repeated lookups remain amortized O(1).
   auto resolve = [&](const std::string &name) -> std::string {
     auto it = renames.find(name);
     if (it == renames.end()) return name;
-    std::string canonical = it->second;
-    while (true) {
-      auto next = renames.find(canonical);
-      if (next == renames.end()) break;
-      canonical = next->second;
-    }
-    if (canonical != it->second) it->second = canonical;
-    return canonical;
+    return it->second;  // chains are length 1 (canonical names are never renamed)
   };
 
-  // ── Pass 1: find duplicates, build rename map ──
   for (auto &blk : blocks) {
     // Available expressions within this block (key -> canonical result name).
     std::unordered_map<std::string, std::string> available;
@@ -80,10 +124,11 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
     for (auto &ins : blk->instructions_) {
       if (ins->removed_) continue;
 
+      // Eagerly apply accumulated renames so keys use canonical operands.
+      ApplyInIns(ins.get(), renames);
+
       std::string key;
 
-      // Build key with resolved operands so that earlier renames
-      // (from this block or previous blocks) are reflected.
       if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get())) {
         key = "gep|" + TypeKey(gep->type_.get()) + "|" +
               resolve(gep->ptrval_) + "|" + std::to_string(gep->index_);
@@ -91,26 +136,16 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
                      dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get())) {
         key = "gepp|" + TypeKey(gepp->type_.get()) + "|" +
               resolve(gepp->ptrval_) + "|" + resolve(gepp->index_);
-      } else if (auto *a = dynamic_cast<IRArithmeticInstructionNode *>(ins.get())) {
-        key = "arith|" + a->op_ + "|" + a->type_ + "|" +
-              resolve(a->operand1_) + "|" + resolve(a->operand2_) + "|" +
-              (a->is_unsigned_ ? "u" : "s");
-      } else if (auto *c = dynamic_cast<IRCompareInstructionNode *>(ins.get())) {
-        key = "cmp|" + std::to_string(static_cast<int>(c->op_)) + "|" +
-              c->type_ + "|" + resolve(c->operand1_) + "|" + resolve(c->operand2_);
-      } else if (auto *n = dynamic_cast<IRNegationInstructionNode *>(ins.get())) {
-        key = "neg|" + std::to_string(n->is_minus_) + "|" + n->type_ +
-              "|" + resolve(n->operand_);
       } else {
-        // Side-effecting or non-pure instruction — skip.
+        // Only GEP / GEPP are pure address computations suitable for CSE.
         continue;
       }
 
       auto it = available.find(key);
       if (it != available.end()) {
-        // Duplicate found — record the rename.
+        // Duplicate — record the rename and remove this instruction.
         std::string old_result = GetResultName(ins.get());
-        renames[old_result] = resolve(it->second);
+        renames[old_result] = it->second;
         ins->removed_ = true;
       } else {
         available[key] = GetResultName(ins.get());
@@ -118,49 +153,20 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
     }
   }
 
-  // ── Pass 2: apply all renames in a single sweep over all blocks ──
-  if (renames.empty()) return;
-
-  auto apply = [&](std::string &s) {
-    auto it = renames.find(s);
-    if (it != renames.end()) s = it->second;
-  };
-
-  for (auto &blk : blocks) {
-    for (auto &ins : blk->instructions_) {
-      if (ins->removed_) continue;
-
-      if (auto *a = dynamic_cast<IRArithmeticInstructionNode *>(ins.get())) {
-        apply(a->operand1_); apply(a->operand2_);
-      } else if (auto *c = dynamic_cast<IRCompareInstructionNode *>(ins.get())) {
-        apply(c->operand1_); apply(c->operand2_);
-      } else if (auto *b = dynamic_cast<IRBranchInstructionNode *>(ins.get())) {
-        apply(b->condition_);
-      } else if (auto *m = dynamic_cast<IRMoveInstructionNode *>(ins.get())) {
-        apply(m->source_);
-      } else if (auto *s = dynamic_cast<IRSelectInstructionNode *>(ins.get())) {
-        apply(s->cond_);
-      } else if (auto *n = dynamic_cast<IRNegationInstructionNode *>(ins.get())) {
-        apply(n->operand_);
-      } else if (auto *r = dynamic_cast<IRReturnInstructionNode *>(ins.get())) {
-        apply(r->name_);
-      } else if (auto *cl = dynamic_cast<IRCallInstructionNode *>(ins.get())) {
-        for (auto &arg : cl->arguments_) apply(arg->value_);
-      } else if (auto *l = dynamic_cast<IRLoadInstructionNode *>(ins.get())) {
-        apply(l->pointer_);
-      } else if (auto *sv = dynamic_cast<IRStoreVariableInstructionNode *>(ins.get())) {
-        apply(sv->value_); apply(sv->pointer_);
-      } else if (auto *sc = dynamic_cast<IRStoreConstInstructionNode *>(ins.get())) {
-        apply(sc->pointer_);
-      } else if (auto *g = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get())) {
-        apply(g->ptrval_);
-      } else if (auto *gp = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get())) {
-        apply(gp->ptrval_); apply(gp->index_);
+  // Apply all renames to every instruction and phi in every block.
+  // This handles cross-block uses: a variable defined and CSE-renamed
+  // in block A may be used in block B (via SSA dominance or a phi).
+  if (!renames.empty()) {
+    for (auto &blk : blocks) {
+      for (auto &ins : blk->instructions_) {
+        if (ins->removed_) continue;
+        ApplyInIns(ins.get(), renames);
       }
-    }
-    for (auto &phi : blk->phi_) {
-      for (auto &pair : phi->val_) {
-        apply(pair.first);
+      for (auto &phi : blk->phi_) {
+        for (auto &pair : phi->val_) {
+          auto it = renames.find(pair.first);
+          if (it != renames.end()) pair.first = it->second;
+        }
       }
     }
   }
