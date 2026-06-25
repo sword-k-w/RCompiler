@@ -56,14 +56,13 @@ private:
   // (t3, t4 — registers that no other code path writes to).
   std::unordered_map<int64_t, std::string> const_cache_;
 
-  // Deferred kMemory store: RegToVariable defers the `sd` and caches the
-  // register+address.  VariableToReg reuses it (skipping `ld`), and
-  // BeforeWrite(rd) flushes it before rd is overwritten.
-  struct { uint32_t addr = UINT32_MAX; std::string reg; } deferred_store_;
+  // Safety hook: BeforeWrite(rd) flushes any pending deferred kMemory store
+  // before rd is overwritten.  Currently a no-op (deferred-store optimization
+  // removed), retained so future implementations can't forget this safeguard.
   void FlushDeferredStore();
   void BeforeWrite(const std::string &rd) {
-    if (deferred_store_.addr != UINT32_MAX && rd == deferred_store_.reg)
-      FlushDeferredStore();
+    // Deferred-store optimization removed — no-op, retained as a safety hook.
+    (void)rd;
   }
 
   IRFunctionNode *cur_func_;

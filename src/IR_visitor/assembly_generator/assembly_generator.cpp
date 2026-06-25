@@ -14,10 +14,8 @@ AssemblyGenerator::AssemblyGenerator(const std::string &builtin_begin, std::ostr
   builtin_begin_(builtin_begin), os_(os), builtin_os_(builtin_os) {}
 
 void AssemblyGenerator::FlushDeferredStore() {
-  if (deferred_store_.addr == UINT32_MAX) return;
-  PrintMem(os_, "sd", deferred_store_.reg, "sp",
-           current_stack_ - deferred_store_.addr, &const_cache_);
-  deferred_store_.addr = UINT32_MAX;
+  // Deferred-store optimization removed — no-op retained as a safety
+  // hook for future re-implementation.
 }
 
 void AssemblyGenerator::EmitMem(const std::string &type, const std::string &r, const std::string &rs1, int32_t imm) {
@@ -91,19 +89,6 @@ std::string AssemblyGenerator::GetResultReg(StorageType storage_type, uint32_t a
 std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t reg_id, const std::string &val_type) {
   auto [type, address] = GetVariableAddress(name);
   if (type == kMemory) {
-    if (deferred_store_.addr == address) {
-      auto expected = "t" + std::to_string(reg_id);
-      if (deferred_store_.reg == expected)
-        return expected;
-      // The cached value is in a different t-register than expected.
-      // Copy it to the expected register with a cheap `mv` so a
-      // subsequent VariableToReg for a different address won't flush
-      // and then clobber the register we just returned (Bug 1).
-      // The deferred store stays alive — the value is now in two regs.
-      EmitMV(expected, deferred_store_.reg);
-      return expected;
-    }
-    FlushDeferredStore();
     TransferToTreg(address, reg_id, val_type);
     return "t" + std::to_string(reg_id);
   }
@@ -128,19 +113,6 @@ std::string AssemblyGenerator::VariableToReg(const std::string &name, uint32_t r
 void AssemblyGenerator::VariableForceToReg(const std::string &name, const std::string &reg, const std::string &val_type) {
   auto [type, address] = GetVariableAddress(name);
   if (type == kMemory) {
-    if (deferred_store_.addr == address) {
-      // The latest value is still in a deferred t-register, not in memory.
-      // Move it to the requested register instead of loading stale data.
-      if (deferred_store_.reg != reg) {
-        EmitMV(reg, deferred_store_.reg);
-      }
-      // The deferred store is now committed-to-memory by Flush before
-      // the register is overwritten; but we must clear it here since
-      // the value has been consumed.  The caller wants it in `reg`,
-      // which may not be a t-reg at all (e.g. a0 for returns).
-      deferred_store_.addr = UINT32_MAX;
-      return;
-    }
     EmitMem( LoadStoreType(val_type).first, reg, "sp", current_stack_ - address);
   } else if (type == kConst) {
     EmitLI(reg, name);
@@ -155,12 +127,7 @@ void AssemblyGenerator::VariableForceToReg(const std::string &name, const std::s
 void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address, const std::string &reg, const std::string &val_type) {
   assert(storage_type != kConst);
   if (storage_type == kMemory) {
-    if (reg.size() == 2 && reg[0] == 't') {
-      FlushDeferredStore();
-      deferred_store_ = {address, reg};
-    } else {
-      EmitMem( LoadStoreType(val_type).second, reg, "sp", current_stack_ - address);
-    }
+    EmitMem( LoadStoreType(val_type).second, reg, "sp", current_stack_ - address);
   } else if (!SameRegister(address, reg)) {
     EmitMV("x" + std::to_string(address), reg);
   }
@@ -168,8 +135,6 @@ void AssemblyGenerator::RegToVariable(StorageType storage_type, uint32_t address
 }
 
 void AssemblyGenerator::SaveRegister() {
-  // Flush any deferred kMemory store before the call clobbers t-regs.
-  FlushDeferredStore();
   // Save only valid a-regs — invalid ones already have the correct value in
   // their save slot (from an earlier save).  After the call all become invalid.
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
@@ -195,19 +160,12 @@ void AssemblyGenerator::EnsureARegValid(uint32_t addr) {
 }
 
 void AssemblyGenerator::ReloadConstCache() {
-  // All t-regs are call-clobbered — flush and clear the deferred store.
-  FlushDeferredStore();
-  deferred_store_.addr = UINT32_MAX;
   for (auto &[val, reg] : const_cache_) {
     EmitLI(reg, std::to_string(val));
   }
 }
 
 void AssemblyGenerator::FlushSavedRegisters() {
-  // Always flush any deferred kMemory store so successor blocks / return
-  // see the correct memory value.
-  FlushDeferredStore();
-
   // Only emit anything if this block actually had a call (some a-reg
   // is still invalid or ra is saved).  This avoids redundant
   // ReloadConstCache / restore at terminators in call-free blocks.
@@ -345,7 +303,7 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
           if (k == 0) {
             EmitMV(rd, rs);
           } else {
-            EmitIStar("slliw", rd, rs, k);
+            EmitIA("slliw", rd, rs, k);
           }
           RegToVariable(node->storage_type_, node->address_, rd, node->type_);
           return true;
@@ -354,7 +312,7 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
           // divisor is 2^k; only valid when const is operand2 (not commutative).
           if (node->is_unsigned_ && k > 0) {
             // x /u (2^k) → srliw rd, x, k
-            EmitIStar("srliw", rd, rs, k);
+            EmitIA("srliw", rd, rs, k);
             RegToVariable(node->storage_type_, node->address_, rd, node->type_);
             return true;
           }
@@ -362,10 +320,10 @@ void AssemblyGenerator::Visit(IRArithmeticInstructionNode *node) {
           // For k ≥ 1:  sraiw t, rs, 31; srliw t, t, (32-k); addw t, rs, t; sraiw rd, t, k
           if (!node->is_unsigned_ && k > 0 && node->type_ == "i32") {
             std::string t = "t6";  // scratch
-            EmitIStar("sraiw", t, rs, 31);
-            EmitIStar("srliw", t, t, 32 - k);
+            EmitIA("sraiw", t, rs, 31);
+            EmitIA("srliw", t, t, 32 - k);
             EmitR("addw", t, rs, t);
-            EmitIStar("sraiw", rd, t, k);
+            EmitIA("sraiw", rd, t, k);
             RegToVariable(node->storage_type_, node->address_, rd, node->type_);
             return true;
           }
@@ -875,7 +833,6 @@ void AssemblyGenerator::Visit(IRSelectInstructionNode *node) {
 
 void AssemblyGenerator::Visit(IRBlockNode *node) {
   cur_block_ = node->id_;
-  FlushDeferredStore();
   if (node->id_ != 0 && referenced_blocks_.count(node->id_)) {
     os_ << ".L" << block_label_map_[node->id_] << ":\n";
   }
@@ -910,7 +867,6 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   current_a_reg_used_ = node->a_reg_used_cnt_;
   for (bool &v : a_reg_valid_) v = true;
   ra_saved_ = false;
-  deferred_store_.addr = UINT32_MAX;
   current_variables_ = &node->variables_;
   variable_storage_ = &node->variable_storage_;
 
