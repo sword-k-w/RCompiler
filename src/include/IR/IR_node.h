@@ -33,6 +33,7 @@ class IRArrayNode : public IRNode {
   friend class CFGBuilder;
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRArrayNode() = default;
   explicit IRArrayNode(const std::string &);
@@ -76,6 +77,7 @@ class IRInstructionNode : public IRNode {
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   bool removed_{false};
 protected:
@@ -97,6 +99,7 @@ class IRArithmeticInstructionNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
 public:
   IRArithmeticInstructionNode() = delete;
@@ -123,6 +126,7 @@ class IRNegationInstructionNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRNegationInstructionNode() = delete;
   IRNegationInstructionNode(const std::string &, const bool &, const std::string &, const std::string &);
@@ -147,6 +151,7 @@ class IRBranchInstructionNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRBranchInstructionNode() = delete;
   IRBranchInstructionNode(const std::string &, const uint32_t &, const uint32_t &);
@@ -169,6 +174,7 @@ class IRJumpInstructionNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRJumpInstructionNode() = delete;
   explicit IRJumpInstructionNode(const uint32_t &);
@@ -188,6 +194,7 @@ class IRReturnInstructionNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRReturnInstructionNode();
   IRReturnInstructionNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -209,6 +216,7 @@ class IRAllocateInstructionNode : public IRInstructionNode {
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRAllocateInstructionNode() = delete;
   IRAllocateInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>);
@@ -233,6 +241,7 @@ class IRLoadInstructionNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRLoadInstructionNode() = delete;
   IRLoadInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &);
@@ -255,6 +264,7 @@ class IRStoreVariableInstructionNode : public IRInstructionNode {
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRStoreVariableInstructionNode() = delete;
   IRStoreVariableInstructionNode(std::shared_ptr<IRArrayNode>, const std::string &, const std::string &);
@@ -277,6 +287,7 @@ class IRStoreConstInstructionNode : public IRInstructionNode {
   friend void Mem2reg(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRStoreConstInstructionNode() = delete;
   IRStoreConstInstructionNode(const std::string &, const int32_t &, const std::string &);
@@ -298,6 +309,7 @@ class IRGetElementPtrInstructionNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRGetElementPtrInstructionNode() = delete;
   IRGetElementPtrInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &, const uint32_t &);
@@ -321,6 +333,7 @@ class IRGetElementPtrPrimeInstructionNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRGetElementPtrPrimeInstructionNode() = delete;
   IRGetElementPtrPrimeInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &, const std::string &);
@@ -343,6 +356,7 @@ class IRCompareInstructionNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   enum Operator {
     kEq, kNe, kUgt, kUge, kUlt, kUle, kSgt, kSge, kSlt, kSle
@@ -370,6 +384,7 @@ class IRArgumentNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRArgumentNode() = delete;
   IRArgumentNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -391,6 +406,7 @@ class IRCallInstructionNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRCallInstructionNode() = delete;
   IRCallInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &);
@@ -416,6 +432,7 @@ class IRPhiInstructionNode : public IRInstructionNode {
   friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRPhiInstructionNode() = delete;
   IRPhiInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>);
@@ -440,6 +457,7 @@ class IRMoveInstructionNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRMoveInstructionNode() = delete;
   IRMoveInstructionNode(const std::string &dest, const std::string &src,
@@ -462,6 +480,7 @@ class IRSelectInstructionNode : public IRInstructionNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRSelectInstructionNode() = delete;
   IRSelectInstructionNode(const std::string &, const std::string &);
@@ -486,6 +505,7 @@ class IRBlockNode : public IRNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRBlockNode() = delete;
   explicit IRBlockNode(const uint32_t &);
@@ -518,6 +538,7 @@ class IRParameterNode : public IRNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRParameterNode() = delete;
   IRParameterNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -544,6 +565,7 @@ class IRFunctionNode : public IRNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRFunctionNode() = delete;
   IRFunctionNode(std::shared_ptr<IRArrayNode>, const std::string &, bool);
@@ -583,7 +605,9 @@ class IRRootNode : public IRNode {
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
+  friend class CSEr;
   friend class SCCPer;
+  friend class CSEr;
 public:
   IRRootNode() = default;
   void AddStruct(std::shared_ptr<IRStructNode>);
