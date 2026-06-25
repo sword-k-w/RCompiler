@@ -3,6 +3,14 @@
 #include <string>
 #include <unordered_map>
 
+// ─── Debug flags for narrowing down the 'f**k RISCV' RE ──────────────
+// Set to false to disable a specific CSE category and test on OJ.
+
+namespace cse_debug {
+  constexpr bool kCSE_GEP  = true;   // constant-index GEP
+  constexpr bool kCSE_GEPP = true;   // variable-index GEP'
+}
+
 // ─── CSEr: friended class that does all the work ───────────────────────
 
 class CSEr {
@@ -129,15 +137,20 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
 
       std::string key;
 
-      if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get())) {
-        key = "gep|" + TypeKey(gep->type_.get()) + "|" +
-              resolve(gep->ptrval_) + "|" + std::to_string(gep->index_);
-      } else if (auto *gepp =
-                     dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get())) {
-        key = "gepp|" + TypeKey(gepp->type_.get()) + "|" +
-              resolve(gepp->ptrval_) + "|" + resolve(gepp->index_);
-      } else {
-        // Only GEP / GEPP are pure address computations suitable for CSE.
+      if (cse_debug::kCSE_GEP) {
+        if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get())) {
+          key = "gep|" + TypeKey(gep->type_.get()) + "|" +
+                resolve(gep->ptrval_) + "|" + std::to_string(gep->index_);
+        }
+      }
+      if (key.empty() && cse_debug::kCSE_GEPP) {
+        if (auto *gepp =
+                   dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get())) {
+          key = "gepp|" + TypeKey(gepp->type_.get()) + "|" +
+                resolve(gepp->ptrval_) + "|" + resolve(gepp->index_);
+        }
+      }
+      if (key.empty()) {
         continue;
       }
 
