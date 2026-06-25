@@ -7,11 +7,11 @@
 // Set to false to disable a specific CSE category and test on OJ.
 
 namespace cse_debug {
-  constexpr bool kCSE_GEP   = false;   // constant-index GEP
+  constexpr bool kCSE_GEP   = true;   // constant-index GEP
   constexpr bool kCSE_GEPP  = true;   // variable-index GEP'
-  constexpr bool kCrossBlockRename = false;  // propagate renames to other blocks
-  constexpr bool kGEPP_NoPhiBlocks = true;  // if true, skip GEPP CSE in blocks with phi nodes
-  constexpr bool kGEPP_NoRenameOperands = true; // if true, use raw operands (no resolve)
+  constexpr bool kCrossBlockRename = true;  // propagate renames to other blocks
+  constexpr bool kGEPP_NoPhiBlocks = false;  // if true, skip GEPP CSE in blocks with phi nodes
+  constexpr bool kGEPP_NoRenameOperands = false; // if true, use raw operands (no resolve)
 }
 
 // ─── CSEr: friended class that does all the work ───────────────────────
@@ -179,14 +179,20 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
     }
   }
 
-  // Apply all renames to every instruction and phi in every block.
-  // This handles cross-block uses: a variable defined and CSE-renamed
-  // in block A may be used in block B (via SSA dominance or a phi).
-  if (cse_debug::kCrossBlockRename && !renames.empty()) {
+  // Phi fixup: ALWAYS update phi incoming values that reference renamed
+  // variables.  This is essential for correctness — a GEPP removed in
+  // block A (which has no phi nodes) may still be referenced by a phi in
+  // successor block B.  Skipping this produces 'no storage assigned'.
+  //
+  // Cross-block instruction rename (the ApplyInIns loop) is controlled
+  // separately by kCrossBlockRename for debugging.
+  if (!renames.empty()) {
     for (auto &blk : blocks) {
-      for (auto &ins : blk->instructions_) {
-        if (ins->removed_) continue;
-        ApplyInIns(ins.get(), renames);
+      if (cse_debug::kCrossBlockRename) {
+        for (auto &ins : blk->instructions_) {
+          if (ins->removed_) continue;
+          ApplyInIns(ins.get(), renames);
+        }
       }
       for (auto &phi : blk->phi_) {
         for (auto &pair : phi->val_) {
