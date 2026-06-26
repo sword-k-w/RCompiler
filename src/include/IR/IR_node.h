@@ -418,6 +418,10 @@ private:
   std::shared_ptr<IRArrayNode> result_type_; // empty means void which also means result_ is also empty
   std::string function_name_;
   std::vector<std::shared_ptr<IRArgumentNode>> arguments_;
+  // Bitmask of dead a-regs at this call site (set by RegAlloc).
+  // Bit i corresponds to a-reg (10+i).  If set, a-reg i holds no live
+  // value at this call and does not need saving.
+  uint32_t dead_a_regs_mask_ = 0;
 };
 
 class IRPhiInstructionNode : public IRInstructionNode {

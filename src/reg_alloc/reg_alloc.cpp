@@ -7,7 +7,12 @@
 #include "IR_visitor/memory_allocator/memory_allocator.h"
 #include <iostream>
 
-// s1-s11 (callee-saved, preferred) then a0-a7 (caller-saved, fallback)
+// s1-s11 (callee-saved, preferred) then a0-a7 (caller-saved, fallback).
+// s-regs are saved/restored once per function in prologue/epilogue.
+// a-regs would be saved/restored at every call site through SaveRegister/
+// FlushSavedRegisters, so preferring them increases overhead in call-heavy code.
+// GCC can prefer a-regs because it does per-call-save analysis; our deferred
+// save approach makes s-regs cheaper overall.
 static const std::vector<uint32_t> kColorPool = {
     9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,  // s1-s11
     10, 11, 12, 13, 14, 15, 16, 17                 // a0-a7
@@ -124,6 +129,8 @@ void RegAlloc::Visit(IRFunctionNode *node) {
 
   // Step 2: Per block, compute instruction-level liveness and build edges.
   uint32_t var_count = cfg->GetVarCount();
+  // Record live sets at call sites for per-call a-reg save optimization.
+  std::vector<std::pair<IRCallInstructionNode*, BitSet>> call_live_sets;
   for (auto &block : node->blocks_) {
     BitSet live;
     live.Resize(var_count + 256);
@@ -146,6 +153,17 @@ void RegAlloc::Visit(IRFunctionNode *node) {
           live.ClearBit(def_id);
         }
       }
+
+      // Snapshot liveness at call sites AFTER killing defs but BEFORE genning
+      // uses.  This gives liveOut(call) minus call results — the set of
+      // variables that are live across the call and need a-reg saving.
+      if (auto *call = dynamic_cast<IRCallInstructionNode *>(ins)) {
+        BitSet snapshot;
+        snapshot.Resize(var_count + 256);
+        live.ForEach([&](uint32_t id) { snapshot.Set(id); });
+        call_live_sets.emplace_back(call, std::move(snapshot));
+      }
+
       // Process uses: become live going backwards (add to live)
       for (auto use_id : ins->use_) {
         if (promotable_vars.Test(use_id)) {
@@ -235,6 +253,25 @@ void RegAlloc::Visit(IRFunctionNode *node) {
   uint32_t num_colors = color_pool.size();
   ig.Coalesce(num_colors);
   auto spilled = ig.Color(num_colors, color_pool);
+
+  // Compute per-call dead a-reg masks: for each call site, determine which
+  // a-regs (a0-a7, phys regs 10-17) hold NO live value at that point.
+  // These a-regs can skip SaveRegister, reducing call overhead.
+  for (auto &[call, live] : call_live_sets) {
+    uint32_t dead_mask = 0;
+    for (uint32_t a = 0; a < 8; ++a) {
+      uint32_t phys_reg = 10 + a;
+      bool has_live = false;
+      live.ForEach([&](uint32_t var_id) {
+        if (!has_live && ig.HasPhysReg(var_id)
+            && ig.GetPhysReg(var_id) == phys_reg) {
+          has_live = true;
+        }
+      });
+      if (!has_live) dead_mask |= (1u << a);
+    }
+    call->dead_a_regs_mask_ = dead_mask;
+  }
 
   // 4. Rewrite storage for colored variables (both variable_storage_ and instruction fields)
   for (auto &block : node->blocks_) {

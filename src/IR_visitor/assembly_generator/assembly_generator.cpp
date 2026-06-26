@@ -547,6 +547,31 @@ bool AssemblyGenerator::EmitInlineCopy(const std::string &dst_ptr,
   return true;
 }
 
+// Emit inline memory fill (zero) using sd/sw/sb with x0.  Same threshold
+// and register conventions as EmitInlineCopy.
+bool AssemblyGenerator::EmitInlineMemset(const std::string &dst_ptr, uint32_t size) {
+  if (size > kInlineCopyThreshold) return false;
+  if (size == 0) return true;
+  uint32_t offset = 0;
+  while (offset + 8 <= size) {
+    EmitMem("sd", "x0", dst_ptr, static_cast<int32_t>(offset));
+    offset += 8;
+  }
+  if (offset + 4 <= size) {
+    EmitMem("sw", "x0", dst_ptr, static_cast<int32_t>(offset));
+    offset += 4;
+  }
+  if (offset + 2 <= size) {
+    EmitMem("sh", "x0", dst_ptr, static_cast<int32_t>(offset));
+    offset += 2;
+  }
+  if (offset + 1 <= size) {
+    EmitMem("sb", "x0", dst_ptr, static_cast<int32_t>(offset));
+    offset += 1;
+  }
+  return true;
+}
+
 void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
   auto ptr_reg = VariableToReg(node->pointer_, 0, "ptr");
   if (node->storage_type_ == kRegister) {
@@ -819,6 +844,19 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
         EmitInlineCopy(dst_ptr, src_ptr, copy_sz);
         return;
       }
+    }
+  }
+
+  // Dead a-reg optimization: a-regs that hold no live values at this call
+  // don't need saving.  But we only skip a-regs that are *already* invalid
+  // (previously saved): if an a-reg is valid (fresh value), its save slot is
+  // stale and must be updated before the call clobbers the hardware register.
+  uint32_t dead_mask = node->dead_a_regs_mask_;
+  for (uint32_t i = 0; i < current_a_reg_used_ && i < 8; ++i) {
+    if ((dead_mask & (1u << i)) && !a_reg_valid_[i]) {
+      // Already saved by a previous call — keep it invalid so SaveRegister
+      // skips it, avoiding a redundant save.
+      // a_reg_valid_[i] stays false.
     }
   }
 
