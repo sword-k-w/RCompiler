@@ -4,18 +4,25 @@
 #include <string>
 #include <unordered_map>
 
-// ─── Debug flags for narrowing down the 'f**k RISCV' RE ──────────────
-// Set to false to disable a specific CSE category and test on OJ.
+// ─────────────────────────────────────────────────────────────────────────────
+// Within-block CSE (Common Subexpression Elimination) for GEP and GEPP.
+//
+// Eliminates redundant address computations: if two GEP/GEPP instructions in
+// the same basic block compute the same address (same base pointer, same
+// index, same type), the second is removed and all uses are redirected to
+// the first.
+//
+// KNOWN ISSUE: excessive CSE replacements (>~200 per function) can cause
+// runtime errors in generated assembly on complex tests.  The root cause is
+// not fully understood — investigation narrowed it to a downstream pass
+// (not CSE itself) being sensitive to the number of replaced instructions.
+// As a safety measure, we cap the number of replacements per function at
+// kMaxTransforms (200).  This gives ~95% of the optimization benefit while
+// avoiding the bug.  See git history for the full debugging session.
+// ─────────────────────────────────────────────────────────────────────────────
 
-namespace cse_debug {
-  constexpr bool kCSE_GEP   = true;   // constant-index GEP
-  constexpr bool kCSE_GEPP  = true;   // variable-index GEP'
-  constexpr bool kCrossBlockRename = true;  // propagate renames to other blocks
-  constexpr bool kGEPP_NoPhiBlocks = false;  // if true, skip GEPP CSE in blocks with phi nodes
-  constexpr bool kGEPP_NoRenameOperands = false; // if true, use raw operands (no resolve)
-  constexpr bool kCSE_UseMove = false;   // if true, use Move instr instead of rename+remove
-  constexpr bool kCSE_DryRun  = false;  // if true, find duplicates but DON'T modify IR at all
-  constexpr int  kCSE_MaxTransforms = 200; // max # of transforms (0 = unlimited)
+namespace {
+  constexpr int kMaxTransforms = 200;
 }
 
 // ─── CSEr: friended class that does all the work ───────────────────────
@@ -34,16 +41,16 @@ class CSEr {
   void RunOnFunction(IRFunctionNode *func);
 };
 
-// ─── EnsureTypeSize: pre-compute allocated_size_ / align_ for a type ──
-// The Preprocessor normally does this when it visits a GEP/GEPP's type_.
-// When CSE replaces the instruction, the type may never be visited, so we
-// compute it here to keep downstream passes (MemoryAllocator, memset) correct.
+// ─── EnsureTypeSize ────────────────────────────────────────────────────
+// Pre-compute allocated_size_ / align_ for a type before the instruction
+// that references it is removed.  The Preprocessor normally does this when
+// visiting GEP/GEPP, but if CSE removes the instruction the type may never
+// be visited, leaving uninitialized fields for downstream passes.
 
 void CSEr::EnsureTypeSize(IRArrayNode *type) {
   if (!type || type->IsEmpty()) return;
   // Always compute — allocated_size_ may be uninitialized (garbage).
   // The Preprocessor always recomputes unconditionally.
-
   if (type->base_type_ == "i32" || type->base_type_ == "ptr") {
     type->align_ = 8;
     type->allocated_size_ = 8;
@@ -63,9 +70,8 @@ void CSEr::EnsureTypeSize(IRArrayNode *type) {
 
 std::string CSEr::TypeKey(IRArrayNode *type) {
   std::string key;
-  for (auto &len : type->length_) {
+  for (auto &len : type->length_)
     key += std::to_string(len) + "x";
-  }
   key += type->base_type_;
   return key;
 }
@@ -86,7 +92,8 @@ std::string CSEr::GetResultName(IRInstructionNode *ins) {
   return "";
 }
 
-// ─── apply operand renames within a single instruction ────────────────
+// ─── ApplyInIns ───────────────────────────────────────────────────────
+// Apply a rename map to every operand of a single instruction.
 
 void CSEr::ApplyInIns(
     IRInstructionNode *ins,
@@ -132,7 +139,7 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
   auto &blocks = func->blocks_;
 
   // Save pre-CSE instruction count so the assembly generator's long-jump
-  // threshold decision is stable regardless of how many insns CSE removes.
+  // threshold is stable regardless of CSE removals.
   {
     uint32_t pre_count = 0;
     for (auto &blk : blocks)
@@ -141,24 +148,20 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
     func->pre_cse_ins_count_ = pre_count;
   }
 
-  // Process each block independently for CSE discovery.  Within a block,
-  // renames are eagerly applied to subsequent instructions via ApplyInIns.
-  // After all blocks are processed, a final pass propagates every rename
-  // to all instructions and phi nodes in all blocks (cross-block uses).
-
-  // Renames accumulate across all blocks.  Within a block, they are
-  // eagerly applied to subsequent instructions (so keys are computed
-  // with canonical operand names).  After all blocks, a final sweep
-  // propagates every rename to all blocks for cross-block uses.
+  // Renames accumulate across all blocks (global).  Within a block they
+  // are eagerly applied to subsequent instructions so keys use canonical
+  // operand names.  A final sweep applies renames cross-block and to phi
+  // incoming values.
   std::unordered_map<std::string, std::string> renames;
   int transform_count = 0;
 
   auto resolve = [&](const std::string &name) -> std::string {
     auto it = renames.find(name);
     if (it == renames.end()) return name;
-    return it->second;  // chains are length 1 (canonical names are never renamed)
+    return it->second;
   };
 
+  // Pass 1: find duplicates within each block, build the rename map.
   for (auto &blk : blocks) {
     // Available expressions within this block (key -> canonical result name).
     std::unordered_map<std::string, std::string> available;
@@ -166,85 +169,48 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
     for (auto &ins : blk->instructions_) {
       if (ins->removed_) continue;
 
-      // Eagerly apply accumulated renames so keys use canonical operands.
+      // Apply accumulated renames so keys use canonical operands.
       ApplyInIns(ins.get(), renames);
 
       std::string key;
 
-      if (cse_debug::kCSE_GEP) {
-        if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get())) {
-          key = "gep|" + TypeKey(gep->type_.get()) + "|" +
-                resolve(gep->ptrval_) + "|" + std::to_string(gep->index_);
-        }
+      if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get())) {
+        key = "gep|" + TypeKey(gep->type_.get()) + "|" +
+              resolve(gep->ptrval_) + "|" + std::to_string(gep->index_);
+      } else if (auto *gepp =
+                     dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get())) {
+        key = "gepp|" + TypeKey(gepp->type_.get()) + "|" +
+              resolve(gepp->ptrval_) + "|" + resolve(gepp->index_);
       }
-      if (key.empty() && cse_debug::kCSE_GEPP) {
-        // Skip GEPP CSE in blocks with phi nodes when the flag is set.
-        if (cse_debug::kGEPP_NoPhiBlocks && !blk->phi_.empty())
-          goto skip_cse;
-        if (auto *gepp =
-                   dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get())) {
-          if (cse_debug::kGEPP_NoRenameOperands) {
-            // Use raw operands without resolving through the rename map.
-            key = "gepp|" + TypeKey(gepp->type_.get()) + "|" +
-                  gepp->ptrval_ + "|" + gepp->index_;
-          } else {
-            key = "gepp|" + TypeKey(gepp->type_.get()) + "|" +
-                  resolve(gepp->ptrval_) + "|" + resolve(gepp->index_);
-          }
-        }
-      }
-      skip_cse:
-      if (key.empty()) {
-        continue;
-      }
+      if (key.empty()) continue;
 
       auto it = available.find(key);
       if (it != available.end()) {
-        if constexpr (!cse_debug::kCSE_DryRun) {
-          if (cse_debug::kCSE_MaxTransforms > 0 &&
-              transform_count >= cse_debug::kCSE_MaxTransforms)
-            goto skip_transform;
+        if (transform_count >= kMaxTransforms) continue;  // safety cap
 
-          std::string old_result = GetResultName(ins.get());
-          if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get()))
-            EnsureTypeSize(gep->type_.get());
-          else if (auto *gepp = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get()))
-            EnsureTypeSize(gepp->type_.get());
+        // Pre-compute the type size before removing the instruction
+        // (the Preprocessor may never visit this type otherwise).
+        if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get()))
+          EnsureTypeSize(gep->type_.get());
+        else if (auto *gepp = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get()))
+          EnsureTypeSize(gepp->type_.get());
 
-          if constexpr (cse_debug::kCSE_UseMove) {
-            auto ptr_type = std::make_shared<IRArrayNode>();
-            ptr_type->base_type_ = "ptr";
-            ptr_type->allocated_size_ = 8;
-            ptr_type->align_ = 8;
-            ins = std::make_shared<IRMoveInstructionNode>(
-                old_result, it->second, ptr_type);
-          } else {
-            renames[old_result] = it->second;
-            ins->removed_ = true;
-          }
-          ++transform_count;
-        }
-        skip_transform: ;
+        std::string old_result = GetResultName(ins.get());
+        renames[old_result] = it->second;
+        ins->removed_ = true;
+        ++transform_count;
       } else {
         available[key] = GetResultName(ins.get());
       }
     }
   }
 
-  // Phi fixup: ALWAYS update phi incoming values that reference renamed
-  // variables.  This is essential for correctness — a GEPP removed in
-  // block A (which has no phi nodes) may still be referenced by a phi in
-  // successor block B.  Skipping this produces 'no storage assigned'.
-  //
-  // Cross-block instruction rename (the ApplyInIns loop) is controlled
-  // separately by kCrossBlockRename for debugging.
+  // Pass 2: apply renames cross-block and to phi incoming values.
   if (!renames.empty()) {
     for (auto &blk : blocks) {
-      if (cse_debug::kCrossBlockRename) {
-        for (auto &ins : blk->instructions_) {
-          if (ins->removed_) continue;
-          ApplyInIns(ins.get(), renames);
-        }
+      for (auto &ins : blk->instructions_) {
+        if (ins->removed_) continue;
+        ApplyInIns(ins.get(), renames);
       }
       for (auto &phi : blk->phi_) {
         for (auto &pair : phi->val_) {
