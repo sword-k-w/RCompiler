@@ -547,31 +547,6 @@ bool AssemblyGenerator::EmitInlineCopy(const std::string &dst_ptr,
   return true;
 }
 
-// Emit inline memory fill (zero) using sd/sw/sb with x0.  Same threshold
-// and register conventions as EmitInlineCopy.
-bool AssemblyGenerator::EmitInlineMemset(const std::string &dst_ptr, uint32_t size) {
-  if (size > kInlineCopyThreshold) return false;
-  if (size == 0) return true;
-  uint32_t offset = 0;
-  while (offset + 8 <= size) {
-    EmitMem("sd", "x0", dst_ptr, static_cast<int32_t>(offset));
-    offset += 8;
-  }
-  if (offset + 4 <= size) {
-    EmitMem("sw", "x0", dst_ptr, static_cast<int32_t>(offset));
-    offset += 4;
-  }
-  if (offset + 2 <= size) {
-    EmitMem("sh", "x0", dst_ptr, static_cast<int32_t>(offset));
-    offset += 2;
-  }
-  if (offset + 1 <= size) {
-    EmitMem("sb", "x0", dst_ptr, static_cast<int32_t>(offset));
-    offset += 1;
-  }
-  return true;
-}
-
 void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
   auto ptr_reg = VariableToReg(node->pointer_, 0, "ptr");
   if (node->storage_type_ == kRegister) {

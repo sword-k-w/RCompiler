@@ -8,11 +8,12 @@
 #include <iostream>
 
 // s1-s11 (callee-saved, preferred) then a0-a7 (caller-saved, fallback).
-// s-regs are saved/restored once per function in prologue/epilogue.
-// a-regs would be saved/restored at every call site through SaveRegister/
-// FlushSavedRegisters, so preferring them increases overhead in call-heavy code.
-// GCC can prefer a-regs because it does per-call-save analysis; our deferred
-// save approach makes s-regs cheaper overall.
+// s-regs cost one save+restore per function (prologue/epilogue).
+// a-regs cost one save+restore per call site (SaveRegister/FlushSavedRegisters).
+// Even with per-call dead masks avoiding redundant saves, the per-call
+// overhead of a-regs outweighs the once-per-function cost of s-regs in
+// call-heavy code.  GCC can prefer a-regs because its per-callsite analysis
+// only saves the specific a-regs that are live, not all a-regs unconditionally.
 static const std::vector<uint32_t> kColorPool = {
     9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,  // s1-s11
     10, 11, 12, 13, 14, 15, 16, 17                 // a0-a7
