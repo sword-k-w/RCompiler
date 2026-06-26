@@ -40,7 +40,8 @@ class CSEr {
 
 void CSEr::EnsureTypeSize(IRArrayNode *type) {
   if (!type || type->IsEmpty()) return;
-  if (type->allocated_size_ > 0) return;  // already computed
+  // Always compute — allocated_size_ may be uninitialized (garbage).
+  // The Preprocessor always recomputes unconditionally.
 
   if (type->base_type_ == "i32" || type->base_type_ == "ptr") {
     type->align_ = 8;
