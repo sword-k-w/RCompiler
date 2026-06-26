@@ -64,6 +64,9 @@ std::pair<std::string, std::string> LoadStoreType(const std::string &type) {
   if (type == "i1") {
     return std::make_pair("lbu", "sb");
   }
-  assert(type == "i32" || type == "ptr");
+  if (type == "i32") {
+    return std::make_pair("lw", "sw");
+  }
+  assert(type == "ptr");
   return std::make_pair("ld", "sd");
 }

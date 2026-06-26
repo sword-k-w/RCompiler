@@ -80,5 +80,5 @@ std::pair<Type *, uint32_t> AutoDereference(Type *);
 
 std::shared_ptr<IRArrayNode> GetIRTypeNode(Type *);
 
-// (total size, is bool)
-std::pair<uint32_t, bool> GetTypeSize(Type *);
+// (total size, alignment)
+std::pair<uint32_t, uint32_t> GetTypeSize(Type *);

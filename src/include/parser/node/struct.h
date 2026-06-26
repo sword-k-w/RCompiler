@@ -11,7 +11,7 @@ class StructFieldNode : public ASTNode {
   friend class SecondChecker;
   friend class ThirdChecker;
   friend class IRGenerator;
-  friend std::pair<uint32_t, bool> GetTypeSize(Type *);
+  friend std::pair<uint32_t, uint32_t> GetTypeSize(Type *);
 public:
   StructFieldNode() = delete;
   StructFieldNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -27,7 +27,7 @@ class StructFieldsNode : public ASTNode {
   friend class SecondChecker;
   friend class ThirdChecker;
   friend class IRGenerator;
-  friend std::pair<uint32_t, bool> GetTypeSize(Type *);
+  friend std::pair<uint32_t, uint32_t> GetTypeSize(Type *);
 public:
   StructFieldsNode() = delete;
   StructFieldsNode(const std::vector<Token> &, uint32_t &, const uint32_t &);
@@ -43,7 +43,7 @@ class StructNode : public ASTNode {
   friend class SecondChecker;
   friend class ThirdChecker;
   friend class IRGenerator;
-  friend std::pair<uint32_t, bool> GetTypeSize(Type *);
+  friend std::pair<uint32_t, uint32_t> GetTypeSize(Type *);
 public:
   StructNode() = delete;
   StructNode(const std::vector<Token> &, uint32_t &, const uint32_t &);

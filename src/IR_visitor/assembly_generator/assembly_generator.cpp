@@ -577,19 +577,14 @@ uint32_t AssemblyGenerator::ComputeGEPOffset(IRGetElementPtrInstructionNode *nod
     uint32_t align = 1;
     auto struct_node = StructMap::Instance().Query(node->type_->base_type_);
     for (uint32_t i = 0; i < node->index_; ++i) {
-      if (align == 1 && struct_node->members_[i]->align_ == 8) {
-        align = 8;
-        offset = Align8(offset);
-      }
-      auto member_size = struct_node->members_[i]->allocated_size_;
-      if (align == 8 && struct_node->members_[i]->align_ == 1) {
-        member_size = Align8(member_size);
-      }
-      offset += member_size;
+      auto memb_align = struct_node->members_[i]->align_;
+      if (memb_align > align) align = memb_align;
+      offset = (offset + memb_align - 1) / memb_align * memb_align;
+      offset += struct_node->members_[i]->allocated_size_;
     }
-    if (struct_node->members_[node->index_]->align_ == 8) {
-      offset = Align8(offset);
-    }
+    offset = (offset + struct_node->members_[node->index_]->align_ - 1)
+           / struct_node->members_[node->index_]->align_
+           * struct_node->members_[node->index_]->align_;
   } else {
     offset = node->type_->allocated_size_ / node->type_->length_[0] * node->index_;
   }

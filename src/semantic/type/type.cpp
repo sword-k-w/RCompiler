@@ -216,42 +216,38 @@ std::shared_ptr<IRArrayNode> GetIRTypeNode(Type *type) {
   return res;
 }
 
-std::pair<uint32_t, bool> GetTypeSize(Type *type) {
+std::pair<uint32_t, uint32_t> GetTypeSize(Type *type) {
   try {
     if (type->type_ == kLeafType) {
       if (type->type_name_ == "bool") {
-        return std::make_pair(1, true);
+        return std::make_pair(1, 1);
       }
       if (type->type_name_ == "char" || type->type_name_ == "String" || type->type_name_ == "str") {
         throw Error("IR generator : unexpected type");
       }
-      return std::make_pair(8, false);
+      return std::make_pair(4, 4);
     }
     if (type->type_ == kEnumType || type->type_ == kPointerType) {
-      return std::make_pair(8, false);
+      return std::make_pair(8, 8);
     }
     if (type->type_ == kArrayType) {
-      auto [size, tag] = GetTypeSize(type->array_type_info_.first.get());
-      return std::make_pair(size * type->array_type_info_.second, tag);
+      auto [size, align] = GetTypeSize(type->array_type_info_.first.get());
+      return std::make_pair(size * type->array_type_info_.second, align);
     }
     if (type->type_ == kStructType) {
       auto struct_type = dynamic_cast<StructNode *>(type->source_);
       uint32_t size = 0;
-      bool tag = true;
+      uint32_t align = 1;
       if (struct_type->struct_fields_ != nullptr) {
         for (auto &field : struct_type->struct_fields_->struct_field_s_) {
-          auto [inner_size, inner_tag] = GetTypeSize(field->type_->type_info_.get());
-          if (!tag && inner_tag) {
-            inner_size = (inner_size + 7) / 8 * 8;
-          }
-          if (tag && !inner_tag) {
-            size = (size + 7) / 8 * 8;
-          }
-          tag &= inner_tag;
+          auto [inner_size, inner_align] = GetTypeSize(field->type_->type_info_.get());
+          size = (size + inner_align - 1) / inner_align * inner_align;
+          if (inner_align > align) align = inner_align;
           size += inner_size;
         }
       }
-      return std::make_pair(size, tag);
+      size = (size + align - 1) / align * align;
+      return std::make_pair(size, align);
     }
     throw Error("IR generator : Getting Type Size.");
   } catch (Error &) { throw; }

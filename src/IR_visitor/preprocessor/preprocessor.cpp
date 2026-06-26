@@ -10,7 +10,13 @@ void Preprocessor::Visit(IRArrayNode *node) {
   if (node->IsEmpty()) {
     return;
   }
-  if (node->base_type_ == "i32" || node->base_type_ == "ptr") {
+  if (node->base_type_ == "i32") {
+    node->align_ = 4;
+    node->allocated_size_ = 4;
+    for (auto &length : node->length_) {
+      node->allocated_size_ *= length;
+    }
+  } else if (node->base_type_ == "ptr") {
     node->align_ = 8;
     node->allocated_size_ = 8;
     for (auto &length : node->length_) {
@@ -39,15 +45,11 @@ void Preprocessor::Visit(IRStructNode *node) {
     array_node->Accept(this);
     auto inner_size = array_node->allocated_size_;
     auto inner_align = array_node->align_;
-    if (inner_align == 1 && node->align_ == 8) {
-      inner_size = Align8(inner_size);
-    }
-    if (node->align_ == 1 && inner_align == 8) {
-      node->allocated_size_ = Align8(node->allocated_size_);
-      node->align_ = 8;
-    }
+    node->allocated_size_ = (node->allocated_size_ + inner_align - 1) / inner_align * inner_align;
+    if (inner_align > node->align_) node->align_ = inner_align;
     node->allocated_size_ += inner_size;
   }
+  node->allocated_size_ = (node->allocated_size_ + node->align_ - 1) / node->align_ * node->align_;
 }
 
 void Preprocessor::Visit(IRArithmeticInstructionNode *node) {
@@ -258,17 +260,14 @@ void Preprocessor::FoldZeroOffsetGEPs(std::shared_ptr<IRRootNode> IR_root) {
           uint32_t align = 1;
           auto *sn = StructMap::Instance().Query(gep->type_->base_type_);
           for (uint32_t i = 0; i < gep->index_; ++i) {
-            if (align == 1 && sn->members_[i]->align_ == 8) {
-              align = 8;
-              offset = Align8(offset);
-            }
-            auto ms = sn->members_[i]->allocated_size_;
-            if (align == 8 && sn->members_[i]->align_ == 1)
-              ms = Align8(ms);
-            offset += ms;
+            auto memb_align = sn->members_[i]->align_;
+            if (memb_align > align) align = memb_align;
+            offset = (offset + memb_align - 1) / memb_align * memb_align;
+            offset += sn->members_[i]->allocated_size_;
           }
-          if (sn->members_[gep->index_]->align_ == 8)
-            offset = Align8(offset);
+          offset = (offset + sn->members_[gep->index_]->align_ - 1)
+                 / sn->members_[gep->index_]->align_
+                 * sn->members_[gep->index_]->align_;
         } else {
           offset = gep->type_->allocated_size_ / gep->type_->length_[0]
                  * gep->index_;
