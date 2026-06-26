@@ -15,7 +15,7 @@ namespace cse_debug {
   constexpr bool kGEPP_NoRenameOperands = false; // if true, use raw operands (no resolve)
   constexpr bool kCSE_UseMove = false;   // if true, use Move instr instead of rename+remove
   constexpr bool kCSE_DryRun  = false;  // if true, find duplicates but DON'T modify IR at all
-  constexpr int  kCSE_MaxTransforms = 5; // max # of transforms (0 = unlimited)
+  constexpr int  kCSE_MaxTransforms = 20; // max # of transforms (0 = unlimited)
 }
 
 // ─── CSEr: friended class that does all the work ───────────────────────
