@@ -12,6 +12,7 @@ public:
 
   void AddNode(uint32_t id);
   void AddEdge(uint32_t u, uint32_t v);
+  void RemoveEdge(uint32_t u, uint32_t v);
   void SetPrecolored(uint32_t id, uint32_t phys_reg);
   bool IsPrecolored(uint32_t id) const;
   uint32_t GetPrecoloredReg(uint32_t id) const;

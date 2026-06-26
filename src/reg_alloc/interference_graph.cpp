@@ -16,6 +16,14 @@ void InterferenceGraph::AddEdge(uint32_t u, uint32_t v) {
   adjacency_[v].insert(u);
 }
 
+void InterferenceGraph::RemoveEdge(uint32_t u, uint32_t v) {
+  if (u == v) return;
+  auto it_u = adjacency_.find(u);
+  if (it_u != adjacency_.end()) it_u->second.erase(v);
+  auto it_v = adjacency_.find(v);
+  if (it_v != adjacency_.end()) it_v->second.erase(u);
+}
+
 void InterferenceGraph::SetPrecolored(uint32_t id, uint32_t phys_reg) {
   precolored_[id] = phys_reg;
   phys_reg_[id] = phys_reg;

@@ -190,6 +190,46 @@ void RegAlloc::Visit(IRFunctionNode *node) {
   }
 
   // 3. Coalesce move-related nodes, then color
+  // Before coalescing, remove false interference edges for phi-related move
+  // pairs: when a move's source is defined using the destination as a last-use
+  // operand (common in loop induction variables), the block-level liveness
+  // creates a spurious edge through the OUT set.  Scan each block to find
+  // (def, use) pairs where the use is dead after the defining instruction,
+  // and remove the interference edge between them if a matching move exists.
+  for (auto &block : node->blocks_) {
+    std::unordered_map<uint32_t, uint32_t> last_use_def;  // use_id -> def_id that last-used it
+    // Walk forward to find the last def that uses each variable
+    for (auto &inst : block->instructions_) {
+      if (inst->removed_) continue;
+      for (auto use_id : inst->use_) {
+        if (promotable_vars.Test(use_id)) {
+          // Record this def as the last user of use_id (overwrites previous)
+          if (!inst->def_.empty()) {
+            last_use_def[use_id] = *inst->def_.begin();
+          }
+        }
+      }
+    }
+    // Now check move instructions: if the source (use) is a last-use operand
+    // of some def in this block, remove the interference edge.
+    for (auto &inst : block->instructions_) {
+      if (inst->removed_) continue;
+      auto *mv = dynamic_cast<IRMoveInstructionNode *>(inst.get());
+      if (!mv || mv->def_.empty() || mv->use_.empty()) continue;
+      uint32_t src_id = *mv->use_.begin();
+      uint32_t dst_id = *mv->def_.begin();
+      // Check: was src defined by an instruction that last-used dst?
+      auto it = last_use_def.find(dst_id);
+      if (it != last_use_def.end() && it->second == src_id) {
+        // The instruction that defines src also last-uses dst.
+        // The interference edge between them is spurious (block-level
+        // liveness only) — they are never simultaneously live at any
+        // instruction within the block.  Remove it so coalescing can merge them.
+        ig.RemoveEdge(src_id, dst_id);
+      }
+    }
+  }
+
   bool is_leaf = !node->has_calls_;
   auto color_pool = is_leaf ? LeafColorPool(node) : kColorPool;
   uint32_t num_colors = color_pool.size();
