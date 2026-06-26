@@ -8,13 +8,14 @@
 // Set to false to disable a specific CSE category and test on OJ.
 
 namespace cse_debug {
-  constexpr bool kCSE_GEP   = true;  // constant-index GEP
+  constexpr bool kCSE_GEP   = true;   // constant-index GEP
   constexpr bool kCSE_GEPP  = true;   // variable-index GEP'
   constexpr bool kCrossBlockRename = true;  // propagate renames to other blocks
   constexpr bool kGEPP_NoPhiBlocks = false;  // if true, skip GEPP CSE in blocks with phi nodes
   constexpr bool kGEPP_NoRenameOperands = false; // if true, use raw operands (no resolve)
   constexpr bool kCSE_UseMove = true;   // if true, use Move instr instead of rename+remove
   constexpr bool kCSE_DryRun  = false;  // if true, find duplicates but DON'T modify IR at all
+  constexpr int  kCSE_MaxTransforms = 0; // max # of transforms (0 = unlimited)
 }
 
 // ─── CSEr: friended class that does all the work ───────────────────────
@@ -150,6 +151,7 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
   // with canonical operand names).  After all blocks, a final sweep
   // propagates every rename to all blocks for cross-block uses.
   std::unordered_map<std::string, std::string> renames;
+  int transform_count = 0;
 
   auto resolve = [&](const std::string &name) -> std::string {
     auto it = renames.find(name);
@@ -199,11 +201,11 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
       auto it = available.find(key);
       if (it != available.end()) {
         if constexpr (!cse_debug::kCSE_DryRun) {
+          if (cse_debug::kCSE_MaxTransforms > 0 &&
+              transform_count >= cse_debug::kCSE_MaxTransforms)
+            goto skip_transform;
+
           std::string old_result = GetResultName(ins.get());
-          // Pre-compute the array/struct type size before replacing the
-          // instruction.  The Preprocessor normally does this when it
-          // visits the GEP/GEPP, but if we replace it the type may never
-          // be visited, leaving allocated_size_ uninitialized.
           if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get()))
             EnsureTypeSize(gep->type_.get());
           else if (auto *gepp = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(ins.get()))
@@ -220,7 +222,9 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
             renames[old_result] = it->second;
             ins->removed_ = true;
           }
+          ++transform_count;
         }
+        skip_transform: ;
       } else {
         available[key] = GetResultName(ins.get());
       }
