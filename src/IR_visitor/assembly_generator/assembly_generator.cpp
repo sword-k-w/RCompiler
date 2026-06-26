@@ -211,14 +211,21 @@ void AssemblyGenerator::DataMove(const std::string &from, StorageType to_type, u
       EmitMem( l_ins, "x" + std::to_string(to_address), "sp", current_stack_ - from_address);
       if (to_address >= 10 && to_address <= 17) a_reg_valid_[to_address - 10] = true;
     } else {
-      SaveRegister();
-      EmitIA( "addi", "a0", "sp", current_stack_ - to_address);
-      EmitIA( "addi", "a1", "sp", current_stack_ - from_address);
-      EmitLI("a2", type->allocated_size_);
-      os_ << "\tcall\tbuiltin_memcpy\n";
-      // Defer a-reg restore to the block terminator: only invalid a-regs are
-      // restored on-demand; consecutive calls only save valid a-regs.
-      ReloadConstCache();
+      uint32_t sz = type->allocated_size_;
+      if (sz > 0) {
+        std::string dst_ptr = "t1";
+        std::string src_ptr = "t2";
+        EmitIA("addi", dst_ptr, "sp", current_stack_ - to_address);
+        EmitIA("addi", src_ptr, "sp", current_stack_ - from_address);
+        if (!EmitInlineCopy(dst_ptr, src_ptr, sz)) {
+          SaveRegister();
+          EmitIA( "addi", "a0", "sp", current_stack_ - to_address);
+          EmitIA( "addi", "a1", "sp", current_stack_ - from_address);
+          EmitLI("a2", sz);
+          os_ << "\tcall\tbuiltin_memcpy\n";
+          ReloadConstCache();
+        }
+      }
     }
   }
 }
@@ -502,6 +509,44 @@ void AssemblyGenerator::Visit(IRAllocateInstructionNode *node) {
   RegToVariable(node->storage_type_, node->address_, rd, "ptr");
 }
 
+static constexpr uint32_t kInlineCopyThreshold = 128;
+
+bool AssemblyGenerator::EmitInlineCopy(const std::string &dst_ptr,
+                                        const std::string &src_ptr,
+                                        uint32_t size) {
+  if (size > kInlineCopyThreshold) return false;
+  if (size == 0) return true;
+  // Pick a data register that does not conflict with either pointer.
+  // VariableToReg may return "t0" for kMemory pointers; t0/t1/t2 are pure
+  // scratch and never hold promoted variables across instructions.
+  std::string data_reg = "t0";
+  if (dst_ptr == "t0" || src_ptr == "t0") data_reg = "t2";
+  if (dst_ptr == data_reg || src_ptr == data_reg) data_reg = "t1";
+
+  uint32_t offset = 0;
+  while (offset + 8 <= size) {
+    EmitMem("ld", data_reg, src_ptr, static_cast<int32_t>(offset));
+    EmitMem("sd", data_reg, dst_ptr, static_cast<int32_t>(offset));
+    offset += 8;
+  }
+  if (offset + 4 <= size) {
+    EmitMem("lwu", data_reg, src_ptr, static_cast<int32_t>(offset));
+    EmitMem("sw", data_reg, dst_ptr, static_cast<int32_t>(offset));
+    offset += 4;
+  }
+  if (offset + 2 <= size) {
+    EmitMem("lhu", data_reg, src_ptr, static_cast<int32_t>(offset));
+    EmitMem("sh", data_reg, dst_ptr, static_cast<int32_t>(offset));
+    offset += 2;
+  }
+  if (offset + 1 <= size) {
+    EmitMem("lbu", data_reg, src_ptr, static_cast<int32_t>(offset));
+    EmitMem("sb", data_reg, dst_ptr, static_cast<int32_t>(offset));
+    offset += 1;
+  }
+  return true;
+}
+
 void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
   auto ptr_reg = VariableToReg(node->pointer_, 0, "ptr");
   if (node->storage_type_ == kRegister) {
@@ -509,23 +554,27 @@ void AssemblyGenerator::Visit(IRLoadInstructionNode *node) {
     EmitMem( l_ins, "x" + std::to_string(node->address_), ptr_reg, 0);
     if (node->address_ >= 10 && node->address_ <= 17) a_reg_valid_[node->address_ - 10] = true;
   } else {
-    SaveRegister();
-    EmitIA( "addi", "a0", "sp", current_stack_ - node->address_);
-    bool flag = true;
-    for (uint32_t i = 10; i < 18; ++i) {
-      if (SameRegister(i, ptr_reg)) {
-        EnsureARegValid(i);
-        EmitMV("a1", "x" + std::to_string(i));
-        flag = false;
+    uint32_t size = node->type_->allocated_size_;
+    std::string dst_ptr = "t1";
+    EmitIA("addi", dst_ptr, "sp", current_stack_ - node->address_);
+    if (!EmitInlineCopy(dst_ptr, ptr_reg, size)) {
+      SaveRegister();
+      EmitIA( "addi", "a0", "sp", current_stack_ - node->address_);
+      bool flag = true;
+      for (uint32_t i = 10; i < 18; ++i) {
+        if (SameRegister(i, ptr_reg)) {
+          EnsureARegValid(i);
+          EmitMV("a1", "x" + std::to_string(i));
+          flag = false;
+        }
       }
+      if (flag) {
+        EmitMV("a1", ptr_reg);
+      }
+      EmitLI("a2", size);
+      os_ << "\tcall\tbuiltin_memcpy\n";
+      ReloadConstCache();
     }
-    if (flag) {
-      EmitMV("a1", ptr_reg);
-    }
-    EmitLI("a2", node->type_->allocated_size_);
-    os_ << "\tcall\tbuiltin_memcpy\n";
-    // Defer restore to the block terminator (see DataMove).
-    ReloadConstCache();
   }
 }
 
@@ -543,23 +592,28 @@ void AssemblyGenerator::Visit(IRStoreVariableInstructionNode *node) {
     auto [_, s_ins] = LoadStoreType(node->type_->base_type_);
     EmitMem( s_ins, "x" + std::to_string(address), ptr_reg, 0);
   } else {
-    SaveRegister();
-    bool flag = true;
-    for (uint32_t i = 10; i < 18; ++i) {
-      if (SameRegister(i, ptr_reg)) {
-        EnsureARegValid(i);
-        EmitMV("a0", "x" + std::to_string(i));
-        flag = false;
+    uint32_t size = node->type_->allocated_size_;
+    if (size == 0) return;
+    std::string src_ptr = "t1";
+    EmitIA("addi", src_ptr, "sp", current_stack_ - address);
+    if (!EmitInlineCopy(ptr_reg, src_ptr, size)) {
+      SaveRegister();
+      bool flag = true;
+      for (uint32_t i = 10; i < 18; ++i) {
+        if (SameRegister(i, ptr_reg)) {
+          EnsureARegValid(i);
+          EmitMV("a0", "x" + std::to_string(i));
+          flag = false;
+        }
       }
+      if (flag) {
+        EmitMV("a0", ptr_reg);
+      }
+      EmitIA( "addi", "a1", "sp", current_stack_ - address);
+      EmitLI("a2", size);
+      os_ << "\tcall\tbuiltin_memcpy\n";
+      ReloadConstCache();
     }
-    if (flag) {
-      EmitMV("a0", ptr_reg);
-    }
-    EmitIA( "addi", "a1", "sp", current_stack_ - address);
-    EmitLI("a2", node->type_->allocated_size_);
-    os_ << "\tcall\tbuiltin_memcpy\n";
-    // Defer restore to the block terminator (see DataMove).
-    ReloadConstCache();
   }
 }
 
@@ -737,6 +791,37 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
   auto function_node = FunctionMap::Instance().Query(node->function_name_);
   auto size = node->arguments_.size();
 
+  // Inline small builtin_memcpy calls: extract dest, src, size and emit
+  // ld/sd pairs directly, avoiding the call and register save/restore.
+  if (node->function_name_ == "builtin_memcpy" && size == 3) {
+    auto [sz_type, sz_addr] = GetVariableAddress(node->arguments_[2]->value_);
+    if (sz_type == kConst) {
+      uint32_t copy_sz = static_cast<uint32_t>(std::stoul(node->arguments_[2]->value_));
+      if (copy_sz > 0 && copy_sz <= kInlineCopyThreshold) {
+        // Helper to resolve a pointer argument to a register string.
+        auto resolve_ptr = [&](const std::string &val, const std::string &tmp_reg) -> std::string {
+          auto [ty, addr] = GetVariableAddress(val);
+          if (ty == kRegister) {
+            if (addr >= 10 && addr <= 17) EnsureARegValid(addr);
+            return "x" + std::to_string(addr);
+          } else if (ty == kConst) {
+            // Constant address: load it into the temp register
+            EmitLI(tmp_reg, val);
+            return tmp_reg;
+          } else {
+            // kMemory: the pointer value is stored on the stack — load it
+            EmitMem("ld", tmp_reg, "sp", current_stack_ - addr);
+            return tmp_reg;
+          }
+        };
+        std::string dst_ptr = resolve_ptr(node->arguments_[0]->value_, "t1");
+        std::string src_ptr = resolve_ptr(node->arguments_[1]->value_, "t2");
+        EmitInlineCopy(dst_ptr, src_ptr, copy_sz);
+        return;
+      }
+    }
+  }
+
   SaveRegister();
 
   // operate the memory to memory in advance, using builtin_memcpy
@@ -744,14 +829,19 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
     auto para = function_node->parameters_[i];
     auto [type, address] = GetVariableAddress(node->arguments_[i]->value_);
     if (type == kMemory && para->storage_type_ == kMemory) {
-      EmitIA( "addi", "a0", "sp", -static_cast<int32_t>(para->address_));
-      EmitIA( "addi", "a1", "sp", current_stack_ - address);
-      EmitLI("a2", para->type_->allocated_size_);
-      os_ << "\tcall\tbuiltin_memcpy\n";
-      // The call clobbered t3/t4; reload the cached constants (don't clear the
-      // map — SaveRegister/FlushSavedRegisters EmitMem may rely on the cached
-      // offsets, which must stay valid across the loop body and beyond).
-      ReloadConstCache();
+      uint32_t sz = para->type_->allocated_size_;
+      if (sz == 0) continue;
+      std::string dst_ptr = "t1";
+      std::string src_ptr = "t2";
+      EmitIA("addi", dst_ptr, "sp", -static_cast<int32_t>(para->address_));
+      EmitIA("addi", src_ptr, "sp", current_stack_ - address);
+      if (!EmitInlineCopy(dst_ptr, src_ptr, sz)) {
+        EmitIA( "addi", "a0", "sp", -static_cast<int32_t>(para->address_));
+        EmitIA( "addi", "a1", "sp", current_stack_ - address);
+        EmitLI("a2", sz);
+        os_ << "\tcall\tbuiltin_memcpy\n";
+        ReloadConstCache();
+      }
     }
   }
 

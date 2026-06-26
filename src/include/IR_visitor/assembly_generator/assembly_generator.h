@@ -102,4 +102,8 @@ private:
 
   // GEP chain folding: compute the byte offset for a constant-index GEP.
   uint32_t ComputeGEPOffset(class IRGetElementPtrInstructionNode *node);
+
+  // Emit inline memory copy using ld/sd pairs. Returns true if inlined;
+  // returns false if size exceeds threshold (caller should use builtin_memcpy).
+  bool EmitInlineCopy(const std::string &dst_ptr, const std::string &src_ptr, uint32_t size);
 };
