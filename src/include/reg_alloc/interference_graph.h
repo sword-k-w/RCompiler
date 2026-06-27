@@ -33,6 +33,9 @@ public:
   void Coalesce(uint32_t k);
   const std::unordered_map<uint32_t, uint32_t> &GetPhysRegs() const { return phys_reg_; }
 
+  // Variables that are live at any call site — cannot use t5 (call-clobbered).
+  std::unordered_set<uint32_t> call_crossing_vars_;
+
 private:
   std::unordered_map<uint32_t, std::unordered_set<uint32_t>> adjacency_;
   std::unordered_map<uint32_t, uint32_t> precolored_;

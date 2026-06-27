@@ -16,9 +16,10 @@
 // only saves the specific a-regs that are live, not all a-regs unconditionally.
 static const std::vector<uint32_t> kColorPool = {
     9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,  // s1-s11
-    10, 11, 12, 13, 14, 15, 16, 17                 // a0-a7
+    10, 11, 12, 13, 14, 15, 16, 17,              // a0-a7
+    30                                            // t5 (call-clobbered, for values not crossing calls)
 };
-static const uint32_t kNumColors = 19;
+static const uint32_t kNumColors = 20;
 
 // Leaf functions (no calls) can safely use caller-saved registers for
 // promoted variables since they're never clobbered.  We build a pool
@@ -255,6 +256,14 @@ void RegAlloc::Visit(IRFunctionNode *node) {
     }
   }
 
+  // Populate call-crossing vars: any variable live at any call site
+  // cannot use t5 (register 30), which is caller-saved.
+  for (auto &[call, live] : call_live_sets) {
+    live.ForEach([&](uint32_t var_id) {
+      ig.call_crossing_vars_.insert(var_id);
+    });
+  }
+
   bool is_leaf = !node->has_calls_;
   auto color_pool = is_leaf ? LeafColorPool(node) : kColorPool;
   uint32_t num_colors = color_pool.size();
@@ -316,6 +325,20 @@ void RegAlloc::Visit(IRFunctionNode *node) {
     }
   }
   node->a_reg_used_cnt_ = max_a_reg_used;
+
+  // Compute per-block live-in a-reg masks for selective save/restore.
+  for (auto &block : node->blocks_) {
+    uint32_t mask = 0;
+    block->in_.ForEach([&](uint32_t var_id) {
+      if (ig.HasPhysReg(var_id)) {
+        uint32_t pr = ig.GetPhysReg(var_id);
+        if (pr >= 10 && pr <= 17) {
+          mask |= (1u << (pr - 10));
+        }
+      }
+    });
+    block->live_in_a_regs_mask_ = mask;
+  }
 
   // 6. Assign stack addresses to kMemory variables.  MemoryAllocator
   // recorded sizes but deferred address assignment until after reg_alloc so

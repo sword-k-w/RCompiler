@@ -178,6 +178,11 @@ std::set<uint32_t> InterferenceGraph::Color(uint32_t k, const std::vector<uint32
         neighbor_colors.insert(phys_reg_[neighbor]);
       }
     }
+    // t5 (reg 30) is caller-saved; forbid it for variables that cross
+    // call sites (they would be clobbered by the call).
+    if (call_crossing_vars_.count(id)) {
+      neighbor_colors.insert(30);
+    }
 
     bool assigned = false;
     for (auto color : colors) {

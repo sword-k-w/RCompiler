@@ -544,6 +544,10 @@ private:
   BitSet in_;
   BitSet out_;
 
+  // Bitmask of a-regs (a0-a7, bits 0-7) that hold live-in values
+  // at this block.  Computed by RegAlloc after coloring.
+  uint32_t live_in_a_regs_mask_ = 0;
+
   std::vector<std::shared_ptr<IRPhiInstructionNode>> phi_;
 };
 
