@@ -385,15 +385,126 @@ void RegAlloc::Visit(IRFunctionNode *node) {
       cur = addr;
     }
 
-    // Remaining kMemory variables from variable_storage_, in name order
-    // for deterministic layout.
+    // Frequency-aware layout: hot variables (most accessed) are assigned
+    // LAST so they get the largest `address_` values.  Since access offset
+    // from sp is `current_stack_ - address_`, large addresses → small
+    // offsets → 1-instruction `ld/sd off(sp)` (no `li t6, ...; add t6, t6, sp`
+    // detour).
+    //
+    // Frequency is counted as the total number of (def + use) appearances of
+    // each variable name across all non-removed instructions, weighted by
+    // a per-block multiplier: 10× for blocks that are loop headers (have
+    // any predecessor with a higher block id, i.e. a back-edge), 1× otherwise.
+    // Loop bodies execute many times per outer iteration, so their variables
+    // should sit closest to sp.
+    //
+    // Predecessors are derived from each block's terminator (jump.destination_,
+    // branch.true_branch_/false_branch_) since IRBlockNode doesn't store them.
+    std::unordered_map<uint32_t, std::vector<uint32_t>> preds;
+    for (auto &block : node->blocks_) {
+      for (auto &ins : block->instructions_) {
+        if (ins->removed_) continue;
+        if (auto *jmp = dynamic_cast<IRJumpInstructionNode *>(ins.get())) {
+          preds[jmp->destination_].push_back(block->id_);
+        } else if (auto *br = dynamic_cast<IRBranchInstructionNode *>(ins.get())) {
+          preds[br->true_branch_].push_back(block->id_);
+          preds[br->false_branch_].push_back(block->id_);
+        }
+      }
+    }
+    std::unordered_map<uint32_t, uint32_t> block_weight;
+    for (auto &block : node->blocks_) {
+      uint32_t w = 1;
+      auto it = preds.find(block->id_);
+      if (it != preds.end()) {
+        for (auto pred_id : it->second) {
+          if (pred_id > block->id_) { w = 10; break; }
+        }
+      }
+      block_weight[block->id_] = w;
+    }
+
+    std::unordered_map<std::string, uint64_t> freq;
+    for (auto &block : node->blocks_) {
+      uint32_t w = block_weight[block->id_];
+      for (auto &ins : block->instructions_) {
+        if (ins->removed_) continue;
+        for (auto id : ins->def_) {
+          auto [not_alloc, name] = cfg->GetName(id);
+          if (not_alloc && !name.empty() && name[0] == '%') freq[name] += w;
+        }
+        for (auto id : ins->use_) {
+          auto [not_alloc, name] = cfg->GetName(id);
+          if (not_alloc && !name.empty() && name[0] == '%') freq[name] += w;
+        }
+      }
+    }
+
+    auto get_freq = [&](const std::string &n) -> uint64_t {
+      auto it = freq.find(n);
+      return it == freq.end() ? 0 : it->second;
+    };
+
+    // Remaining kMemory variables from variable_storage_, sorted by
+    // frequency ASCENDING (cold first → small address → large sp-offset,
+    // hot last → large address → small sp-offset).  Name break-ties for
+    // determinism.
     std::vector<std::string> mem_names;
     for (auto &[name, storage] : node->variable_storage_) {
       if (storage.first == kMemory && !assigned.count(name)) {
         mem_names.push_back(name);
       }
     }
-    std::sort(mem_names.begin(), mem_names.end());
+    std::sort(mem_names.begin(), mem_names.end(),
+              [&](const std::string &a, const std::string &b) {
+                uint64_t fa = get_freq(a), fb = get_freq(b);
+                if (fa != fb) return fa < fb;
+                return a < b;
+              });
+
+    // Layout decision: place ALLOCAS first (low cur → high sp-offset, expensive),
+    // and kMemory scalar variables LAST (high cur → low sp-offset, cheap).
+    //
+    // Rationale: arrays are accessed via load(pointer_slot) → add index → load.
+    // Each access loads the pointer slot, which is a kMemory scalar variable.
+    // Making pointer slots cheap (1-instruction `ld off(sp)`) saves 2 instructions
+    // per array access.  In a hot loop with N array reads per iteration this
+    // dominates the one-time array base computation cost at function entry.
+    //
+    // The array DATA itself sits at a fixed offset; only the hottest small arrays
+    // (reg, scratch) will fit in the cheap range after allocas.  Per-element
+    // accesses still need `add base, index` regardless.
+
+    // Alloca inner data: sort by frequency of the alloca's result name
+    // (the pointer that GEPs load to compute element addresses) so hot
+    // arrays' data sits closest to sp.  Result-name frequency tracks
+    // GEP loads of the pointer, which is proportional to indexed accesses.
+    std::vector<IRAllocateInstructionNode *> allocas;
+    for (auto &block : node->blocks_) {
+      for (auto &ins : block->instructions_) {
+        if (ins->removed_) continue;
+        auto *alloca = dynamic_cast<IRAllocateInstructionNode *>(ins.get());
+        if (!alloca) continue;
+        allocas.push_back(alloca);
+      }
+    }
+    std::sort(allocas.begin(), allocas.end(),
+              [&](IRAllocateInstructionNode *a, IRAllocateInstructionNode *b) {
+                uint64_t fa = get_freq(a->result_), fb = get_freq(b->result_);
+                if (fa != fb) return fa < fb;
+                return a->result_ < b->result_;
+              });
+    for (auto *alloca : allocas) {
+      uint32_t sz = Align8(alloca->type_->allocated_size_);
+      uint32_t addr = cur + sz;
+      alloca->inner_address_ = addr;
+      cur = addr;
+    }
+
+    // kMemory scalar variables LAST so they get the largest addresses
+    // (smallest sp-offsets).  Total kMemory scalar size is typically a few
+    // hundred bytes, so this packs the entire scalar zone into the cheap
+    // [0, 2047] offset range.
     for (auto &name : mem_names) {
       auto sit = node->variable_size_.find(name);
       if (sit == node->variable_size_.end()) continue;
@@ -401,19 +512,6 @@ void RegAlloc::Visit(IRFunctionNode *node) {
       uint32_t addr = cur + sz;
       node->variable_storage_[name] = {kMemory, addr};
       cur = addr;
-    }
-
-    // Alloca inner data (always in memory), in block/instruction order
-    for (auto &block : node->blocks_) {
-      for (auto &ins : block->instructions_) {
-        if (ins->removed_) continue;
-        auto *alloca = dynamic_cast<IRAllocateInstructionNode *>(ins.get());
-        if (!alloca) continue;
-        uint32_t sz = Align8(alloca->type_->allocated_size_);
-        uint32_t addr = cur + sz;
-        alloca->inner_address_ = addr;
-        cur = addr;
-      }
     }
     node->stack_size_ = cur;
 

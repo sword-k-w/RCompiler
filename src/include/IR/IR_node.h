@@ -149,6 +149,7 @@ class IRBranchInstructionNode : public IRInstructionNode {
   friend class CFGBuilder;
   friend class CFG;
   friend class FunctionInliner;
+  friend class RegAlloc;
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
@@ -173,6 +174,7 @@ class IRJumpInstructionNode : public IRInstructionNode {
   friend class AssemblyGenerator;
   friend class CFGBuilder;
   friend class FunctionInliner;
+  friend class RegAlloc;
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
   friend void ReplacePhiWithMoves(std::shared_ptr<IRRootNode>);
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
