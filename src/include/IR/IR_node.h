@@ -101,6 +101,7 @@ class IRArithmeticInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
   friend void EliminateEmptyBlocks(std::shared_ptr<IRRootNode>);
 public:
   IRArithmeticInstructionNode() = delete;
@@ -128,6 +129,7 @@ class IRNegationInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRNegationInstructionNode() = delete;
   IRNegationInstructionNode(const std::string &, const bool &, const std::string &, const std::string &);
@@ -153,6 +155,7 @@ class IRBranchInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRBranchInstructionNode() = delete;
   IRBranchInstructionNode(const std::string &, const uint32_t &, const uint32_t &);
@@ -196,6 +199,7 @@ class IRReturnInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRReturnInstructionNode();
   IRReturnInstructionNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -243,6 +247,7 @@ class IRLoadInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRLoadInstructionNode() = delete;
   IRLoadInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &);
@@ -266,6 +271,7 @@ class IRStoreVariableInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRStoreVariableInstructionNode() = delete;
   IRStoreVariableInstructionNode(std::shared_ptr<IRArrayNode>, const std::string &, const std::string &);
@@ -289,6 +295,7 @@ class IRStoreConstInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRStoreConstInstructionNode() = delete;
   IRStoreConstInstructionNode(const std::string &, const int32_t &, const std::string &);
@@ -311,6 +318,7 @@ class IRGetElementPtrInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRGetElementPtrInstructionNode() = delete;
   IRGetElementPtrInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &, const uint32_t &);
@@ -335,6 +343,7 @@ class IRGetElementPtrPrimeInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRGetElementPtrPrimeInstructionNode() = delete;
   IRGetElementPtrPrimeInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &, const std::string &);
@@ -358,6 +367,7 @@ class IRCompareInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   enum Operator {
     kEq, kNe, kUgt, kUge, kUlt, kUle, kSgt, kSge, kSlt, kSle
@@ -386,6 +396,7 @@ class IRArgumentNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRArgumentNode() = delete;
   IRArgumentNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -408,6 +419,7 @@ class IRCallInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRCallInstructionNode() = delete;
   IRCallInstructionNode(const std::string &, std::shared_ptr<IRArrayNode>, const std::string &);
@@ -463,6 +475,7 @@ class IRMoveInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRMoveInstructionNode() = delete;
   IRMoveInstructionNode(const std::string &dest, const std::string &src,
@@ -486,6 +499,7 @@ class IRSelectInstructionNode : public IRInstructionNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRSelectInstructionNode() = delete;
   IRSelectInstructionNode(const std::string &, const std::string &);
@@ -511,6 +525,7 @@ class IRBlockNode : public IRNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRBlockNode() = delete;
   explicit IRBlockNode(const uint32_t &);
@@ -544,6 +559,7 @@ class IRParameterNode : public IRNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRParameterNode() = delete;
   IRParameterNode(std::shared_ptr<IRArrayNode>, const std::string &);
@@ -571,6 +587,7 @@ class IRFunctionNode : public IRNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRFunctionNode() = delete;
   IRFunctionNode(std::shared_ptr<IRArrayNode>, const std::string &, bool);
@@ -611,8 +628,7 @@ class IRRootNode : public IRNode {
   friend void SCCP(std::shared_ptr<IRRootNode>);
   friend class SCCPer;
   friend class CSEr;
-  friend class SCCPer;
-  friend class CSEr;
+  friend class ParameterDemoter;
 public:
   IRRootNode() = default;
   void AddStruct(std::shared_ptr<IRStructNode>);

@@ -177,7 +177,13 @@ void RegAlloc::Visit(IRFunctionNode *node) {
       // Collect move pairs for coalescing
       if (auto *mv = dynamic_cast<IRMoveInstructionNode *>(ins)) {
         if (!mv->def_.empty() && !mv->use_.empty()) {
-          ig.AddMovePair(*mv->use_.begin(), *mv->def_.begin());
+          uint32_t src_id = *mv->use_.begin();
+          // Skip parameter-demotion moves: demoted copies should get
+          // s-regs when beneficial, not coalesce back to the precolored
+          // a-reg of the original parameter.
+          if (!precolored_ids.Test(src_id)) {
+            ig.AddMovePair(src_id, *mv->def_.begin());
+          }
         }
       }
 
