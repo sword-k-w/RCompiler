@@ -100,18 +100,21 @@ The driver lives in `test/codegen_submit.cpp`.
 
 ## Stack frame layout
 
-s-regs at the bottom (sp), a-reg/ra at the top (within 72 bytes). The two areas never overlap.
+Hot-region-first: s-reg saves and the a-reg/ra save area sit at the bottom (small sp-offsets, 1-instruction `sd/ld off(sp)`). Variables and allocas are sorted by access frequency so the most-accessed scalars and pointer slots also pack into the cheap 12-bit window.
 
 ```
 High addresses (sp + total_stack):
   ┌──────────────────────────────┐
-  │ a0 save             (off  8) │ ┐
-  │ a1 save             (off 16) │ │ SaveRegister (packed tightly,
-  │ ...                          │ │ no t-reg space — t-regs are
-  │ a7 save             (off 64) │ │ caller-saved scratch, dead
-  │ ra save             (off 72) │ ┘ after each instruction)
-  ├──────────────────────────────┤ ← top of stack_size_
-  │ local variables & spills     │ ← assigned after reg_alloc
+  │                              │
+  │ variables and allocas         │  RegAlloc sorts by access frequency:
+  │  (cold first, hot last)       │   1. allocas (hot last → smallest offset)
+  │                              │   2. kMemory scalars (hot last)
+  │                              │
+  ├──────────────────────────────┤ ← sp + s_save + a_save
+  │ ra save                       │  a-reg/ra save area (non-leaf only)
+  │ a(N-1) save                   │   slot for a-reg i: sp + s_save + 8*i
+  │ ...                          │   slot for ra:      sp + s_save + 8*N
+  │ a0 save                       │
   ├──────────────────────────────┤ ← sp + s_save
   │ s1 save             (off  0) │ ┐ prologue: s-regs at
   │ s2 save             (off  8) │ │ sp + 0, 8, 16, ...
@@ -120,12 +123,18 @@ High addresses (sp + total_stack):
 Low addresses (sp):
 ```
 
-- `s_save = 8 * |used_s_regs|`, `total_stack = stack_size_ + s_save`.
-- `total_stack` rounded up to a multiple of 16 for RISC-V ABI compliance.
-- Leaf functions (no calls) skip the entire a-reg/ra save area.
-- Memory addresses assigned after reg_alloc: only `kMemory` variables get stack slots.
+- `s_save = 8 * |used_s_regs|`.
+- `a_save = 8 * (a_reg_used_cnt_ + 1)` for non-leaf functions, else 0.
+- `total_stack = stack_size_ + s_save + a_save`, rounded up to 16 for RISC-V ABI compliance.
+- `current_stack_ = total_stack`. Variable access: `sp + (current_stack_ - address)`.
+- Save slots are at low offsets (≤ s_save + 72), so every per-call `sd/ld` is a single instruction instead of the previous `li t6, off; add t6, t6, sp; sd/ld 0(t6)`.
+- Memory addresses assigned after reg_alloc: only `kMemory` variables get stack slots, sorted by access frequency.
 - `i32` slot size is 4 bytes (not 8).
 - t3/t4 constants reloaded via `li` after calls, not saved to memory.
+
+### Frequency-aware layout
+
+RegAlloc walks every non-removed instruction's def/use sets to count per-variable accesses, weighted 10× for blocks that look like loop bodies (a predecessor with a higher block id, i.e. a back-edge). Allocas and kMemory scalars are then assigned addresses sorted by this score — hot variables get the largest addresses and therefore the smallest sp-offsets. For a typical function the entire kMemory scalar zone (including every array's pointer slot) fits into [0, 2047] sp-offsets, dropping each array-element load from 6 instructions to 4.
 
 ## Key optimizations
 

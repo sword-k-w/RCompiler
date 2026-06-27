@@ -145,39 +145,54 @@ Phis in the same block are calculated in parallel (see `codegen/phi_topo.cpp`).
 
 ### Stack frame layout (codegen)
 
-s-reg saves live at the bottom of the frame (near sp), a-reg/ra saves at the top (within a 72-byte reserved area). The two areas never overlap.
+The frame is laid out so that the most-accessed regions sit closest to sp, where load/store offsets fit in a 12-bit immediate (range `-2048..2047`) and lower to a single `sd/ld off(sp)` instruction. Anything past the 12-bit window requires `li t6, off; add t6, t6, sp; sd/ld 0(t6)` (3 instructions) and is reserved for cold variables and the array-data zone.
 
 ```
 High addresses (sp + total_stack):
   ┌──────────────────────────────┐
-  │ a0 save             (off  8) │ ┐
-  │ a1 save             (off 16) │ │ SaveRegister / RestoreRegister
-  │ ...                          │ │ packed tightly: no t-reg space
-  │ a7 save             (off 64) │ │ t-regs are caller-saved scratch,
-  │ ra save             (off 72) │ ┘   dead after each instruction
-  ├──────────────────────────────┤ ← top of original stack_size_
   │                              │
-  │ local variables & spills     │ ← assigned after reg_alloc
+  │ variables and allocas         │ ← assigned by RegAlloc:
+  │  (cold scalars,               │   1. allocas (sorted by freq, hot last
+  │   array data,                 │      so the hottest sit closest to sp)
+  │   hot scalars near the        │   2. kMemory scalars (sorted by freq,
+  │   low end of this band)       │      hot last → small sp-offsets)
   │                              │
-  ├──────────────────────────────┤ ← bottom of variable area (sp + s_save)
-  │ s1 save             (off  0) │ ┐ prologue / epilogue: s-regs
-  │ s2 save             (off  8) │ │ packed at sp + 0, 8, 16, ...
+  ├──────────────────────────────┤ ← sp + s_save + a_save
+  │ ra save              (off +N)│ ┐ a-reg/ra save area
+  │ a(N-1) save                  │ │ Save slot for a-reg i:
+  │ ...                          │ │   sp + s_save + 8*i
+  │ a0 save     (off s_save + 0) │ │ Save slot for ra:
+  │                              │ ┘   sp + s_save + 8*current_a_reg_used_
+  ├──────────────────────────────┤ ← sp + s_save (non-leaf only)
+  │ s1 save             (off  0) │ ┐ prologue / epilogue: s-regs packed
+  │ s2 save             (off  8) │ │ tightly at sp + 0, 8, 16, ...
   │ ...                          │ ┘
   └──────────────────────────────┘
 Low addresses (sp):
 ```
 
-- `s_save = 8 * |used_s_regs|`, `total_stack = stack_size_ + s_save`.
-- `total_stack` is rounded up to the nearest multiple of 16 for RISC-V ABI compliance.
-- s-regs at `sp + 0, sp + 8, ...` (bottom of frame).
-- a-regs at `current_stack_ - 8 - 8*i`, ra at `current_stack_ - 8 - 8*current_a_reg_used_` (top of frame).
-- t-regs are pure scratch (caller-saved, dead after each instruction), no save space reserved.
+- `s_save = 8 * |used_s_regs|`.
+- `a_save = 8 * (a_reg_used_cnt_ + 1)` for non-leaf functions (`has_calls_`), else 0.
+- `total_stack = stack_size_ + s_save + a_save`, rounded up to the nearest multiple of 16 for RISC-V ABI compliance.
+- `current_stack_ = total_stack`. Variable access: `sp + (current_stack_ - address)`.
+- Save slots: `sp + save_area_base_ + 8*i`, where `save_area_base_ = s_save`. With `a_save ≤ 72`, every save/restore lands in the cheap 12-bit window — the same offset that used to cost 3 instructions now costs 1.
+- t-regs are pure scratch (caller-saved, dead after each instruction); no save space reserved.
 - t3/t4 constants are reloaded via `li` after calls, not saved to memory.
-- Variable access: `sp + current_stack_ - address`.
 
 ### Memory allocation
 
 MemoryAllocator records sizes without assigning addresses. After RegAlloc promotes scalar variables to registers, only variables still in memory (`kMemory`) receive contiguous stack addresses. Promoted variables never occupy stack space, so no compaction is needed. `i32` slot size is **4 bytes** (not 8), to keep struct/array storage and stack memcpy budgets tight.
+
+### Frequency-aware address assignment (RegAlloc step 6)
+
+Stack addresses are assigned in two phases, both sorted by access frequency (ascending — hot last → largest address → smallest sp-offset):
+
+1. **Allocas** first (low addresses → high sp-offsets, expensive). Hottest allocas placed last so their data sits closest to sp.
+2. **kMemory scalar variables** last (highest addresses → smallest sp-offsets, cheap).
+
+Frequency is counted by walking every non-removed instruction's `def_`/`use_` sets, weighted by a per-block multiplier: 10× for blocks that look like loop headers (any predecessor with a higher block id, i.e. a back-edge), 1× otherwise. The check is cheap and approximates "this block is inside a loop" using IR-generation order, which is roughly topological for `while`/`loop` constructs.
+
+The kMemory-scalar zone is typically a few hundred bytes for run_filter-sized functions, so the entire scalar zone — including every array's pointer slot — packs into the cheap [0, 2047] sp-offset range. Each pointer-slot access (one per array-element read) drops from 3 instructions to 1.
 
 ### Leaf function optimizations
 
