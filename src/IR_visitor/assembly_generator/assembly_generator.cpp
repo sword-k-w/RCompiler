@@ -1215,26 +1215,85 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
           add_const(v);
         }
       };
+      // For a name that resolves to a kMemory variable, count the stack
+      // offset (current_stack_ - addr) that any ld/sd against that slot
+      // will emit.  This is what makes hoisting these offsets into t3/t4
+      // pay off: each cached offset avoids `li t6, X; add t6, t6, sp`
+      // (2 ins) at every load and store of the slot, replaced by a single
+      // `add t6, t3, sp`.
+      auto scan_var = [&](const std::string &s) {
+        if (s.empty() || s[0] != '%') return;
+        auto it = node->variable_storage_.find(s);
+        if (it == node->variable_storage_.end()) return;
+        if (it->second.first != kMemory) return;
+        int64_t off = static_cast<int64_t>(current_stack_) -
+                      static_cast<int64_t>(it->second.second);
+        add_const(off);
+      };
       for (auto &block : node->blocks_) {
         for (auto &ins : block->instructions_) {
           if (ins->removed_) continue;
-          if (auto *p = dynamic_cast<IRArithmeticInstructionNode *>(ins.get())) {
+          IRInstructionNode *i = ins.get();
+          if (auto *p = dynamic_cast<IRArithmeticInstructionNode *>(i)) {
             scan(p->operand1_); scan(p->operand2_);
-          } else if (auto *p = dynamic_cast<IRCompareInstructionNode *>(ins.get())) {
+            scan_var(p->operand1_); scan_var(p->operand2_); scan_var(p->result_);
+          } else if (auto *p = dynamic_cast<IRCompareInstructionNode *>(i)) {
             scan(p->operand1_); scan(p->operand2_);
-          } else if (auto *p = dynamic_cast<IRStoreConstInstructionNode *>(ins.get())) {
+            scan_var(p->operand1_); scan_var(p->operand2_); scan_var(p->result_);
+          } else if (auto *p = dynamic_cast<IRStoreConstInstructionNode *>(i)) {
             add_const(p->value_);
+            scan_var(p->pointer_);
+          } else if (auto *p = dynamic_cast<IRStoreVariableInstructionNode *>(i)) {
+            scan_var(p->pointer_); scan_var(p->value_);
+          } else if (auto *p = dynamic_cast<IRLoadInstructionNode *>(i)) {
+            scan_var(p->pointer_); scan_var(p->result_);
+          } else if (auto *p = dynamic_cast<IRGetElementPtrInstructionNode *>(i)) {
+            scan_var(p->ptrval_); scan_var(p->result_);
+          } else if (auto *p = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(i)) {
+            scan_var(p->ptrval_); scan(p->index_); scan_var(p->index_); scan_var(p->result_);
+          } else if (auto *p = dynamic_cast<IRNegationInstructionNode *>(i)) {
+            scan_var(p->operand_); scan_var(p->result_);
+          } else if (auto *p = dynamic_cast<IRMoveInstructionNode *>(i)) {
+            scan_var(p->source_); scan_var(p->result_);
+          } else if (auto *p = dynamic_cast<IRCallInstructionNode *>(i)) {
+            for (auto &arg : p->arguments_) {
+              scan(arg->value_);
+              scan_var(arg->value_);
+            }
+            if (!p->result_type_->IsEmpty()) scan_var(p->result_);
+          } else if (auto *p = dynamic_cast<IRBranchInstructionNode *>(i)) {
+            scan_var(p->condition_);
+          } else if (auto *p = dynamic_cast<IRReturnInstructionNode *>(i)) {
+            if (!p->type_->IsEmpty()) scan_var(p->name_);
+          } else if (auto *p = dynamic_cast<IRSelectInstructionNode *>(i)) {
+            scan_var(p->cond_); scan_var(p->result_);
           }
         }
       }
       // Also count stack offsets used by SaveRegister/FlushSavedRegisters.
       // These are used every time a call is made, so they can be very frequent.
       // Only add if the function actually has a stack frame and makes calls.
+      // Weight by call count — each call site emits each save offset twice
+      // (once in SaveRegister, once in RestoreRegister/FlushSavedRegisters),
+      // so a function with many calls will load/store these offsets far more
+      // often than any individual kMemory variable's slot.
       if (current_stack_ > 0 && node->a_reg_used_cnt_ > 0) {
-        for (uint32_t i = 0; i < node->a_reg_used_cnt_; ++i) {
-          add_const(static_cast<int32_t>(current_stack_ - 8 - 8 * i));
+        uint32_t save_weight = 0;
+        for (auto &block : node->blocks_) {
+          for (auto &ins : block->instructions_) {
+            if (ins->removed_) continue;
+            if (dynamic_cast<IRCallInstructionNode *>(ins.get())) ++save_weight;
+            // Struct/array Load/Store/Move that lower to builtin_memcpy
+            // also save/restore, but only large ones — skip for simplicity.
+          }
         }
-        add_const(static_cast<int32_t>(current_stack_ - 8 - 8 * node->a_reg_used_cnt_));  // ra offset
+        save_weight = save_weight > 0 ? save_weight * 2 : 1;
+        for (uint32_t i = 0; i < node->a_reg_used_cnt_; ++i) {
+          int64_t off = static_cast<int32_t>(current_stack_ - 8 - 8 * i);
+          if (off < -2048 || off > 2047) const_freq[off] += save_weight;
+        }
+        int64_t ra_off = static_cast<int32_t>(current_stack_ - 8 - 8 * node->a_reg_used_cnt_);
+        if (ra_off < -2048 || ra_off > 2047) const_freq[ra_off] += save_weight;
       }
 
       // Sort by frequency (descending) and pick top 2.
