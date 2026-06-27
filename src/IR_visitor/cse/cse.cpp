@@ -10,20 +10,8 @@
 // Eliminates redundant address computations: if two GEP/GEPP instructions in
 // the same basic block compute the same address (same base pointer, same
 // index, same type), the second is removed and all uses are redirected to
-// the first.
-//
-// KNOWN ISSUE: excessive CSE replacements (>~200 per function) can cause
-// runtime errors in generated assembly on complex tests.  The root cause is
-// not fully understood — investigation narrowed it to a downstream pass
-// (not CSE itself) being sensitive to the number of replaced instructions.
-// As a safety measure, we cap the number of replacements per function at
-// kMaxTransforms (200).  This gives ~95% of the optimization benefit while
-// avoiding the bug.  See git history for the full debugging session.
+// the first.  Phi incoming values are also updated.
 // ─────────────────────────────────────────────────────────────────────────────
-
-namespace {
-  constexpr int kMaxTransforms = 2000000;
-}
 
 // ─── CSEr: friended class that does all the work ───────────────────────
 
@@ -153,7 +141,6 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
   // operand names.  A final sweep applies renames cross-block and to phi
   // incoming values.
   std::unordered_map<std::string, std::string> renames;
-  int transform_count = 0;
 
   auto resolve = [&](const std::string &name) -> std::string {
     auto it = renames.find(name);
@@ -186,8 +173,6 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
 
       auto it = available.find(key);
       if (it != available.end()) {
-        if (transform_count >= kMaxTransforms) continue;  // safety cap
-
         // Pre-compute the type size before removing the instruction
         // (the Preprocessor may never visit this type otherwise).
         if (auto *gep = dynamic_cast<IRGetElementPtrInstructionNode *>(ins.get()))
@@ -198,7 +183,6 @@ void CSEr::RunOnFunction(IRFunctionNode *func) {
         std::string old_result = GetResultName(ins.get());
         renames[old_result] = it->second;
         ins->removed_ = true;
-        ++transform_count;
       } else {
         available[key] = GetResultName(ins.get());
       }
