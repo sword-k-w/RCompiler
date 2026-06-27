@@ -22,7 +22,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 namespace {
-  constexpr int kMaxTransforms = 200;
+  constexpr int kMaxTransforms = 2000000;
 }
 
 // ─── CSEr: friended class that does all the work ───────────────────────
