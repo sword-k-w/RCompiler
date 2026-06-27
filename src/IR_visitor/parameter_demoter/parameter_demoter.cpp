@@ -83,11 +83,12 @@ void ParameterDemoter::RunOnFunction(IRFunctionNode *func) {
     // Register the new variable in the function's maps.
     func->variables_[it->demoted_name] = move.get();
     func->variable_storage_[it->demoted_name] = {kMemory, 0};
-    // Copy size from the original parameter.
+    // Copy size from the original parameter.  Fall back to 8 bytes
+    // (aligned max scalar size) if the parameter has no recorded size,
+    // so the RegAlloc address assignment doesn't skip this variable.
     auto size_it = func->variable_size_.find(it->param->name_);
-    if (size_it != func->variable_size_.end()) {
-      func->variable_size_[it->demoted_name] = size_it->second;
-    }
+    uint32_t sz = (size_it != func->variable_size_.end()) ? size_it->second : 8;
+    func->variable_size_[it->demoted_name] = sz;
   }
 
   // Rename all uses of the original parameter names to the demoted names
@@ -108,5 +109,29 @@ void ParameterDemoter::RunOnFunction(IRFunctionNode *func) {
 void ParameterDemoter::Run(std::shared_ptr<IRRootNode> root) {
   for (auto &func : root->functions_) {
     RunOnFunction(func.get());
+  }
+}
+
+void ParameterDemoter::FixupAfterRegAlloc(std::shared_ptr<IRRootNode> root) {
+  // After RegAlloc, sync move instruction destination addresses with
+  // variable_storage_.  The move instructions created by parameter
+  // demotion have address_=0 (top of frame), but RegAlloc step 6
+  // assigns proper stack addresses for spilled variables.  Sync them.
+  for (auto &func : root->functions_) {
+    if (func->IsBuiltin()) continue;
+    for (auto &block : func->blocks_) {
+      for (auto &ins : block->instructions_) {
+        if (ins->removed_) continue;
+        auto *mv = dynamic_cast<IRMoveInstructionNode *>(ins.get());
+        if (!mv) continue;
+        if (mv->storage_type_ != kMemory) continue;  // promoted, fine
+        if (mv->address_ != 0) continue;  // already has a proper address
+
+        auto it = func->variable_storage_.find(mv->result_);
+        if (it != func->variable_storage_.end() && it->second.first == kMemory) {
+          mv->address_ = it->second.second;
+        }
+      }
+    }
   }
 }

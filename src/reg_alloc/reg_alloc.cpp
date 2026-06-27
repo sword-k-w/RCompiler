@@ -410,6 +410,17 @@ void RegAlloc::Visit(IRFunctionNode *node) {
           continue;
         }
 
+        // Move instructions: look up by result_ name directly.
+        // Sync both address and storage_type from variable_storage_.
+        if (auto *mv = dynamic_cast<IRMoveInstructionNode *>(ins.get())) {
+          auto it = node->variable_storage_.find(mv->result_);
+          if (it != node->variable_storage_.end()) {
+            ins->storage_type_ = it->second.first;
+            ins->address_ = it->second.second;
+          }
+          continue;
+        }
+
         // Other kMemory instructions: use CFG def ID -> variable name
         if (ins->def_.empty()) continue;
         uint32_t def_id = *ins->def_.begin();

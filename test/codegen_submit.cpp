@@ -77,6 +77,7 @@ void TestCode(const std::string &code, std::ostream &out) {
     ParameterDemoter::Run(IR_root);
     RegAlloc reg_alloc;
     IR_root->Accept(&reg_alloc);
+    ParameterDemoter::FixupAfterRegAlloc(IR_root);
     AssemblyGenerator assembly_generator(LoadFromFile("builtin_gcc.s"), out, &std::cerr);
     IR_root->Accept(&assembly_generator);
   } catch (Error &err) {
