@@ -74,7 +74,7 @@ The driver lives in `test/codegen_submit.cpp`.
 - **Function inliner**: clones non-recursive callees of ≤50 IR instructions at each call site, re-IDing blocks and remapping names via a per-caller `NameAllocator`. Runs to fixpoint.
 - **SCCP**: lattice cells `Top`/`Constant(i32)`/`Bottom`; the executable-edges set prevents dead branches from poisoning the lattice. Folds constants, retargets dead branches into unconditional jumps, drops phi inputs on unexecutable edges.
 - **CSE (within block, GEP/GEPP only)**: dedupes address computations with the same `(base, [index], type-key)`. `EnsureTypeSize()` pre-computes the dropped GEP's `allocated_size_`/`align_` so downstream passes still see them.
-- **Parameter demotion** (Phase 3): before RegAlloc, prepend `%x.mv ← %x` moves for every a-reg parameter and rename all uses to `%x.mv`. RegAlloc then colors `%x.mv` like any other virtual — typically into an s-reg, t5, or a free a-reg. `FixupAfterRegAlloc` writes back the assigned stack slot into the demotion move's address.
+- **Parameter demotion** (Phase 3): before RegAlloc, prepend `%x.mv ← %x` moves for every a-reg parameter and rename all uses to `%x.mv`. RegAlloc then colors `%x.mv` like any other virtual — typically into an s-reg, t5, or a free a-reg. `FixupAfterRegAlloc` writes back the assigned stack slot into the demotion move's address. When `%x.mv` doesn't cross any call (leaf functions; non-leaves where the param dies before the first call), Briggs coalescing merges `%x.mv` back into the precolored a-reg and the entry `mv` is elided.
 
 ## RISC-V register conventions
 
@@ -96,7 +96,7 @@ The driver lives in `test/codegen_submit.cpp`.
 - **Leaf functions**: t5 → unused a-regs → s1–s11 → parameter a-regs (no s-reg save/restore needed).
 - **Non-leaf functions**: s1–s11 → a0–a7 → t5. The interference graph strips t5 edges from variables that don't cross a call (`call_crossing_vars_`), so t5 is only assigned to non-call-crossing values.
 - **Per-call dead-a-reg masks**: RegAlloc snapshots live sets at every call site and stores `dead_a_regs_mask_` per call; `SaveRegister`/`FlushSavedRegisters` skip the `sd`/`ld` pair for a-regs that hold no live value at the call.
-- Briggs conservative move coalescing merges move-related virtual registers that don't interfere. A pre-pass removes spurious "src-killed-when-dst-defined" interference edges so phi-move coalescing inside loops actually fires.
+- Briggs conservative move coalescing merges move-related virtual registers that don't interfere. Two helpers keep it firing on more cases: the edge-build loop skips the spurious def↔src edge at every move instruction (otherwise block-level liveness wrongly marks them as conflicting), and `Coalesce` handles precolored-source moves by swapping operands so the precolored side survives (used by parameter-demotion coalescing).
 
 ## Stack frame layout
 
@@ -145,7 +145,7 @@ RegAlloc walks every non-removed instruction's def/use sets to count per-variabl
 - **Block layout**: DFS reorder from entry; branches prefer the false target as next so `bnez`/`beqz` falls through the common path.
 - **Constant hoisting**: up to 2 large constants pre-loaded into t3/t4 at function entry. Scan covers IR operands AND kMemory variable stack offsets AND a-reg/ra save-slot offsets (weighted by call count). Cached immediates avoid `li t6` at every load/store.
 - **Compare peephole**: `==0`/`!=0` use `sltiu`/`sltu` with immediate 1 or x0 (no `li t1, 0`).
-- **Compare→branch fusion**: a single-use `kMemory` compare immediately before a branch parks its t-reg result in `fused_cmp_branch_reg_`; the branch reads it directly, skipping the `sd`/`ld` pair.
+- **Compare→branch fusion**: when a compare's result has exactly one use (the immediately following branch's condition) and only phi-elim moves sit between, the compare is skipped entirely and the branch emits a single `blt/bge/beq/bne/bltu/bgeu` straight from the compare's operands. Saves 1-2 instructions per fused pair.
 - **Long jumps**: functions with `est_asm > 8000` or `blocks > 500` use `lui+addi+jalr` (±2GB range).
 - **Call-save consolidation**: `RestoreRegister`+`SaveRegister` skipped between consecutive calls — flushed only at block exits.
 - **Per-call dead a-reg masks**: every call site carries a bitmask of a-regs known dead; saves and reloads for those a-regs are skipped.

@@ -109,6 +109,11 @@ A two-step trick that gives parameters the same coloring freedom as ordinary vir
 
 Without this, parameter a-regs interfere with every value live across `SaveRegister`, and the allocator is forced to choose between leaking parameter values into s-regs or constantly spilling.
 
+**Demotion-move coalescing**: when the demoted `%x.mv` doesn't cross any call (every leaf function, plus any non-leaf where the parameter is dead before the first call), the Briggs coalescer merges `%x.mv` back into `%x`'s precolored a-reg. The entry-block `mv` becomes a self-move and is elided. Two pieces are needed for this to work:
+
+- The edge-build loop skips the interference edge between a move's def and its src (otherwise block-level liveness creates a spurious edge: at the move, both src and def appear in the live set, so the standard "def conflicts with everything live" rule wrongly marks them as conflicting).
+- `Coalesce` handles precolored moves specially: if `src` is precolored, swap so the precolored side is the survivor (color propagation goes from survivor to coalesced). Skip the coalesce if the virtual side is in `call_crossing_vars_` — forcing the value back into its caller-saved a-reg would require save/restore at every call site, defeating demotion.
+
 ### RISC-V temp register conventions (codegen)
 
 - **t0**: arith (operand1), compare aux (sub, sltu, slt), data move, call args
@@ -123,12 +128,13 @@ Constant cache: per-function frequency analysis picks the 2 most-used large (>12
 
 ### Compare→branch fusion (codegen)
 
-When a `compare` instruction is the last non-removed instruction in a block whose terminator is a `branch` on the compare's result, AND the result is `kMemory`, AND the result has exactly one use across the entire function, the pre-scan in `Visit(IRFunctionNode)` adds the compare to `fused_compares_`. The compare emit then:
+A pre-scan in `Visit(IRFunctionNode)` populates `fused_compares_` with every compare whose result feeds an immediately-following branch and has exactly one use in the function. Phi-elimination moves between the compare and the branch are stepped over only when they don't alias any compare operand (checked at both SSA-name and post-RegAlloc physical-register level — coalescing can put distinct SSA names in the same register).
 
-- Computes its result into a t-reg.
-- Skips the `kMemory` store and instead parks the t-reg name in `fused_cmp_branch_reg_`.
+The compare visitor sees the compare is fused and skips emission entirely (no `slt`/`sltu`/`sub`/`xori`), stashing the IR node in `pending_fused_cmp_`. The branch visitor then emits a single `blt/bge/beq/bne/bltu/bgeu` directly using the compare's operands — with operand swap for `kSgt`/`kSle`/`kUgt`/`kUle`, and with the opposite op (`blt↔bge`, etc.) when the true target is the next block in layout order (taken-on-false fall-through). Savings per fused pair:
 
-The following branch picks the value up directly from `fused_cmp_branch_reg_` instead of reloading from the stack slot, saving one `sd` + one `ld` per fused pair.
+- `kEq`/`kNe`: 3 instructions → 1 (`sub; sltiu; bnez` → `beq`).
+- `kSlt`/`kUlt`/`kSgt`/`kUgt`: 2 → 1 (`slt; bnez` → `blt`).
+- `kSle`/`kSge`/`kUle`/`kUge`: 3 → 1 (`slt; xori; bnez` → `bge`).
 
 ### Block layout optimization (codegen)
 
@@ -226,7 +232,9 @@ RegAlloc snapshots the live set at every call site (in `call_live_sets`) AFTER k
   - **Leaf functions** (`!has_calls_`): t5 (ID 30), unused a-regs beyond parameters, then s1–s11 (IDs 9, 18–27), then parameter a-regs as last resort. Caller-saved registers are safe because no call ever clobbers them.
   - **Non-leaf functions**: `{9, 18..27}` (s1–s11) then `{10..17}` (a0–a7) then `{30}` (t5). For each variable in `call_crossing_vars_` (live at ≥1 call site), the interference graph strips edges to t5 — so t5 is only available to virtuals whose live range doesn't cross any call. With per-call dead masks (above), a-regs can be coalesced into non-parameter virtuals too.
 - The two pools (precolored vs. colorable) are disjoint; `Color()` strips edges between precolored and regular nodes.
-- **Move coalescing**: Before coloring, `Coalesce()` attempts to merge move-related virtual registers using Briggs conservative heuristic (merge only if the combined node has degree < K). Coalesced nodes share the same physical register, eliminating `mv` instructions. The pre-pass also removes a known-spurious edge: when a move's `src` is last-used and `dst` is defined at the same instruction, they're never simultaneously live within the block, so the block-level interference edge is dropped — fixing phi-move coalescing in loops.
+- **Move coalescing**: Before coloring, `Coalesce()` merges move-related virtual registers using Briggs conservative heuristic (merge only if the combined node has degree < K). Two helpers make this fire on more cases:
+  - **Spurious-edge skip**: when the edge-build loop processes `dst = mv src`, it skips the def↔src interference edge. Block-level liveness would otherwise create one (both src and dst appear in the live set at the move instruction), wrongly blocking the coalescer.
+  - **Precolored-aware coalesce**: when one side of the move is a precolored a-reg (parameter-demotion moves), `Coalesce()` swaps so the precolored side is the survivor, propagating the precolor into the virtual. Refuses if the virtual is call-crossing — letting it sit in the caller-saved a-reg would cost a save/restore at every call site.
 
 ### Assembly Generator optimizations (codegen)
 
