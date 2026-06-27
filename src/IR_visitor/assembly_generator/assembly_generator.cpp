@@ -429,7 +429,17 @@ void AssemblyGenerator::Visit(IRNegationInstructionNode *node) {
 void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
   // Leaving the block: hardware a-regs/ra must be valid for successors.
   FlushSavedRegisters();
-  auto rs = VariableToReg(node->condition_, 0, "i1");
+  std::string rs;
+  if (!fused_cmp_branch_reg_.empty()) {
+    // Compare→branch fusion: the immediately preceding compare wrote its
+    // result into this t-reg and skipped the memory store.  Branch on it
+    // directly (no load).  FlushSavedRegisters above only touches t3/t4
+    // (const cache) and a-regs/ra, never t2 — so the value still holds.
+    rs = fused_cmp_branch_reg_;
+    fused_cmp_branch_reg_.clear();
+  } else {
+    rs = VariableToReg(node->condition_, 0, "i1");
+  }
 
   auto label = [&](uint32_t id) {
     return ".L" + std::to_string(block_label_map_[id]);
@@ -692,6 +702,15 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
   bool op1c = (type1 == kConst);
   bool op2c = (type2 == kConst);
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
+  bool fused = fused_compares_.count(node) > 0;
+  auto store_result = [&]() {
+    if (fused) {
+      // Skip the kMemory store; the branch will read `rd` directly.
+      fused_cmp_branch_reg_ = rd;
+    } else {
+      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+    }
+  };
 
   // Helper: fold small constant into addi for ==/!=.  Returns true if folded.
   auto foldConstCmp = [&](bool is_eq, const std::string &const_op,
@@ -716,22 +735,22 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
     if (op1c && node->operand1_ == "0") {
       auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
       EmitIA("sltiu", rd, rs2, 1);
-      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      store_result();
       return;
     }
     if (op2c && node->operand2_ == "0") {
       auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
       EmitIA("sltiu", rd, rs1, 1);
-      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      store_result();
       return;
     }
     // Peephole: ==small_const — fold into addi (avoids li).
     if (op2c && foldConstCmp(true, node->operand2_, node->operand1_, 0)) {
-      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      store_result();
       return;
     }
     if (op1c && foldConstCmp(true, node->operand1_, node->operand2_, 1)) {
-      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      store_result();
       return;
     }
   }
@@ -739,22 +758,22 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
     if (op1c && node->operand1_ == "0") {
       auto rs2 = VariableToReg(node->operand2_, 1, node->type_);
       EmitR("sltu", rd, "x0", rs2);
-      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      store_result();
       return;
     }
     if (op2c && node->operand2_ == "0") {
       auto rs1 = VariableToReg(node->operand1_, 0, node->type_);
       EmitR("sltu", rd, "x0", rs1);
-      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      store_result();
       return;
     }
     // Peephole: !=small_const — fold into addi (avoids li).
     if (op2c && foldConstCmp(false, node->operand2_, node->operand1_, 0)) {
-      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      store_result();
       return;
     }
     if (op1c && foldConstCmp(false, node->operand1_, node->operand2_, 1)) {
-      RegToVariable(node->storage_type_, node->address_, rd, "i1");
+      store_result();
       return;
     }
   }
@@ -791,7 +810,7 @@ void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
     EmitR("slt", "t0", rs2, rs1);
     EmitIA("xori", rd, "t0", 1);
   }
-  RegToVariable(node->storage_type_, node->address_, rd, "i1");
+  store_result();
 }
 
 void AssemblyGenerator::Visit(IRArgumentNode *node) {}
@@ -945,6 +964,7 @@ void AssemblyGenerator::Visit(IRSelectInstructionNode *node) {
 
 void AssemblyGenerator::Visit(IRBlockNode *node) {
   cur_block_ = node->id_;
+  fused_cmp_branch_reg_.clear();
   if (node->id_ != 0 && referenced_blocks_.count(node->id_)) {
     os_ << ".L" << block_label_map_[node->id_] << ":\n";
   }
@@ -986,6 +1006,72 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
 
   cur_func_ = node;
   const_cache_.clear();
+  fused_compares_.clear();
+  fused_cmp_branch_reg_.clear();
+
+  // Compare→branch fusion pre-scan: for each block whose terminator is a
+  // branch, check whether the preceding non-removed instruction is a compare
+  // that defines the branch's condition.  If so — and the compare's result
+  // is in kMemory (otherwise regalloc already gave it a real register) and
+  // has exactly one use in the entire function — we can skip the store/load
+  // pair and let the compare's t-reg result flow directly into the branch.
+  {
+    std::unordered_map<std::string, uint32_t> use_count;
+    auto bump = [&](const std::string &n) {
+      if (!n.empty() && n[0] == '%') ++use_count[n];
+    };
+    for (auto &block : node->blocks_) {
+      for (auto &ins : block->instructions_) {
+        if (ins->removed_) continue;
+        IRInstructionNode *i = ins.get();
+        if (auto *p = dynamic_cast<IRArithmeticInstructionNode *>(i)) {
+          bump(p->operand1_); bump(p->operand2_);
+        } else if (auto *p = dynamic_cast<IRNegationInstructionNode *>(i)) {
+          bump(p->operand_);
+        } else if (auto *p = dynamic_cast<IRBranchInstructionNode *>(i)) {
+          bump(p->condition_);
+        } else if (auto *p = dynamic_cast<IRReturnInstructionNode *>(i)) {
+          if (!p->type_->IsEmpty()) bump(p->name_);
+        } else if (auto *p = dynamic_cast<IRLoadInstructionNode *>(i)) {
+          bump(p->pointer_);
+        } else if (auto *p = dynamic_cast<IRStoreVariableInstructionNode *>(i)) {
+          bump(p->pointer_); bump(p->value_);
+        } else if (auto *p = dynamic_cast<IRStoreConstInstructionNode *>(i)) {
+          bump(p->pointer_);
+        } else if (auto *p = dynamic_cast<IRGetElementPtrInstructionNode *>(i)) {
+          bump(p->ptrval_);
+        } else if (auto *p = dynamic_cast<IRGetElementPtrPrimeInstructionNode *>(i)) {
+          bump(p->ptrval_); bump(p->index_);
+        } else if (auto *p = dynamic_cast<IRCompareInstructionNode *>(i)) {
+          bump(p->operand1_); bump(p->operand2_);
+        } else if (auto *p = dynamic_cast<IRCallInstructionNode *>(i)) {
+          for (auto &arg : p->arguments_) bump(arg->value_);
+        } else if (auto *p = dynamic_cast<IRMoveInstructionNode *>(i)) {
+          bump(p->source_);
+        } else if (auto *p = dynamic_cast<IRSelectInstructionNode *>(i)) {
+          bump(p->cond_);
+        }
+      }
+    }
+    for (auto &block : node->blocks_) {
+      IRInstructionNode *prev = nullptr;
+      IRInstructionNode *last = nullptr;
+      for (auto &ins : block->instructions_) {
+        if (ins->removed_) continue;
+        prev = last;
+        last = ins.get();
+      }
+      auto *br = dynamic_cast<IRBranchInstructionNode *>(last);
+      if (!br || !prev) continue;
+      auto *cmp = dynamic_cast<IRCompareInstructionNode *>(prev);
+      if (!cmp) continue;
+      if (cmp->storage_type_ != kMemory) continue;
+      if (cmp->result_ != br->condition_) continue;
+      auto it = use_count.find(cmp->result_);
+      if (it == use_count.end() || it->second != 1) continue;
+      fused_compares_.insert(cmp);
+    }
+  }
 
   // Estimate function code size: count non-removed IR instructions
   // plus const-cache overhead (ReloadConstCache emits ~2 li per call,

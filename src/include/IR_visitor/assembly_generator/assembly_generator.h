@@ -56,6 +56,15 @@ private:
   // (t3, t4 — registers that no other code path writes to).
   std::unordered_map<int64_t, std::string> const_cache_;
 
+  // Compare→branch fusion: when a compare is the second-to-last instruction
+  // of a block, its result feeds the terminating branch, and the result has
+  // no other uses, the compare leaves its result in a t-reg (the value
+  // GetResultReg returned for kMemory storage), the kMemory store is skipped,
+  // and the branch reads `fused_cmp_branch_reg_` directly instead of reloading
+  // from the stack slot.  Pre-computed once per function.
+  std::set<class IRCompareInstructionNode *> fused_compares_;
+  std::string fused_cmp_branch_reg_;
+
   // Safety hook: BeforeWrite(rd) flushes any pending deferred kMemory store
   // before rd is overwritten.  Currently a no-op (deferred-store optimization
   // removed), retained so future implementations can't forget this safeguard.
