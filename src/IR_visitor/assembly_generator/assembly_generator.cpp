@@ -429,21 +429,92 @@ void AssemblyGenerator::Visit(IRNegationInstructionNode *node) {
 void AssemblyGenerator::Visit(IRBranchInstructionNode *node) {
   // Leaving the block: hardware a-regs/ra must be valid for successors.
   FlushSavedRegisters();
-  std::string rs;
-  if (!fused_cmp_branch_reg_.empty()) {
-    // Compare→branch fusion: the immediately preceding compare wrote its
-    // result into this t-reg and skipped the memory store.  Branch on it
-    // directly (no load).  FlushSavedRegisters above only touches t3/t4
-    // (const cache) and a-regs/ra, never t2 — so the value still holds.
-    rs = fused_cmp_branch_reg_;
-    fused_cmp_branch_reg_.clear();
-  } else {
-    rs = VariableToReg(node->condition_, 0, "i1");
-  }
 
   auto label = [&](uint32_t id) {
     return ".L" + std::to_string(block_label_map_[id]);
   };
+
+  // Compare→branch fusion path: emit one of beq/bne/blt/bge/bltu/bgeu
+  // directly from the (skipped) compare's operands, saving the slt+xori+bnez
+  // sequence (1-2 instructions per compare).
+  if (pending_fused_cmp_ != nullptr && pending_fused_cmp_->result_ == node->condition_) {
+    auto *cmp = pending_fused_cmp_;
+    pending_fused_cmp_ = nullptr;
+
+    // Map IR compare op → (branch op, swap operands).  The condition we want
+    // is "branch to true_label iff (operand1 OP operand2)".
+    //   kSgt: a > b  ⇔  b < a   → blt swapped
+    //   kSle: a <= b ⇔  b >= a  → bge swapped
+    //   kUgt / kUle: analogous for unsigned.
+    std::string br_op;
+    bool swap = false;
+    switch (cmp->op_) {
+      case IRCompareInstructionNode::kEq:  br_op = "beq";  break;
+      case IRCompareInstructionNode::kNe:  br_op = "bne";  break;
+      case IRCompareInstructionNode::kSlt: br_op = "blt";  break;
+      case IRCompareInstructionNode::kSge: br_op = "bge";  break;
+      case IRCompareInstructionNode::kSgt: br_op = "blt";  swap = true; break;
+      case IRCompareInstructionNode::kSle: br_op = "bge";  swap = true; break;
+      case IRCompareInstructionNode::kUlt: br_op = "bltu"; break;
+      case IRCompareInstructionNode::kUge: br_op = "bgeu"; break;
+      case IRCompareInstructionNode::kUgt: br_op = "bltu"; swap = true; break;
+      case IRCompareInstructionNode::kUle: br_op = "bgeu"; swap = true; break;
+    }
+
+    // Inversion (taken-on-false) used when true_branch is the next block in
+    // layout order — we emit the inverted branch to false_branch and let
+    // true_branch fall through.
+    auto invert = [](const std::string &op) -> std::string {
+      if (op == "beq")  return "bne";
+      if (op == "bne")  return "beq";
+      if (op == "blt")  return "bge";
+      if (op == "bge")  return "blt";
+      if (op == "bltu") return "bgeu";
+      if (op == "bgeu") return "bltu";
+      return op;
+    };
+
+    std::string op1_name = cmp->operand1_;
+    std::string op2_name = cmp->operand2_;
+    if (swap) std::swap(op1_name, op2_name);
+    auto rs1 = VariableToReg(op1_name, 0, cmp->type_);
+    auto rs2 = VariableToReg(op2_name, 1, cmp->type_);
+
+    if (!large_function_) {
+      auto get_next = [&]() -> uint32_t {
+        auto it = next_block_map_.find(cur_block_);
+        return (it != next_block_map_.end()) ? it->second : UINT32_MAX;
+      };
+      uint32_t nid = get_next();
+      if (node->false_branch_ == nid) {
+        os_ << "\t" << br_op << "\t" << rs1 << ", " << rs2 << ", " << label(node->true_branch_) << '\n';
+        return;
+      }
+      if (node->true_branch_ == nid) {
+        os_ << "\t" << invert(br_op) << "\t" << rs1 << ", " << rs2 << ", " << label(node->false_branch_) << '\n';
+        return;
+      }
+      os_ << "\t" << br_op << "\t" << rs1 << ", " << rs2 << ", " << label(node->true_branch_) << '\n';
+      os_ << "\tj " << label(node->false_branch_) << '\n';
+      return;
+    }
+
+    // Large-function: trampoline via local label 1f.
+    auto true_lbl  = label(node->true_branch_);
+    auto false_lbl = label(node->false_branch_);
+    os_ << "\t" << br_op << "\t" << rs1 << ", " << rs2 << ", 1f\n";
+    os_ << "\tlui\tt5, %hi(" << false_lbl << ")\n";
+    os_ << "\taddi\tt5, t5, %lo(" << false_lbl << ")\n";
+    os_ << "\tjalr\tx0, t5, 0\n";
+    os_ << "1:\n";
+    os_ << "\tlui\tt5, %hi(" << true_lbl << ")\n";
+    os_ << "\taddi\tt5, t5, %lo(" << true_lbl << ")\n";
+    os_ << "\tjalr\tx0, t5, 0\n";
+    return;
+  }
+
+  // No fused compare: load the i1 condition and branch on zero/non-zero.
+  auto rs = VariableToReg(node->condition_, 0, "i1");
 
   if (!large_function_) {
     // Elide redundant fall-through jumps.
@@ -697,19 +768,21 @@ void AssemblyGenerator::Visit(IRGetElementPtrPrimeInstructionNode *node) {
 }
 
 void AssemblyGenerator::Visit(IRCompareInstructionNode *node) {
+  // Compare→branch fusion: skip emission entirely.  The immediately
+  // following branch will emit a single `blt/bge/beq/bne/bltu/bgeu`
+  // straight from this compare's operands.
+  if (fused_compares_.count(node) > 0) {
+    pending_fused_cmp_ = node;
+    return;
+  }
+
   auto [type1, addr1] = GetVariableAddress(node->operand1_);
   auto [type2, addr2] = GetVariableAddress(node->operand2_);
   bool op1c = (type1 == kConst);
   bool op2c = (type2 == kConst);
   auto rd = GetResultReg(node->storage_type_, node->address_, 2);
-  bool fused = fused_compares_.count(node) > 0;
   auto store_result = [&]() {
-    if (fused) {
-      // Skip the kMemory store; the branch will read `rd` directly.
-      fused_cmp_branch_reg_ = rd;
-    } else {
-      RegToVariable(node->storage_type_, node->address_, rd, "i1");
-    }
+    RegToVariable(node->storage_type_, node->address_, rd, "i1");
   };
 
   // Helper: fold small constant into addi for ==/!=.  Returns true if folded.
@@ -964,7 +1037,7 @@ void AssemblyGenerator::Visit(IRSelectInstructionNode *node) {
 
 void AssemblyGenerator::Visit(IRBlockNode *node) {
   cur_block_ = node->id_;
-  fused_cmp_branch_reg_.clear();
+  pending_fused_cmp_ = nullptr;
   if (node->id_ != 0 && referenced_blocks_.count(node->id_)) {
     os_ << ".L" << block_label_map_[node->id_] << ":\n";
   }
@@ -1018,7 +1091,7 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   cur_func_ = node;
   const_cache_.clear();
   fused_compares_.clear();
-  fused_cmp_branch_reg_.clear();
+  pending_fused_cmp_ = nullptr;
 
   // Compare→branch fusion pre-scan: for each block whose terminator is a
   // branch, check whether the preceding non-removed instruction is a compare
@@ -1064,22 +1137,80 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
         }
       }
     }
+    // Helper: look up the post-RegAlloc storage of a variable name.
+    auto var_storage = [&](const std::string &name) -> std::pair<StorageType, uint32_t> {
+      auto it = node->variable_storage_.find(name);
+      if (it == node->variable_storage_.end()) return {kConst, 0};
+      return it->second;
+    };
+
     for (auto &block : node->blocks_) {
-      IRInstructionNode *prev = nullptr;
-      IRInstructionNode *last = nullptr;
+      // Collect all non-removed instructions in this block.
+      std::vector<IRInstructionNode *> live_ins;
       for (auto &ins : block->instructions_) {
-        if (ins->removed_) continue;
-        prev = last;
-        last = ins.get();
+        if (!ins->removed_) live_ins.push_back(ins.get());
       }
-      auto *br = dynamic_cast<IRBranchInstructionNode *>(last);
-      if (!br || !prev) continue;
-      auto *cmp = dynamic_cast<IRCompareInstructionNode *>(prev);
+      if (live_ins.size() < 2) continue;
+
+      // The last instruction must be a branch.
+      auto *br = dynamic_cast<IRBranchInstructionNode *>(live_ins.back());
+      if (!br) continue;
+
+      // Walk backward past any phi-elimination moves looking for the compare
+      // that defines the branch's condition.
+      IRCompareInstructionNode *cmp = nullptr;
+      int cmp_idx = -1;
+      for (int idx = static_cast<int>(live_ins.size()) - 2; idx >= 0; --idx) {
+        auto *i = live_ins[idx];
+        if (auto *c = dynamic_cast<IRCompareInstructionNode *>(i)) {
+          cmp = c;
+          cmp_idx = idx;
+          break;
+        }
+        if (dynamic_cast<IRMoveInstructionNode *>(i)) continue;
+        // Any other instruction blocks fusion.
+        break;
+      }
       if (!cmp) continue;
-      if (cmp->storage_type_ != kMemory) continue;
       if (cmp->result_ != br->condition_) continue;
       auto it = use_count.find(cmp->result_);
       if (it == use_count.end() || it->second != 1) continue;
+
+      // Safety check for intervening moves: when we defer the compare to the
+      // branch site, its operands must still hold their pre-compare values.
+      // A phi move with destination = operand's name is obviously bad, but
+      // after RegAlloc/coalescing two distinct SSA names can share the same
+      // physical register — so we check at the physical-register level too.
+      auto op1_store = var_storage(cmp->operand1_);
+      auto op2_store = var_storage(cmp->operand2_);
+      bool intervening_safe = true;
+      for (int idx = cmp_idx + 1; idx < static_cast<int>(live_ins.size()) - 1; ++idx) {
+        auto *mv = dynamic_cast<IRMoveInstructionNode *>(live_ins[idx]);
+        if (!mv) { intervening_safe = false; break; }
+        // Direct name match.
+        if (mv->result_ == cmp->operand1_ || mv->result_ == cmp->operand2_) {
+          intervening_safe = false; break;
+        }
+        // Physical-register aliasing.
+        auto mv_store = var_storage(mv->result_);
+        if (mv_store.first == kRegister) {
+          if (op1_store.first == kRegister && op1_store.second == mv_store.second) {
+            intervening_safe = false; break;
+          }
+          if (op2_store.first == kRegister && op2_store.second == mv_store.second) {
+            intervening_safe = false; break;
+          }
+        } else if (mv_store.first == kMemory) {
+          if (op1_store.first == kMemory && op1_store.second == mv_store.second) {
+            intervening_safe = false; break;
+          }
+          if (op2_store.first == kMemory && op2_store.second == mv_store.second) {
+            intervening_safe = false; break;
+          }
+        }
+      }
+      if (!intervening_safe) continue;
+
       fused_compares_.insert(cmp);
     }
   }
