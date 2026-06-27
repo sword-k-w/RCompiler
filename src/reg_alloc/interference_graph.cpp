@@ -215,7 +215,28 @@ void InterferenceGraph::AddMovePair(uint32_t src_id, uint32_t dst_id) {
 }
 
 void InterferenceGraph::Coalesce(uint32_t k) {
-  for (auto &[src, dst] : move_pairs_) {
+  for (auto &[src_orig, dst_orig] : move_pairs_) {
+    uint32_t src = src_orig, dst = dst_orig;
+
+    // Precolored handling: when one side of the move is a precolored
+    // parameter a-reg, we want the virtual to inherit the precolor.  The
+    // coalescer treats `dst` as the survivor (color propagation looks up
+    // dst), so swap src/dst when src is the precolored one.  Also refuse
+    // when the virtual is call-crossing — keeping the demoted value in
+    // its caller-saved a-reg would force a save/restore at every call
+    // site, defeating the purpose of parameter demotion.
+    bool src_pc = precolored_.count(src) > 0;
+    bool dst_pc = precolored_.count(dst) > 0;
+    if (src_pc && !dst_pc) {
+      if (call_crossing_vars_.count(dst)) continue;
+      std::swap(src, dst);
+    } else if (!src_pc && dst_pc) {
+      if (call_crossing_vars_.count(src)) continue;
+    } else if (src_pc && dst_pc) {
+      // Both precolored: can only "coalesce" if they share the same color.
+      if (phys_reg_.at(src) != phys_reg_.at(dst)) continue;
+    }
+
     if (!adjacency_.count(src) || !adjacency_.count(dst)) continue;
     if (coalesced_.count(src) || coalesced_.count(dst)) continue;
     if (adjacency_[src].count(dst)) continue;

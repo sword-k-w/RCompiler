@@ -175,21 +175,32 @@ void RegAlloc::Visit(IRFunctionNode *node) {
         }
       }
 
-      // Collect move pairs for coalescing
+      // Collect move pairs for coalescing.  Parameter-demotion moves
+      // (precolored src) are also added; the Coalesce pass decides whether
+      // to merge them based on whether the destination crosses a call —
+      // if it doesn't, coalescing back into the precolored a-reg saves the
+      // entry-block `mv` without forcing per-call save/restore.
       if (auto *mv = dynamic_cast<IRMoveInstructionNode *>(ins)) {
         if (!mv->def_.empty() && !mv->use_.empty()) {
           uint32_t src_id = *mv->use_.begin();
-          // Skip parameter-demotion moves: demoted copies should get
-          // s-regs when beneficial, not coalesce back to the precolored
-          // a-reg of the original parameter.
-          if (!precolored_ids.Test(src_id)) {
-            ig.AddMovePair(src_id, *mv->def_.begin());
-          }
+          ig.AddMovePair(src_id, *mv->def_.begin());
         }
       }
 
       // Build edges: for each promotable def, add interference
       // edges to every other variable in liveIn.
+      //
+      // For move instructions (`dst = mv src`), skip the edge between
+      // def(dst) and src.  src is being consumed by this exact instruction
+      // — after `mv`, dst holds src's value, so the two can safely share a
+      // physical register.  Without this skip, the block-level liveness
+      // would generate a spurious interference (src is in live-in because
+      // it's used here, dst is being defined), blocking the coalescer
+      // from merging parameter-demotion moves into their precolored a-reg.
+      uint32_t move_src = UINT32_MAX;
+      if (dynamic_cast<IRMoveInstructionNode *>(ins) && !ins->use_.empty()) {
+        move_src = *ins->use_.begin();
+      }
       for (auto def_id : ins->def_) {
         auto [not_alloc, name] = cfg->GetName(def_id);
         if (!not_alloc) continue;
@@ -198,7 +209,7 @@ void RegAlloc::Visit(IRFunctionNode *node) {
         ig.AddNode(def_id);
         ig.IncDefCount(def_id);
         live.ForEach([&](uint32_t other) {
-          if (other != def_id) {
+          if (other != def_id && other != move_src) {
             ig.AddNode(other);
             ig.AddEdge(def_id, other);
           }
