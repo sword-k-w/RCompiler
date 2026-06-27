@@ -139,14 +139,14 @@ void AssemblyGenerator::SaveRegister() {
   // their save slot (from an earlier save).  After the call all become invalid.
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
     if (a_reg_valid_[i]) {
-      EmitMem( "sd", "a" + std::to_string(i), "sp", current_stack_ - 8 - 8 * i);
+      EmitMem( "sd", "a" + std::to_string(i), "sp", save_area_base_ + 8 * i);
       a_reg_valid_[i] = false;
       a_slot_valid_[i] = true;  // Save slot now holds a valid value.
     }
   }
   // ra is saved at most once per block.
   if (!ra_saved_) {
-    EmitMem( "sd", "ra", "sp", current_stack_ - 8 - 8 * current_a_reg_used_);
+    EmitMem( "sd", "ra", "sp", save_area_base_ + 8 * current_a_reg_used_);
     ra_saved_ = true;
     ra_slot_valid_ = true;
   }
@@ -155,15 +155,15 @@ void AssemblyGenerator::SaveRegister() {
 void AssemblyGenerator::EnsureARegValid(uint32_t addr) {
   uint32_t idx = addr - 10;
   if (!a_reg_valid_[idx] && a_slot_valid_[idx]) {
-    uint32_t save_off = 8 * (addr - 9);
-    EmitMem( "ld", "x" + std::to_string(addr), "sp", current_stack_ - save_off);
+    uint32_t save_off = save_area_base_ + 8 * idx;
+    EmitMem( "ld", "x" + std::to_string(addr), "sp", save_off);
     a_reg_valid_[idx] = true;
   } else if (!a_reg_valid_[idx] && !a_slot_valid_[idx]) {
     // Trying to read an a-reg whose value was never saved — this is a bug
     // in the dead-register tracking.  Emit a load from the stale slot as
     // a fallback (the slot contains whatever was on the stack).
-    uint32_t save_off = 8 * (addr - 9);
-    EmitMem( "ld", "x" + std::to_string(addr), "sp", current_stack_ - save_off);
+    uint32_t save_off = save_area_base_ + 8 * idx;
+    EmitMem( "ld", "x" + std::to_string(addr), "sp", save_off);
     a_reg_valid_[idx] = true;
   }
 }
@@ -188,12 +188,12 @@ void AssemblyGenerator::FlushSavedRegisters() {
   ReloadConstCache();
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
     if (!a_reg_valid_[i] && a_slot_valid_[i]) {
-      EmitMem( "ld", "a" + std::to_string(i), "sp", current_stack_ - 8 - 8 * i);
+      EmitMem( "ld", "a" + std::to_string(i), "sp", save_area_base_ + 8 * i);
       a_reg_valid_[i] = true;
     }
   }
   if (ra_saved_ && ra_slot_valid_) {
-    EmitMem( "ld", "ra", "sp", current_stack_ - 8 - 8 * current_a_reg_used_);
+    EmitMem( "ld", "ra", "sp", save_area_base_ + 8 * current_a_reg_used_);
     ra_saved_ = false;
   }
 }
@@ -910,11 +910,11 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
         // temp for memory params) — don't go through EnsureARegValid,
         // which would restore to the source a-reg hardware and risk
         // clobbering a previously-set parameter register.
+        uint32_t save_off = save_area_base_ + 8 * (address - 10);
         if (para->storage_type_ == kRegister) {
-          EmitMem( l_ins, "x" + std::to_string(para->address_), "sp",
-                  current_stack_ - 8 * (address - 9));
+          EmitMem( l_ins, "x" + std::to_string(para->address_), "sp", save_off);
         } else {
-          EmitMem( l_ins, "t0", "sp", current_stack_ - 8 * (address - 9));
+          EmitMem( l_ins, "t0", "sp", save_off);
           EmitMem( s_ins, "t0", "sp", -static_cast<int32_t>(para->address_));
         }
       } else {
@@ -983,11 +983,19 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   os_ << "\t.type " << node->name_ << ",@function\n";
   os_ << node->name_ << ":        # @" << node->name_ << '\n';
 
-  // Extend the frame by s_save bytes to hold s-reg saves at the bottom
-  // (sp + 0, sp + 8, ...).  a-reg/ra/t1 saves stay at the top within the
-  // MemoryAllocator's 64-byte reserved area.  The two areas never overlap.
+  // Frame layout (low addresses ↑):
+  //   sp + 0..s_save                              s-reg saves
+  //   sp + s_save..s_save + a_save                a-reg/ra save area (non-leaf)
+  //   sp + s_save + a_save..total_stack           variables and allocas
+  //
+  // The 72-byte top-of-frame reservation (where saves used to live) is still
+  // counted inside the variable address space, so parameter addresses are
+  // unchanged.  Adding a-reg saves at the bottom costs an extra `a_save`
+  // bytes per non-leaf function, but every save/restore drops from 3
+  // instructions (`li t6, off; add t6, t6, sp; sd 0(t6)`) to 1 (`sd off(sp)`).
   uint32_t s_save = 8 * node->used_s_regs_.size();
-  uint32_t total_stack = node->stack_size_ + s_save;
+  uint32_t a_save = node->has_calls_ ? 8 * (node->a_reg_used_cnt_ + 1) : 0;
+  uint32_t total_stack = node->stack_size_ + s_save + a_save;
   total_stack = (total_stack + 15) / 16 * 16;  // 16-byte alignment for RISC-V ABI
 
   if (total_stack != 0) {
@@ -997,6 +1005,9 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   current_stack_ = total_stack;
   current_func_name_ = node->name_;
   current_a_reg_used_ = node->a_reg_used_cnt_;
+  // Save slots live in the [s_save, s_save + a_save] window — cheap to
+  // access via `sd/ld off(sp)` since these offsets fit in a 12-bit immediate.
+  save_area_base_ = s_save;
   for (bool &v : a_reg_valid_) v = true;
   for (bool &v : a_slot_valid_) v = false;
   ra_saved_ = false;
@@ -1289,10 +1300,10 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
         }
         save_weight = save_weight > 0 ? save_weight * 2 : 1;
         for (uint32_t i = 0; i < node->a_reg_used_cnt_; ++i) {
-          int64_t off = static_cast<int32_t>(current_stack_ - 8 - 8 * i);
+          int64_t off = static_cast<int32_t>(save_area_base_ + 8 * i);
           if (off < -2048 || off > 2047) const_freq[off] += save_weight;
         }
-        int64_t ra_off = static_cast<int32_t>(current_stack_ - 8 - 8 * node->a_reg_used_cnt_);
+        int64_t ra_off = static_cast<int32_t>(save_area_base_ + 8 * node->a_reg_used_cnt_);
         if (ra_off < -2048 || ra_off > 2047) const_freq[ra_off] += save_weight;
       }
 

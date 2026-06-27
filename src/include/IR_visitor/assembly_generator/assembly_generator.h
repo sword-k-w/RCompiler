@@ -40,6 +40,13 @@ private:
   uint32_t current_stack_;
   std::string current_func_name_;
   uint32_t current_a_reg_used_;
+  // Offset from sp where the a-reg/ra save area begins.
+  // Layout (non-leaf):  sp + 0..s_save              s-reg saves
+  //                     sp + save_area_base_..      a-reg/ra save area
+  //                     ...                         variables and allocas
+  // Save slot for a-reg i:  sp + save_area_base_ + 8*i
+  // Save slot for ra:       sp + save_area_base_ + 8*current_a_reg_used_
+  uint32_t save_area_base_;
   std::unordered_map<std::string, IRNode *> *current_variables_;
   std::unordered_map<std::string, std::pair<StorageType, uint32_t>> *variable_storage_;
 
