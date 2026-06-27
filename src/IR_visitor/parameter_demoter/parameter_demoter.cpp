@@ -1,8 +1,7 @@
 #include "IR_visitor/parameter_demoter/parameter_demoter.h"
 #include "IR/IR_node.h"
-#include "IR/function_map.h"
-#include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 
 void ParameterDemoter::RenameInIns(IRInstructionNode *ins,
                                    const std::string &from,
@@ -63,6 +62,10 @@ void ParameterDemoter::RunOnFunction(IRFunctionNode *func) {
   auto &entry_block = func->blocks_[0];
   auto &insts = entry_block->instructions_;
 
+  // Track the move instructions we create so we don't rename their
+  // source operand (they intentionally reference the a-reg parameter).
+  std::unordered_set<IRInstructionNode *> demotion_moves;
+
   // Create and insert moves at the front of the entry block.
   // Insert in reverse order so they appear in parameter order at the front.
   for (auto it = params_to_demote.rbegin(); it != params_to_demote.rend(); ++it) {
@@ -75,6 +78,7 @@ void ParameterDemoter::RunOnFunction(IRFunctionNode *func) {
     move->address_ = 0;
 
     insts.push_front(move);
+    demotion_moves.insert(move.get());
 
     // Register the new variable in the function's maps.
     func->variables_[it->demoted_name] = move.get();
@@ -87,10 +91,13 @@ void ParameterDemoter::RunOnFunction(IRFunctionNode *func) {
   }
 
   // Rename all uses of the original parameter names to the demoted names
-  // across all instructions in all blocks.
+  // across all instructions in all blocks.  Skip the demotion moves
+  // themselves — their source operand intentionally references the a-reg
+  // parameter.
   for (auto &block : func->blocks_) {
     for (auto &ins : block->instructions_) {
       if (ins->removed_) continue;
+      if (demotion_moves.count(ins.get())) continue;
       for (auto &p : params_to_demote) {
         RenameInIns(ins.get(), p.param->name_, p.demoted_name);
       }
