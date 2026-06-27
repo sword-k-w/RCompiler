@@ -126,16 +126,6 @@ void CSEr::ApplyInIns(
 void CSEr::RunOnFunction(IRFunctionNode *func) {
   auto &blocks = func->blocks_;
 
-  // Save pre-CSE instruction count so the assembly generator's long-jump
-  // threshold is stable regardless of CSE removals.
-  {
-    uint32_t pre_count = 0;
-    for (auto &blk : blocks)
-      for (auto &ins : blk->instructions_)
-        if (!ins->removed_) ++pre_count;
-    func->pre_cse_ins_count_ = pre_count;
-  }
-
   // Renames accumulate across all blocks (global).  Within a block they
   // are eagerly applied to subsequent instructions so keys use canonical
   // operand names.  A final sweep applies renames cross-block and to phi

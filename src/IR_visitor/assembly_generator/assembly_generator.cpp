@@ -141,18 +141,27 @@ void AssemblyGenerator::SaveRegister() {
     if (a_reg_valid_[i]) {
       EmitMem( "sd", "a" + std::to_string(i), "sp", current_stack_ - 8 - 8 * i);
       a_reg_valid_[i] = false;
+      a_slot_valid_[i] = true;  // Save slot now holds a valid value.
     }
   }
   // ra is saved at most once per block.
   if (!ra_saved_) {
     EmitMem( "sd", "ra", "sp", current_stack_ - 8 - 8 * current_a_reg_used_);
     ra_saved_ = true;
+    ra_slot_valid_ = true;
   }
 }
 
 void AssemblyGenerator::EnsureARegValid(uint32_t addr) {
   uint32_t idx = addr - 10;
-  if (!a_reg_valid_[idx]) {
+  if (!a_reg_valid_[idx] && a_slot_valid_[idx]) {
+    uint32_t save_off = 8 * (addr - 9);
+    EmitMem( "ld", "x" + std::to_string(addr), "sp", current_stack_ - save_off);
+    a_reg_valid_[idx] = true;
+  } else if (!a_reg_valid_[idx] && !a_slot_valid_[idx]) {
+    // Trying to read an a-reg whose value was never saved — this is a bug
+    // in the dead-register tracking.  Emit a load from the stale slot as
+    // a fallback (the slot contains whatever was on the stack).
     uint32_t save_off = 8 * (addr - 9);
     EmitMem( "ld", "x" + std::to_string(addr), "sp", current_stack_ - save_off);
     a_reg_valid_[idx] = true;
@@ -178,12 +187,12 @@ void AssemblyGenerator::FlushSavedRegisters() {
   // Reload const cache first — the EmitMem calls below may use cached offsets.
   ReloadConstCache();
   for (uint32_t i = 0; i < current_a_reg_used_; ++i) {
-    if (!a_reg_valid_[i]) {
+    if (!a_reg_valid_[i] && a_slot_valid_[i]) {
       EmitMem( "ld", "a" + std::to_string(i), "sp", current_stack_ - 8 - 8 * i);
       a_reg_valid_[i] = true;
     }
   }
-  if (ra_saved_) {
+  if (ra_saved_ && ra_slot_valid_) {
     EmitMem( "ld", "ra", "sp", current_stack_ - 8 - 8 * current_a_reg_used_);
     ra_saved_ = false;
   }
@@ -823,9 +832,14 @@ void AssemblyGenerator::Visit(IRCallInstructionNode *node) {
   }
 
   // Dead a-reg optimization: a-regs that hold no live values at this call
-  // don't need saving.  But we only skip a-regs that are *already* invalid
-  // (previously saved): if an a-reg is valid (fresh value), its save slot is
-  // stale and must be updated before the call clobbers the hardware register.
+  // don't need saving.  We only skip a-regs that are *already* invalid
+  // (previously saved): if an a-reg is valid (fresh value), we must save it
+  // to establish a valid save slot before the call clobbers the hardware register.
+  // Subsequent calls in the same block can then skip the re-save for dead a-regs.
+  // For the first call in a block, all a-regs start valid so all are saved.
+  // The dead_mask was computed by RegAlloc from instruction-level backwards
+  // liveness: bit i is set iff no variable assigned to phys_reg(10+i)
+  // is in liveOut(call).
   uint32_t dead_mask = node->dead_a_regs_mask_;
   for (uint32_t i = 0; i < current_a_reg_used_ && i < 8; ++i) {
     if ((dead_mask & (1u << i)) && !a_reg_valid_[i]) {
@@ -964,7 +978,9 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
   current_func_name_ = node->name_;
   current_a_reg_used_ = node->a_reg_used_cnt_;
   for (bool &v : a_reg_valid_) v = true;
+  for (bool &v : a_slot_valid_) v = false;
   ra_saved_ = false;
+  ra_slot_valid_ = false;
   current_variables_ = &node->variables_;
   variable_storage_ = &node->variable_storage_;
 
@@ -987,18 +1003,15 @@ void AssemblyGenerator::Visit(IRFunctionNode *node) {
         if (dynamic_cast<IRCallInstructionNode *>(ins.get())) ++call_cnt;
       }
     }
-    // For the long-jump threshold, use the pre-CSE instruction count
-    // (if set).  CSE removes instructions, which can reduce the estimate
-    // enough to disable long jumps when they're still needed.
-    uint32_t threshold_ins = (node->pre_cse_ins_count_ > 0)
-                                 ? node->pre_cse_ins_count_
-                                 : total_ins;
     // Each IR insn becomes ~1-3 asm insns; const cache adds ~2 li per
     // call + ~2 li per block terminator.  The B-type branch limit is
     // only ±4KB (~1024 insns), so even moderate functions can exceed it
-    // if blocks are far apart.  Use a generous threshold to be safe.
-    uint32_t est_asm = threshold_ins * 2 + call_cnt * 2 + node->blocks_.size() * 2;
-    large_function_ = (est_asm > 8000 || node->blocks_.size() > 100);
+    // if blocks are far apart.  Use total_ins (post-optimization) with
+    // a multiplier of 3 to be conservative.  (Previously used pre-CSE
+    // count which inflated the estimate for functions with unrolled
+    // array initialization that later becomes memset loops.)
+    uint32_t est_asm = total_ins * 3 + call_cnt * 3 + node->blocks_.size() * 3;
+    large_function_ = (est_asm > 8000 || node->blocks_.size() > 500);
 
     // Reorder blocks to maximize fall-through, minimizing explicit
     // jumps.  A DFS traversal from the entry block places each block

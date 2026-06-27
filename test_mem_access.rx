@@ -1,0 +1,40 @@
+// Test: Random memory access patterns
+// Pattern 1: Sequential array access (baseline)
+fn sum_array(arr: &[i32; 1000], len: usize) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: usize = 0;
+    while (i < len) {
+        sum = sum + arr[i];
+        i = i + 1;
+    }
+    sum
+}
+
+// Pattern 2: Random access via index array (simulates automata state transition)
+fn random_access(table: &[i32; 256], indices: &[usize; 1000], len: usize) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: usize = 0;
+    while (i < len) {
+        let idx: usize = indices[i];
+        sum = sum + table[idx];
+        i = i + 1;
+    }
+    sum
+}
+
+// Pattern 3: Chain of dependent random accesses (simulates pointer chasing)
+fn dependent_access(a: &[usize; 256], b: &[i32; 256], idx: &[usize; 1000], len: usize) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: usize = 0;
+    while (i < len) {
+        let idx1: usize = idx[i];
+        let idx2: usize = a[idx1];
+        sum = sum + b[idx2];
+        i = i + 1;
+    }
+    sum
+}
+
+fn main() {
+    exit(0);
+}

@@ -1,0 +1,173 @@
+// Microbenchmark: Random memory access patterns
+// This test isolates the bottlenecks affecting the hidden test cases:
+//   opti_string_automata_suite (state machine with random table lookups)
+//   opti_inmemory_index_query  (hash table with pointer chasing)
+//
+// To run:
+//   ./build/code < test_rand_access.rx > tmp/test.s 2> tmp/builtin.s
+//   cat tmp/builtin.s tmp/test.s > tmp/combined.s
+//   riscv64-linux-gnu-gcc-12 -static -march=rv64gc tmp/combined.s -o tmp/test_out
+//   qemu-riscv64 tmp/test_out
+//
+// Then examine tmp/test.s for bottlenecks. Key issues:
+//   1. i32 arrays use ld/sd (8 bytes) instead of lw/sw (4 bytes) — search for "slli.*3" vs "slli.*2"
+//   2. Redundant mv instructions at loop back-edges
+//   3. Index-based addressing instead of running pointers for sequential scans
+
+const N: usize = 1000;
+
+// ---------- Pattern 1: Sequential array access (baseline) ----------
+// Bottleneck: index-based addressing + ld instead of lw + extra mv
+fn bench_sequential(arr: &[i32; 1000], len: usize) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: usize = 0;
+    while (i < len) {
+        sum = sum + arr[i];
+        i = i + 1;
+    }
+    sum
+}
+
+// ---------- Pattern 2: Random access via index array ----------
+// This is the core automata pattern: transition_table[current_state][input_char]
+// implemented as a flat table indexed by state*256 + char.
+// Bottleneck: ld instead of lw + dependent load stalls + address recomputation
+fn bench_random_lookup(table: &[i32; 256], indices: &[usize; 1000], len: usize) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: usize = 0;
+    while (i < len) {
+        let idx: usize = indices[i];
+        sum = sum + table[idx];
+        i = i + 1;
+    }
+    sum
+}
+
+// ---------- Pattern 3: Dependent random access (pointer chasing) ----------
+// Simulates: b[a[idx[i]]] — common in hash table bucket traversal
+// where the first load gets a bucket index and the second loads the value.
+// Bottleneck: 3 dependent loads with no scheduling + memory bloat
+fn bench_dependent_chase(
+    a: &[usize; 256],
+    b: &[i32; 256],
+    idx: &[usize; 1000],
+    len: usize
+) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: usize = 0;
+    while (i < len) {
+        let idx1: usize = idx[i];
+        let idx2: usize = a[idx1];
+        sum = sum + b[idx2];
+        i = i + 1;
+    }
+    sum
+}
+
+// ---------- Pattern 4: Automata simulation (integrated) ----------
+// Simulates a DFA: for each input char, look up next state from transition table.
+// transition[state * 256 + ch] — two-level random access in a tight loop.
+const NUM_STATES: usize = 64;
+const NUM_CHARS: usize = 256;
+
+fn bench_automata(
+    transitions: &[i32; 16384],  // 64 states × 256 chars = 16384 entries
+    input: &[usize; 1000],
+    len: usize
+) -> i32 {
+    let mut state: usize = 0;
+    let mut i: usize = 0;
+    while (i < len) {
+        let ch: usize = input[i];
+        // transition[state][ch] — the classic automata inner loop
+        let idx: usize = state * NUM_CHARS + ch;
+        state = transitions[idx] as usize;
+        i = i + 1;
+    }
+    state as i32
+}
+
+// ---------- Pattern 5: Struct field access (simulates hash table entry) ----------
+// Hash table entries are structs; accessing fields through array indices
+// simulates bucket chain traversal.
+struct HashEntry {
+    key: i32,
+    value: i32,
+    next: usize,  // index of next entry in the pool (simulates linked list)
+}
+
+fn bench_hash_table_lookup(
+    pool: &[HashEntry; 512],
+    buckets: &[usize; 256],
+    keys: &[i32; 1000],
+    len: usize
+) -> i32 {
+    let mut sum: i32 = 0;
+    let mut i: usize = 0;
+    while (i < len) {
+        let key: i32 = keys[i];
+        let bucket_idx: usize = (key & 255) as usize;
+        let mut entry_idx: usize = buckets[bucket_idx];
+        // Traverse the bucket chain
+        while (entry_idx != 0) {
+            if (pool[entry_idx].key == key) {
+                sum = sum + pool[entry_idx].value;
+                // break by forcing entry_idx to 0
+                entry_idx = 0;
+            } else {
+                entry_idx = pool[entry_idx].next;
+            }
+        }
+        i = i + 1;
+    }
+    sum
+}
+
+fn main() {
+    // Initialize arrays on the heap (simulated with stack arrays for simplicity)
+    let mut arr: [i32; 1000] = [0; 1000];
+    let mut table: [i32; 256] = [0; 256];
+    let mut indices: [usize; 1000] = [0; 1000];
+    let mut a: [usize; 256] = [0; 256];
+    let mut b: [i32; 256] = [0; 256];
+    let mut transitions: [i32; 16384] = [0; 16384];
+    let mut pool: [HashEntry; 512] = [HashEntry { key: 0, value: 0, next: 0 }; 512];
+    let mut buckets: [usize; 256] = [0; 256];
+    let mut keys: [i32; 1000] = [0; 1000];
+
+    // Fill with test data
+    let mut j: usize = 0;
+    while (j < 1000) {
+        arr[j] = j as i32;
+        indices[j] = j & 255;
+        keys[j] = (j * 17 + 53) as i32;
+        j = j + 1;
+    }
+    j = 0;
+    while (j < 256) {
+        table[j] = (j * 3) as i32;
+        a[j] = (j * 7 + 13) & 255;
+        b[j] = (j * 11) as i32;
+        j = j + 1;
+    }
+    j = 0;
+    while (j < 16384) {
+        transitions[j] = ((j * 13 + 7) & 63) as i32;
+        j = j + 1;
+    }
+
+    // Run benchmarks
+    let r1: i32 = bench_sequential(&arr, 1000);
+    let r2: i32 = bench_random_lookup(&table, &indices, 1000);
+    let r3: i32 = bench_dependent_chase(&a, &b, &indices, 1000);
+    let r4: i32 = bench_automata(&transitions, &indices, 1000);
+    let r5: i32 = bench_hash_table_lookup(&pool, &buckets, &keys, 1000);
+
+    // Print results (prevents dead code elimination)
+    printlnInt(r1);
+    printlnInt(r2);
+    printlnInt(r3);
+    printlnInt(r4);
+    printlnInt(r5);
+    exit(0);
+}

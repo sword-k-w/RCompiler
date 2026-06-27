@@ -70,7 +70,11 @@ private:
   // Per-register liveness: true = hardware a-reg holds the canonical value;
   // false = hardware is call garbage, the save slot is the source of truth.
   bool a_reg_valid_[8]{true, true, true, true, true, true, true, true};
+  // Per-slot validity: true = save slot has been written at least once in
+  // this function and contains a valid value for restore.
+  bool a_slot_valid_[8]{false, false, false, false, false, false, false, false};
   bool ra_saved_{false};
+  bool ra_slot_valid_{false};
 
   std::pair<StorageType, uint32_t> GetVariableAddress(const std::string &);
   void TransferToTreg(uint32_t, uint32_t, const std::string &);
