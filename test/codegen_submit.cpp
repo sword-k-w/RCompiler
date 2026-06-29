@@ -65,8 +65,8 @@ void TestCode(const std::string &code, std::ostream &out) {
 
     EliminateEmptyBlocks(IR_root);
 
-    IRPrinter printer("builtin.ll", std::cerr);
-    IR_root->Accept(&printer);
+    // IRPrinter printer("builtin.ll", std::cerr);
+    // IR_root->Accept(&printer);
 
     Preprocessor preprocessor;
     IR_root->Accept(&preprocessor);
