@@ -52,18 +52,18 @@ void TestCode(const std::string &code, std::ostream &out) {
       return;
     }
 
-    FunctionInliner::Run(IR_root);
+    // FunctionInliner::Run(IR_root);
 
     Mem2reg(IR_root);
     EliminateCriticalEdge(IR_root);
 
-    SCCP(IR_root);
+    // SCCP(IR_root);
 
-    CSE(IR_root);
+    // CSE(IR_root);
 
     ReplacePhiWithMoves(IR_root);
 
-    EliminateEmptyBlocks(IR_root);
+    // EliminateEmptyBlocks(IR_root);
 
     // IRPrinter printer("builtin.ll", std::cerr);
     // IR_root->Accept(&printer);
@@ -74,10 +74,10 @@ void TestCode(const std::string &code, std::ostream &out) {
     MemoryAllocator memory_allocator;
     IR_root->Accept(&memory_allocator);
     FunctionMap::Instance().Accept(&memory_allocator);
-    ParameterDemoter::Run(IR_root);
+    // ParameterDemoter::Run(IR_root);
     RegAlloc reg_alloc;
     IR_root->Accept(&reg_alloc);
-    ParameterDemoter::FixupAfterRegAlloc(IR_root);
+    // ParameterDemoter::FixupAfterRegAlloc(IR_root);
     AssemblyGenerator assembly_generator(LoadFromFile("builtin_gcc.s"), out, &std::cerr);
     IR_root->Accept(&assembly_generator);
   } catch (Error &err) {
